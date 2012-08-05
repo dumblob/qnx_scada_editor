@@ -39,7 +39,8 @@ int on_tree_selection(PtWidget_t *widget, ApInfo_t *apinfo,
 	int i = 0;
 	for (i = 0; (item = buf[i]) != NULL; ++i) {
 		//printf("nulling ");
-		if (item->data != NULL) {
+		if (item->data != NULL &&
+        ((t_table_data *)item->data)->table != NULL) {
 			tbldt = item->data;
 			tbl = tbldt->table;
 			tblSetDim(tbl, tblPos, tblDim);
@@ -58,7 +59,8 @@ int on_tree_selection(PtWidget_t *widget, ApInfo_t *apinfo,
 	tblPos.x = 0;
 	tblPos.y = 0;
 	//printf("seting ");
-	if (cbdata->item->data != NULL) {
+	if (cbdata->item->data != NULL &&
+      ((t_table_data *)cbdata->item->data)->table != NULL) {
 		tbldt = cbdata->item->data;
 		tbl = tbldt->table;
 		tblSetDim(tbl, tblPos, tblDim);

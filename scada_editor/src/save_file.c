@@ -17,23 +17,19 @@
 
 extern char *filepath;
 
-int
-save_file( PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo )
-
-	{
-
+int save_file( PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo )
+{
 	/* eliminate 'unreferenced' warnings */
 	widget = widget, apinfo = apinfo, cbinfo = cbinfo;
 
+  //FIXME wtf?
 	return save_file_as(widget, apinfo, cbinfo);
 
 	if (filepath == NULL) {
-			return save_file_as(widget, apinfo, cbinfo);
+		return save_file_as(widget, apinfo, cbinfo);
 	}
 
 	save_data();
 
 	return( Pt_CONTINUE );
-
-	}
-
+}
