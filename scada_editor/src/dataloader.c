@@ -7,6 +7,9 @@
 
 #include "dataloader.h"
 
+t_variable_list *first = NULL;
+t_variable_list *last = NULL;
+
 xmlDocPtr data;
 xmlDocPtr view;
 
@@ -120,6 +123,7 @@ void parseTreeNode(PtTreeItem_t *parent_item, xmlNodePtr tree_node) {
 				(const xmlChar *) "tree-node")) {
 			printf("its tree-node tag: %s\n", tree_node_child->name);
 			parseTreeNode(parent_item, tree_node_child);
+			parent_item->data = newTableData(NULL, tree_node_child);//FIXME dumblob
 
 		} else if (!xmlStrcmp(tree_node_child->name,
 				(const xmlChar *) "variable")) {
@@ -197,13 +201,13 @@ void process_variable(xmlChar *xpath) {
 
 	xmlChar *sep = NULL;
 
-	sep = xmlStrchr(xpath, (xmlChar) "$");
+	sep = (xmlChar *)xmlStrchr(xpath, (xmlChar) '$');
 
 	while(sep != NULL){
 
 
 
-		sep = xmlStrchr(xpath, (xmlChar) "$");
+		sep = (xmlChar *)xmlStrchr(xpath, (xmlChar) '$');
 	}
 
 
@@ -212,9 +216,7 @@ void process_variable(xmlChar *xpath) {
 
 xmlChar *replace_str(xmlChar *xpath, xmlChar *variable, xmlChar *value)
 {
-
-
-
+  return NULL;
 }
 
 
@@ -274,8 +276,6 @@ t_table_data * createTable(xmlNodePtr node) {
 	int columns_count = 0;
 	int rows_count = 0;
 
-	xmlChar *label;
-	xmlChar *csource;
 	xmlNodeSetPtr nodeset = NULL;
 	xmlXPathObjectPtr result;
 
@@ -295,7 +295,7 @@ t_table_data * createTable(xmlNodePtr node) {
 	}
 	printf("its table columns and rows: %d %d\n", columns_count, rows_count);
 	column = node->xmlChildrenNode;
-	printf("all ok 0");
+	printf("all ok 0\n");
 	tblPos.x = 000;
 	tblPos.y = 000;
 	tblDim.w = ABW_table_pane->area.size.w;
@@ -306,26 +306,49 @@ t_table_data * createTable(xmlNodePtr node) {
 
 	int cell = 0;
 
-	PtArg_t args[1];
+	PtArg_t args[2];
 	xmlChar* attr = NULL;
+	xmlChar* tmp_s = NULL;
+	xmlChar *label;
+	t_xml_info *info = NULL;
 	int i;
 	while (column != NULL) {
 		if ((!xmlStrcmp(column->name, (const xmlChar *) "column"))) {
-			label = xmlGetProp(column, (const xmlChar *) "label");
-			csource = xmlGetProp(column, (const xmlChar *) "source");
+			if ((info = (t_xml_info *)malloc(sizeof(t_xml_info))) == NULL)
+				PtExit(EXIT_FAILURE);
+
+			label        = xmlGetProp(column, (const xmlChar *) "label");
+			info->source = xmlGetProp(column, (const xmlChar *) "source");
+			tmp_s        = xmlGetProp(column, (const xmlChar *) "type");
+
+			/* cfgview.xml <... type="bool" ...> */
+			if      (strcmp((const char*)tmp_s, "number") == 0)
+				info->type = SCADA_EDITOR_XML_ATTR_TYPE_NUMBER;
+			else if (strcmp((const char*)tmp_s, "string") == 0)
+				info->type = SCADA_EDITOR_XML_ATTR_TYPE_STRING;
+			else if (strcmp((const char*)tmp_s, "char"  ) == 0)
+				info->type = SCADA_EDITOR_XML_ATTR_TYPE_CHAR;
+			else if (strcmp((const char*)tmp_s, "bool"  ) == 0)
+				info->type = SCADA_EDITOR_XML_ATTR_TYPE_BOOL;
+			else
+			{
+				fprintf(stderr, "ERROR: Unknown type=\"%s\" found in cfgview.xml!", tmp_s);
+				/* recovery */
+				info->type = SCADA_EDITOR_XML_ATTR_TYPE_STRING;
+			}
 
 			PtSetArg(&args[0], Pt_ARG_TEXT_STRING, label, 0);
-			tblExeOnCellArea(tbl, cell, 0, cell, 0, PtText, 1, args);
+			PtSetArg(&args[1], Pt_ARG_POINTER, info, 0); //FIXME dumblob
+			tblExeOnCellArea(tbl, cell, 0, cell, 0, PtButton, 2, args);
 
 			if (result != NULL) {
 				for (i = 0; i < nodeset->nodeNr; i++) {
 					//printf("keyword: %s\n", nodeset->nodeTab[i]->name);
-					//printf("cs: %s\n", csource+1);
-					attr = xmlGetProp(nodeset->nodeTab[i], csource + 1);
+					//printf("cs: %s\n", info->source +1);
+					attr = xmlGetProp(nodeset->nodeTab[i], info->source +1);
 					//printf("attr: %s\n", attr);
 					PtSetArg(&args[0], Pt_ARG_TEXT_STRING, attr, 0);
-					tblExeOnCellArea(tbl, cell, i + 1, cell, i + 1, PtText, 1,
-							args);
+					tblExeOnCellArea(tbl, cell, i + 1, cell, i + 1, PtText, 1, args);
 
 					xmlFree(attr);
 				}
@@ -333,7 +356,7 @@ t_table_data * createTable(xmlNodePtr node) {
 
 			cell++;
 			xmlFree(label);
-			xmlFree(csource);
+			xmlFree(tmp_s); //FIXME dumblob
 
 		}
 		column = column->next;
@@ -350,7 +373,7 @@ t_table_data * createTable(xmlNodePtr node) {
 
 }
 
-xmlChar* enhance_xpath(xmlChar *xpath, const xmlChar * namespace) {
+xmlChar* enhance_xpath(const xmlChar *xpath, const xmlChar * namespace) {
 	xmlChar *ens;
 	xmlChar *sep;
 	xmlChar *fullpath;
@@ -363,10 +386,10 @@ xmlChar* enhance_xpath(xmlChar *xpath, const xmlChar * namespace) {
 
 	fullpath = xmlCharStrdup((const char *) ens);
 
-	sep = xmlStrchr(xpath, (xmlChar) "/");
+	sep = (xmlChar *)xmlStrchr(xpath, (xmlChar) '/');
 	while (sep != NULL) {
 		f2 = sep - xpath + 1;
-		sep = xmlStrchr(sep + 1, (xmlChar) "/");
+		sep = (xmlChar *)xmlStrchr(sep + 1, (xmlChar) '/');
 		if (sep != NULL) {
 			//printf("/// %d //\n", sep - xpath - f2 - 1);
 			fullpath = xmlStrncat(fullpath, xpath + f2, sep - xpath - f2);
@@ -398,3 +421,18 @@ void destroy() {
 		xmlFreeDoc(view);
 	}
 }
+
+//FIXME dumblob
+t_table_data *newTableData(PtWidget_t *tbl, xmlNodePtr node)
+{
+	t_table_data *data = (t_table_data *)malloc(sizeof(t_table_data));
+
+	if (data == NULL) PtExit(EXIT_FAILURE);
+
+	data->table = tbl;
+	data->xpath = xmlGetProp(node, (const xmlChar *)"source");
+
+	return data;
+}
+
+/* vim: set noexpandtab: */
