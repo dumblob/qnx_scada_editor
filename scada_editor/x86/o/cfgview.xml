@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+<disam:config-view version="1.0"
+  xmlns:disam="http://www.disam.cz/Xmlns/Scada/ConfigEditor/Layout"
+  xmlns:xsl="http://www.xsl.com">
+	<disam:tree preserve-order="true">	  
+	  <disam:tree-node name="Protocol Setup">
+	    <disam:table source="/configuration/protocol-setup/protocol-item" preserve-order="true">
+	      <column label="Id" source="@id" type="string"/>
+	      <column label="kom-task-mbx" source="@kom-task-mbx" type="number"/>
+	      <column label="kom-in-mbx" source="@kom-in-mbx" type="number"/>
+	      <column label="leading-char-value" source="@leading-char-value" type="char"/>
+	      <column label="end-char-value" source="@end-char-value" type="char"/>
+	      <column label="stuff-char-usage" source="@stuff-char-usage" type="bool"/>
+	      <column label="stuff-char-value" source="@stuff-char-value" type="char"/>
+	      <column label="checksum-usage" source="@checksum-usage" type="bool"/>
+	      <column label="checksum-id" source="@checksum-id" type="number"/>
+	      <column label="checksum-len" source="@checksum-len" type="number"/>
+	      <column label="max-message-len" source="@max-message-len" type="number"/>
+	      <column label="description" source="@description" type="number"/>
+	    </disam:table>
+	  </disam:tree-node>
+	  
+	  <disam:tree-node name="COM Setup">
+	    <disam:table source="/configuration/com-setup/com-item" preserve-order="true">
+	      <column label="Id" source="@id" type="string" comment="Identifikace polozky."/>
+	      <column label="Channels" source="@max-channel" type="number"/>
+	      <column label="OS/Channels" source="@max-os-per-channel" type="number"/>
+	      <column label="kom-in-port-task" source="@kom-in-port-task" type="string"/>
+	      <column label="kom-out-port-task" source="@kom-out-port-task" type="string"/>
+	      <column label="kom-out-mbx" source="@kom-out-mbx" type="number"/>
+	      <column label="baud-rate" source="@baud-rate" type="number"/>
+	      <column label="parity" source="@parity" type="number"/>
+	      <column label="stop-bits" source="@stop-bits" type="number"/>
+	      <column label="data-bits" source="@data-bits" type="number"/>
+	      <column label="kom-type" source="@kom-type" type="number"/>
+	      <column label="protokol-id" source="@protokol-id" type="number"/>
+	      <column label="description" source="@description" type="string"/>	      	      
+	    </disam:table> 	
+	  </disam:tree-node>
+	  	  
+	  <disam:tree-node name="OS Setup">
+	    <disam:table source="/configuration/os-setup/os-item">
+	      <column label="Id" source="@id" type="string" comment="Identifikace polozky."/>
+	      <column label="os-type-id" source="@os-type-id" type="string" comment=""/>
+		  <column label="os-type-name" source="@os-type-name" type="string" comment=""/>
+		  
+          <column label="AI" source="@AI" type="number" comment=""/>
+          <column label="DI" source="@DI" type="number" comment=""/>
+          <column label="DO" source="@DO" type="number" comment=""/>
+          <column label="AO" source="@AO" type="number" comment=""/>
+          <column label="CT" source="@CT" type="number" comment=""/>
+          
+          <column label="anal-data-len" source="@anal-data-len" type="number" comment=""/>
+          <column label="properties" source="@properties" type="char" comment=""/>
+          <column label="fix-properties" source="@fix-properties" type="char" comment=""/>	      
+	    </disam:table>
+	  </disam:tree-node>
+	  <disam:tree-node name="Simatic Data">
+	    <disam:tree-node name="@id" source="/configuration/simatic-apl-data/simatic-type">
+	      <xsl:variable name="tid" select="@id"/>
+	      <disam:tree-node name="@id" source="/configuration/simatic-apl-data/simatic-type[@id=$tid]/simatic-subtype">
+	        <xsl:variable name="sid" select="@id"/>
+	        <disam:table source="/configuration/simatic-apl-data/symatic-type[@id=$tid]/simatic-subtype[@id=$sid]/simatic-item">
+	        <column label="No" source="@i-db-no" type="number" comment=""/>
+	        <column label="Offset" source="@i-offset" type="number" comment=""/>
+	        <column label="Num" source="@i-num" type="number" comment=""/>
+	        <column label="Note" source="@note" type="string" comment=""/>
+	        </disam:table>
+	      </disam:tree-node>
+	    </disam:tree-node>
+	  </disam:tree-node>			
+  </disam:tree>
+</disam:config-view> 
