@@ -1,0 +1,199 @@
+:PROTOCOL_SETUP
+#id; kom_task_mbx (0/1), kom_in_mbx (0/1); \
+#    leading_char_value, end_char_value, stuff_char_usage (0/1), stuff_char_value; \
+#    checksum_usage (0/1), checksum_id, checksum_len; \
+#    max_mesage_len; description
+01; 1, 1; 0x0, 0x0, 0, 0x0; 1, 0, 2; 2000; "SIMATIC-DRT"
+02; 1, 1; 0x0, 0x0, 0, 0x0; 1, 1, 2; 2000; "SIMATIC-300"
+03; 1, 0; 0x0, 0x0, 0, 0x0; 0, 0, 0; 0; "AUTEL"
+04; 1, 0; 0x0, 0x0, 0, 0x0; 0, 0, 0; 0; "AUTEL-SRV"
+05; 0, 0; 0x0, 0x0, 0, 0x0; 0, 0, 0; 0; ""
+
+
+:COM_SETUP
+#id; max_channel, max_os_per_channel; \
+#    kom_in_port task, kom_out_port task, kom_out_mbx (0/1); \
+#    baud_rate, parity (0/1/2), stop_bits, data_bits; \
+#    kom_type, protokol_id; \
+#    description
+01; 1, 1; "kom_simatic_nio", "", 1; 0, 0, 0, 0; 6; 1; "CHUV"
+02; 1, 1; "kom_simatic_nio", "", 1; 0, 0, 0, 0; 6; 1; "K3"
+03; 1, 1; "kom_simatic_nio", "", 1; 0, 0, 0, 0; 6; 1; "K2"
+04; 1, 1; "kom_simatic_nio", "", 1; 0, 0, 0, 0; 6; 1; "K1"
+05; 1, 1; "kom_simatic_nio", "", 1; 0, 0, 0, 0; 6; 1; "Pomocne provozy"
+06; 1, 1; "kom_simatic_nio", "", 1; 0, 0, 0, 0; 6; 2; "PTK-1"
+07; 1, 1; "kom_simatic_nio", "", 1; 0, 0, 0, 0; 6; 2; "PTG-3"
+08; 1, 1; "kom_simatic_nio", "", 1; 0, 0, 0, 0; 6; 2; "EO-1"
+09; 1, 1; "kom_simatic_nio", "", 1; 0, 0, 0, 0; 6; 2; "EO-2"
+10; 1, 1; "kom_simatic_nio", "", 1; 0, 0, 0, 0; 6; 2; "JIH"
+11; 1, 1; "kom_simatic_nio", "", 1; 0, 0, 0, 0; 6; 2; "BKP"
+12; 1, 1; "",                "", 0; 0, 0, 0, 0; 5; 4; "Autel-server"
+13; 1, 1; "",                "", 0; 0, 0, 0, 0; 5; 3; "Autel-klient"
+
+
+:OS_SETUP
+#id; os_type_id, os_type_name; \
+#    AI, DI, DO, AO, CT, anal_data_len (code); \
+#    properties, fix_properties; \
+01;   303, "SIMATIC S7 CHUV";   360,  1792,   640,   304,     0,     0; 0x0, 0x0
+02;   304, "SIMATIC S7 Kotel";  360,  1320,   440,   400,     0,     0; 0x0, 0x0
+03;   301, "SIMATIC S7 315";    360,  1320,   440,   400,     0,     0; 0x0, 0x0
+#03;  301, "SIMATIC S7 315";    360,   720,   440,   400,     0,     0; 0x0, 0x0 	!!! az po zmenseni DI 
+04;   314, "SIMATIC S7 PP";     720,  2544,   880,   800,     0,     0; 0x0, 0x0
+05;   316, "SIMATIC S7 BKP";    180,   360,   220,   200,     0,     0; 0x0, 0x0
+06;   400, "AUTEL";             320,   160,   160,   200,     0,     0; 0x0, 0x0
+07;   401, "AUTEL-SERVER";		  1,     0,	 0,     0,     0,     0; 0x0, 0x0
+
+:SIMATIC_APL_DATA
+#id, subtypes_total;
+#{
+#	subtype_id, subtype_items;
+#	{
+#		i_db_no, i_offset, i_num [, note];
+#		...
+#		-1, 0, 0, "= no more";
+#	}
+#	...
+#	subtype_id; subtype_items;
+#	{
+#		i_db_no, i_offset, i_num [, note];
+#		...
+#		-1, 0, 0, "no more";
+#	}
+#}
+1, 8
+{
+	1, 2
+	{
+		  110,     0,   128, "pro skutecne AI na PLC";
+		   -1,     0,     0, "= no more";
+	}
+	2, 2
+	{
+		  105,     0,   128, "pro skutecne raw AI na PLC";
+		   -1,     0,     0, "= no more";
+	}
+	3, 1
+	{
+		   -1,     0,     0, "= no more";
+	}
+	4, 4
+	{
+		  106,     0,   128, "skutecne AI na PLC";
+		  107,   128,    32, "skutecne AO na PLC";
+		  108,   160,   200, "interni na PLC";
+		   -1,     0,     0, "= no more";
+	}
+	5, 2
+	{
+		  109,     0,   250, "moje AO pro PLC";
+		   -1,     0,     0, "= no more";
+	}
+	6, 4
+	{
+		  101,     0,   448, "skutecne DI na PLC (56*8)";
+		  102,   448,   224, "skutecne DO na PLC (28*8)";
+		  103,   672,   640, "interni na PLC";
+		   -1,     0,     0, "= no more";
+	}
+	7, 2
+	{
+		  104,     0,   440, "moje DO pro PLC";
+		   -1,     0,     0, "= no more";
+	}
+	8, 1
+	{
+		   -1,     0,     0, "= no more";
+	}
+}
+02, 8
+{
+	1, 2
+	{
+		  110,     0,   128, "pro skutecne AI na PLC";
+		   -1,     0,     0, "= no more";
+	}
+	2, 2
+	{
+		  105,     0,   128, "pro skutecne raw AI na PLC";
+		   -1,     0,     0, "= no more";
+	}
+	3, 1
+	{
+		   -1,     0,     0, "= no more";
+	}
+	4, 4
+	{
+		  106,     0,   128, "skutecne AI na PLC";
+		  107,   128,    32, "skutecne AO na PLC";
+		  108,   160,   200, "interni na PLC";
+		   -1,     0,     0, "= no more";
+	}
+	5, 2
+	{
+		  109,     0,   250, "moje AO pro PLC";
+		   -1,     0,     0, "= no more";
+	}
+	6, 4
+	{
+		  101,     0,   448, "skutecne DI na PLC (56*8)";
+		  102,   448,   224, "skutecne DO na PLC (28*8)";
+		  103,   672,   640, "interni na PLC";
+		   -1,     0,     0, "= no more";
+	}
+	7, 2
+	{
+		  104,     0,   440, "moje DO pro PLC";
+		   -1,     0,     0, "= no more";
+	}
+	8, 1
+	{
+		   -1,     0,     0, "= no more";
+	}
+}
+03, 8
+{
+	1, 2
+	{
+		  110,     0,   128, "pro skutecne AI na PLC";
+		   -1,     0,     0, "= no more";
+	}
+	2, 2
+	{
+		  105,     0,   128, "pro skutecne raw AI na PLC";
+		   -1,     0,     0, "= no more";
+	}
+	3, 1
+	{
+		   -1,     0,     0, "= no more";
+	}
+	4, 4
+	{
+		  106,     0,   128, "skutecne AI na PLC";
+		  107,   128,    32, "skutecne AO na PLC";
+		  108,   160,   200, "interni na PLC";
+		   -1,     0,     0, "= no more";
+	}
+	5, 3
+	{
+		  109,     0,    60, "set-points";
+		  111,    60,   340, "moje AO pro PLC";
+		   -1,     0,     0, "= no more";
+	}
+	6, 4
+	{
+		  101,     0,   448, "skutecne DI na PLC (56*8)";
+		  102,   448,   224, "skutecne DO na PLC (28*8)";
+		  103,   672,   640, "interni na PLC";
+		   -1,     0,     0, "= no more";
+	}
+	7, 2
+	{
+		  104,     0,   440, "moje DO pro PLC";
+		   -1,     0,     0, "= no more";
+	}
+	8, 1
+	{
+		   -1,     0,     0, "= no more";
+	}
+}

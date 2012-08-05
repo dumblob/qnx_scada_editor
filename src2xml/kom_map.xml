@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<disam:configuration id="kom_map" version="1.0" xmlns:disam="http://www.disam.cz/Xmlns/Scada/Configuration">
+
+  <disam:protocol-setup>
+    <disam:protocol-item id="01" kom-task-mbx="1" kom-in-mbx="1"
+      leading-char-value="0x0" end-char-value="0x0" stuff-char-usage="0" stuff-char-value="0x0"
+      checksum-usage="1" checksum-id="0" checksum-len="2"
+      max-message-len="2000" description="SIMATIC-DRT"/>
+  </disam:protocol-setup>
+
+  <disam:com-setup>
+    <disam:com-item id="01" max-channel="1" max-os-per-channel="1" kom-in-port-task="kom_simatic_nio" kom-out-port-task="" kom-out-mbx="1" baud-rate="0" parity="0" stop-bits="0" data-bits="0" kom-type="6" protokol-id="1" description="CHUV"/>
+  </disam:com-setup>
+
+  <disam:os-setup>
+    <disam:os-item id="01" os-type-id="303" os-type-name="SIMATIC S7 CHUV" AI="360" DI="1792" DO="640" AO="304" CT="0" anal-data-len="0" properties="0x0" fix-properties="0x0" />
+  </disam:os-setup>
+
+  <disam:simatic-apl-data>
+    <disam:simatic-type id="01">
+
+      <disam:simatic-subtype id="1">
+        <disam:simatic-item i-db-no="110" i-offset="0" i-num="128" note="pro skutecne AI na PLC"/>
+        <disam:simatic-item i-db-no="-1" i-offset="0" i-num="0" note="= no more"/>
+      </disam:simatic-subtype>
+
+      <disam:simatic-subtype id="2">
+      </disam:simatic-subtype>
+
+    </disam:simatic-type>
+  </disam:simatic-apl-data>
+
+</disam:configuration>
