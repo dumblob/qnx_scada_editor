@@ -70,7 +70,7 @@ void loadViewAndData() {
 	}
 
 	parseTree(viewnode);
-	loadDataFromXpath("/configuration/simatic-apl-data/symatic-type[@id=02]/simatic-subtype[@id=021]/simatic-item");
+	//loadDataFromXpath("/configuration/simatic-apl-data/symatic-type[@id=02]/simatic-subtype[@id=021]/simatic-item");
 
 }
 
