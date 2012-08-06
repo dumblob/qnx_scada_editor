@@ -76,26 +76,13 @@ void loadViewAndData() {
 
 void parseTree(xmlNodePtr tree) {
 
-	xmlChar *name;
-	PtTreeItem_t *last_item = NULL;
-	PtTreeItem_t *item;
 	xmlNodePtr tree_child = tree->xmlChildrenNode;
 
-<<<<<<< .working
-<<<<<<< .working
-=======
 	//void (*funcptr)(xmlNodePtr, xmlNodePtr) = NULL;
-=======
-	//void (*funcptr)(xmlNodePtr, xmlNodePtr) = NULL;
->>>>>>> .merge-right.r29
 
 	printf("its a tree tag: %s\n", tree->name);
 
->>>>>>> .merge-right.r29
 	while (tree_child != NULL) {
-<<<<<<< .working
-		if ((!xmlStrcmp(tree_child->name, (const xmlChar *) "tree-node"))) {
-=======
 		printf("child of tree is: %s\n", tree_child->name);
 
 		if (!xmlStrcmp(tree_child->name, (const xmlChar *) "tree-node")) {
@@ -104,68 +91,47 @@ void parseTree(xmlNodePtr tree) {
 
 		tree_child = tree_child->next;
 	}
->>>>>>> .merge-right.r29
 
-			name = xmlGetProp(tree_child, (const xmlChar *) "name");
+}
 /*
-			item = PtTreeAllocItem(ABW_tree_wgt, (char *) name, -1, -1);
-/*
-			if (last_item != NULL) {
-				PtTreeAddAfter(ABW_tree_wgt, item, last_item);
-			} else {
-				PtTreeAddFirst(ABW_tree_wgt, item, last_item);
+void (*parseTagPtr(xmlNodePtr next_node))(xmlNodePtr,xmlNodePtr) {
 
-			}
+	void (*funcptr)(xmlNodePtr, xmlNodePtr) = NULL;
 
-			parseTreeNode(item, tree_child);
-			last_item = item;
-			xmlFree(name);
+	if (next_node == NULL) {
+		return NULL;
+	}
 
-<<<<<<< .working
-		}
-		tree_child = tree_child->next;
-=======
+	if ((!xmlStrcmp(next_node->name, (const xmlChar *) "tree-node"))) {
+		funcptr = &parseTreeNode;
+
 	} else if ((!xmlStrcmp(next_node->name, (const xmlChar *) "table"))) {
 		funcptr = &parseTableNode;
 
 	} else if ((!xmlStrcmp(next_node->name,	(const xmlChar *) "variable"))) {
 		funcptr = &parseVarNode;
->>>>>>> .merge-right.r29
 
 	}
+	return funcptr;
 
 }
 */
 
-void parseTreeNode(PtTreeItem_t *parent_item, xmlNodePtr tree_node) {
+void parseTreeNode(xmlNodePtr tree_node, xmlNodePtr parent_node) {
+
 	xmlChar* name = NULL;
 	xmlChar* source = NULL;
 	xmlNodePtr tree_node_child = NULL;
 	//void (*funcptr)(xmlNodePtr, xmlNodePtr) = NULL;
 
-<<<<<<< .working
-<<<<<<< .working
-=======
 	PtTreeItem_t *item = NULL;
 	PtTreeItem_t *tmpitem = NULL;
-=======
-	PtTreeItem_t *item = NULL;
-	PtTreeItem_t *tmpitem = NULL;
->>>>>>> .merge-right.r29
 
-<<<<<<< .working
->>>>>>> .merge-right.r29
 
-=======
-
->>>>>>> .merge-right.r29
 	name = xmlGetProp(tree_node, (const xmlChar *) "name");
 	source = xmlGetProp(tree_node, (const xmlChar *) "source");
 
 
-<<<<<<< .working
-<<<<<<< .working
-=======
 	if(source != NULL){
 		xmlXPathObjectPtr result = loadDataFromXpath(source);
 		xmlNodeSetPtr nodeset = NULL;
@@ -174,16 +140,6 @@ void parseTreeNode(PtTreeItem_t *parent_item, xmlNodePtr tree_node) {
 			int i;
 			xmlChar* attr = NULL;
 			char have_variable = 0;
-=======
-	if(source != NULL){
-		xmlXPathObjectPtr result = loadDataFromXpath(source);
-		xmlNodeSetPtr nodeset = NULL;
-		if (result != NULL) {
-			nodeset = result->nodesetval;
-			int i;
-			xmlChar* attr = NULL;
-			char have_variable = 0;
->>>>>>> .merge-right.r29
 
 			for (i = 0; i < nodeset->nodeNr; i++) {
 				attr = xmlGetProp(nodeset->nodeTab[i], name+1);
@@ -191,8 +147,6 @@ void parseTreeNode(PtTreeItem_t *parent_item, xmlNodePtr tree_node) {
 
 				printf("loaded tree-mode name is %s\n", attr);
 
-<<<<<<< .working
->>>>>>> .merge-right.r29
 				/*pridava itemy korektne ale v opacnem poradi - opravit
 				 * pridat volani pro children
 				 * nejak predat hodnotu pro variable*/
@@ -209,75 +163,15 @@ void parseTreeNode(PtTreeItem_t *parent_item, xmlNodePtr tree_node) {
 				tmpitem = last_item;
 				last_item = item;
 				have_variable = 0;
-=======
-				/*pridava itemy korektne ale v opacnem poradi - opravit
-				 * pridat volani pro children
-				 * nejak predat hodnotu pro variable*/
-				if ((!xmlStrcmp(parent_node->name, (const xmlChar *) "tree-node"))) {
-					PtTreeAddFirst(ABW_tree_wgt, item, last_item);
-				}else{
-					if (last_item != NULL) {
-						PtTreeAddAfter(ABW_tree_wgt, item, last_item);
-					} else {
-						PtTreeAddFirst(ABW_tree_wgt, item, last_item);
-					}
-				}
-				PtTreeExpand(ABW_tree_wgt, last_item, NULL);
-				tmpitem = last_item;
-				last_item = item;
-				have_variable = 0;
->>>>>>> .merge-right.r29
 
-<<<<<<< .working
-<<<<<<< .working
-		printf("its a: %s\n", tree_node_child->name);
-=======
 				t_variable_list * last_tmp = last;
->>>>>>> .merge-right.r29
-=======
-				t_variable_list * last_tmp = last;
->>>>>>> .merge-right.r29
 
-<<<<<<< .working
-<<<<<<< .working
-		if ((!xmlStrcmp(tree_node_child->name, (const xmlChar *) "table"))) {
-			parent_item->data = createTable(tree_node_child);
-=======
 				tree_node_child = tree_node->xmlChildrenNode;
->>>>>>> .merge-right.r29
-=======
-				tree_node_child = tree_node->xmlChildrenNode;
->>>>>>> .merge-right.r29
 
-<<<<<<< .working
-<<<<<<< .working
-		} else if (!xmlStrcmp(tree_node_child->name,
-				(const xmlChar *) "tree-node")) {
-			printf("its tree-node tag: %s\n", tree_node_child->name);
-			parseTreeNode(parent_item, tree_node_child);
-			parent_item->data = newTableData(NULL, tree_node_child);//FIXME dumblob
-=======
 				while (tree_node_child != NULL) {
->>>>>>> .merge-right.r29
-=======
-				while (tree_node_child != NULL) {
->>>>>>> .merge-right.r29
 
-<<<<<<< .working
-<<<<<<< .working
-		} else if (!xmlStrcmp(tree_node_child->name,
-				(const xmlChar *) "variable")) {
-=======
 					printf("its a: %s\n", tree_node_child->name);
->>>>>>> .merge-right.r29
-=======
-					printf("its a: %s\n", tree_node_child->name);
->>>>>>> .merge-right.r29
 
-<<<<<<< .working
-<<<<<<< .working
-			printf("its a variable tag: %s\n", tree_node_child->name);
-=======
 					if ((!xmlStrcmp(tree_node_child->name,(const xmlChar *) "table"))) {
 						item->data = createTable(tree_node_child);
 					} else if (!xmlStrcmp(tree_node_child->name, (const xmlChar *) "tree-node")) {
@@ -286,139 +180,35 @@ void parseTreeNode(PtTreeItem_t *parent_item, xmlNodePtr tree_node) {
 						have_variable = 1;
 						parseVarNode(tree_node_child, attr);
 					}
->>>>>>> .merge-right.r29
-=======
-					if ((!xmlStrcmp(tree_node_child->name,(const xmlChar *) "table"))) {
-						item->data = createTable(tree_node_child);
-					} else if (!xmlStrcmp(tree_node_child->name, (const xmlChar *) "tree-node")) {
-						parseTreeNode(tree_node_child, tree_node);
-					} else if (!xmlStrcmp(tree_node_child->name,(const xmlChar *) "variable")) {
-						have_variable = 1;
-						parseVarNode(tree_node_child, attr);
-					}
->>>>>>> .merge-right.r29
 
-<<<<<<< .working
-<<<<<<< .working
-			xmlXPathObjectPtr result = loadDataFromXpath(source);
-			xmlNodeSetPtr nodeset = NULL;
-=======
 					tree_node_child = tree_node_child->next;
->>>>>>> .merge-right.r29
-=======
-					tree_node_child = tree_node_child->next;
->>>>>>> .merge-right.r29
 
-<<<<<<< .working
-<<<<<<< .working
-			if (result != NULL) {
-				nodeset = result->nodesetval;
-				PtTreeItem_t *last_item = parent_item;
-				PtTreeItem_t *item;
-				int i;
-				xmlChar* attr = NULL;
-=======
 				}
 				last_item = tmpitem;
->>>>>>> .merge-right.r29
-=======
-				}
-				last_item = tmpitem;
->>>>>>> .merge-right.r29
 
-<<<<<<< .working
-<<<<<<< .working
-=======
 				if(have_variable){
 					if(first == last){
 						first = NULL;
 					}
->>>>>>> .merge-right.r29
-=======
-				if(have_variable){
-					if(first == last){
-						first = NULL;
-					}
->>>>>>> .merge-right.r29
 
-<<<<<<< .working
-<<<<<<< .working
-=======
 					free(last->name);
 					free(last->value);
 					free(last);
->>>>>>> .merge-right.r29
-=======
-					free(last->name);
-					free(last->value);
-					free(last);
->>>>>>> .merge-right.r29
 
-<<<<<<< .working
-<<<<<<< .working
-=======
 					last = last_tmp;
 				}
 				xmlFree(attr);
 			}
 		}
->>>>>>> .merge-right.r29
-=======
-					last = last_tmp;
-				}
-				xmlFree(attr);
-			}
-		}
->>>>>>> .merge-right.r29
 
-<<<<<<< .working
-<<<<<<< .working
-				t_variable_list * this = (t_variable_list*) malloc(sizeof(t_variable_list));
-				this->name = xmlGetProp(tree_node_child, (xmlChar*) "name");
-=======
->>>>>>> .merge-right.r29
-=======
->>>>>>> .merge-right.r29
 
-<<<<<<< .working
-<<<<<<< .working
-				if(first == NULL){
-					first = this;
-					last = first;
-				}else{
-					last->next = this;
-					last = last->next;
-				}
-=======
 	} else {
->>>>>>> .merge-right.r29
-=======
-	} else {
->>>>>>> .merge-right.r29
 
-<<<<<<< .working
-<<<<<<< .working
-=======
 		tree_node_child = tree_node->xmlChildrenNode;
->>>>>>> .merge-right.r29
-=======
-		tree_node_child = tree_node->xmlChildrenNode;
->>>>>>> .merge-right.r29
 
-<<<<<<< .working
-<<<<<<< .working
-=======
 		item = PtTreeAllocItem(ABW_tree_wgt, (char *) name, -1, -1);
->>>>>>> .merge-right.r29
-=======
-		item = PtTreeAllocItem(ABW_tree_wgt, (char *) name, -1, -1);
->>>>>>> .merge-right.r29
 
 
-<<<<<<< .working
-<<<<<<< .working
-				for (i = 0; i < nodeset->nodeNr; i++) {
-=======
 		if ((!xmlStrcmp(parent_node->name, (const xmlChar *) "tree-node"))) {
 				PtTreeAddFirst(ABW_tree_wgt, item, last_item);
 			}else{
@@ -428,161 +218,43 @@ void parseTreeNode(PtTreeItem_t *parent_item, xmlNodePtr tree_node) {
 					PtTreeAddFirst(ABW_tree_wgt, item, last_item);
 				}
 			}
->>>>>>> .merge-right.r29
-=======
-		if ((!xmlStrcmp(parent_node->name, (const xmlChar *) "tree-node"))) {
-				PtTreeAddFirst(ABW_tree_wgt, item, last_item);
-			}else{
-				if (last_item != NULL) {
-					PtTreeAddAfter(ABW_tree_wgt, item, last_item);
-				} else {
-					PtTreeAddFirst(ABW_tree_wgt, item, last_item);
-				}
-			}
->>>>>>> .merge-right.r29
 
-<<<<<<< .working
-<<<<<<< .working
-					attr = xmlGetProp(nodeset->nodeTab[i],(xmlChar*) "id");
-=======
 			last_item = item;
->>>>>>> .merge-right.r29
-=======
-			last_item = item;
->>>>>>> .merge-right.r29
-
-<<<<<<< .working
-<<<<<<< .working
-					this->value = attr;
-=======
->>>>>>> .merge-right.r29
-=======
->>>>>>> .merge-right.r29
 
 
-<<<<<<< .working
-<<<<<<< .working
-					item = PtTreeAllocItem(ABW_tree_wgt, (char *) attr, -1, -1);
-=======
+
 			while (tree_node_child != NULL) {
->>>>>>> .merge-right.r29
-=======
-			while (tree_node_child != NULL) {
->>>>>>> .merge-right.r29
 
-<<<<<<< .working
-<<<<<<< .working
-					if (last_item != parent_item) {
-						PtTreeAddAfter(ABW_tree_wgt, item, last_item);
-					} else {
-						PtTreeAddFirst(ABW_tree_wgt, item, last_item);
-=======
 				printf("its a: %s\n", tree_node_child->name);
 				/*funcptr = parseTagPtr(tree_node_child);
->>>>>>> .merge-right.r29
-=======
-				printf("its a: %s\n", tree_node_child->name);
-				/*funcptr = parseTagPtr(tree_node_child);
->>>>>>> .merge-right.r29
 
-<<<<<<< .working
-<<<<<<< .working
-					}
-=======
 				 if (funcptr != NULL) {
 					 (*funcptr)(tree_node_child, tree_node);
 				 }*/
->>>>>>> .merge-right.r29
-=======
-				 if (funcptr != NULL) {
-					 (*funcptr)(tree_node_child, tree_node);
-				 }*/
->>>>>>> .merge-right.r29
 
-<<<<<<< .working
-<<<<<<< .working
-					last_item = item;
-					xmlFree(this->value);
-=======
 				if ((!xmlStrcmp(tree_node_child->name,(const xmlChar *) "table"))) {
 					item->data = createTable(tree_node_child);
 				} else if (!xmlStrcmp(tree_node_child->name, (const xmlChar *) "tree-node")) {
 					parseTreeNode(tree_node_child, tree_node);
 				}
->>>>>>> .merge-right.r29
-=======
-				if ((!xmlStrcmp(tree_node_child->name,(const xmlChar *) "table"))) {
-					item->data = createTable(tree_node_child);
-				} else if (!xmlStrcmp(tree_node_child->name, (const xmlChar *) "tree-node")) {
-					parseTreeNode(tree_node_child, tree_node);
-				}
->>>>>>> .merge-right.r29
 
-<<<<<<< .working
-<<<<<<< .working
-=======
 				tree_node_child = tree_node_child->next;
->>>>>>> .merge-right.r29
-=======
-				tree_node_child = tree_node_child->next;
->>>>>>> .merge-right.r29
 
-<<<<<<< .working
-<<<<<<< .working
-				}
-				xmlFree(this->name);
-				free(this);
 			}
-=======
-			}
->>>>>>> .merge-right.r29
-=======
-			}
->>>>>>> .merge-right.r29
-
-<<<<<<< .working
-<<<<<<< .working
-			break;
-=======
-	}
->>>>>>> .merge-right.r29
-=======
-	}
->>>>>>> .merge-right.r29
-
-<<<<<<< .working
-<<<<<<< .working
-		} else {
-			printf("its some tag: %s\n", tree_node_child->name);
-=======
->>>>>>> .merge-right.r29
-=======
->>>>>>> .merge-right.r29
-
-<<<<<<< .working
-<<<<<<< .working
-		}
-		tree_node_child = tree_node_child->next;
 
 	}
-=======
->>>>>>> .merge-right.r29
-=======
->>>>>>> .merge-right.r29
+
+
 
 
 	if (name != NULL) {
 		xmlFree(name);
 	}
 
-<<<<<<< .working
-=======
 	if (source != NULL) {
 		xmlFree(source);
 	}
 
-<<<<<<< .working
-=======
 }
 
 
@@ -632,90 +304,101 @@ void parseVarNode(xmlNodePtr node, xmlChar * variable) {
 		xmlFree(select);
 	}
 
->>>>>>> .merge-right.r29
 }
 
-<<<<<<< .working
-=======
 
 xmlChar * process_variable(xmlChar *xpath) {
->>>>>>> .merge-right.r29
 
-void parseVarNode(xmlNodePtr node, xmlChar * variable) {
-	//return bo to neni odladene na novy kod - musi mit podporu z fce parseTreeNode
-	//bude asi registrovat jen jednu hodnotu z rodicovskeho tagu a pak se sama smaze
-	//return;
+	const xmlChar *var_start = NULL;
+	const xmlChar *var_end = NULL;
+	xmlChar *enhanced_xpath = xpath;
+	xmlChar dolar = '$';
+	xmlChar *var_name = NULL;
+	xmlChar *var_value = NULL;
 
-	xmlChar* name = NULL;
-	xmlChar* select = NULL;
+	printf("processing xpath : %s\n", xpath);
 
+	var_start = xmlStrchr(xpath, dolar);
 
-	//name = xmlGetProp(node, (const xmlChar *) "name");
-	//select = xmlGetProp(node, (const xmlChar *) "select");
-	//parent_name = xmlGetProp(parent_node, (const xmlChar *) "name");
+	if (var_start != NULL) {
 
-	printf("its a variable tag: %s\n", node->name);
-
-
-	//stary kod, predelat - polozky do menu ted korekte pridava parseTreeNode
-	//algoritmus - vyrobit promenou, ulozit hodnotu , tu by mel pak odstranit konec fce parseTreeNode
-	//dalsi moznost ze dostane od parseTreeNode cely resultset z xpath a s tim bude pracovat, v tom pripade si sama fce bude ridit tvorbu , hodnotu a mazani aktualni promene
-	//promyslet!!!!
-	t_variable_list * this = (t_variable_list*) malloc(sizeof(t_variable_list));
-	this->name = xmlGetProp(node, (xmlChar*) "name");
-	this->value = xmlStrdup(variable);
-	this->next = NULL;
-
-	printf("le wild name: %s\n", this->name);
-
-	if (first == NULL) {
-		first = this;
-		last = first;
-	} else {
-		last->next = this;
-		last = last->next;
+		enhanced_xpath = xmlCharStrndup((const char*) xpath, var_start	- xpath);
 	}
 
+	while (var_start != NULL) {
+		var_end = xmlStrchr(var_start + 1, ']');
 
-	if (name != NULL) {
-		xmlFree(name);
+		if (var_end == NULL) {
+			printf("error when xml variable replacing in xpath \n");
+			var_start = NULL;
+		} else {
+
+			var_name = xmlCharStrndup((const char *) var_start + 1, var_end - var_start - 1);
+			printf("varname found %s \n", var_name);
+
+			var_value = get_variable_value(var_name);
+
+			if (var_value != NULL) {
+				printf("var_value %s \n", var_value);
+				enhanced_xpath = xmlStrcat(enhanced_xpath, var_value);
+
+			} else {
+				printf("error - xls:variable %s not found. \n",
+						var_name);
+				return xpath;
+			}
+
+			var_start = xmlStrchr(var_end + 1, dolar);
+			xmlFree(var_name);
+
+			if (var_start == NULL) {
+				enhanced_xpath = xmlStrcat(enhanced_xpath, var_end);
+			} else {
+				enhanced_xpath = xmlStrncat(enhanced_xpath, var_end, var_start - var_end);
+			}
+		}
+
 	}
 
+	return enhanced_xpath;
 
-
-	if (select != NULL) {
-		xmlFree(select);
+	if (enhanced_xpath != NULL) {
+		printf("replaced x path %s \n", enhanced_xpath);
+		xmlFree(enhanced_xpath);
 	}
-
->>>>>>> .merge-right.r29
-}
-
-<<<<<<< .working
-void process_variable(xmlChar *xpath) {
-=======
-
-xmlChar * process_variable(xmlChar *xpath) {
->>>>>>> .merge-right.r29
-
-	xmlChar *sep = NULL;
-
-	sep = (xmlChar *)xmlStrchr(xpath, (xmlChar) '$');
-
-	while(sep != NULL){
-
-
-
-		sep = (xmlChar *)xmlStrchr(xpath, (xmlChar) '$');
-	}
-
 
 }
 
+xmlChar * get_variable_value(xmlChar * var_name) {
 
-xmlChar *replace_str(xmlChar *xpath, xmlChar *variable, xmlChar *value)
-{
-  return NULL;
+	printf("searching value for %s\n", var_name);
+
+	t_variable_list *act = first;
+			//printf("le name is %s\n", act->name);
+
+	while (act != NULL) {
+		if (act->name == NULL) {
+			printf("le name is null\n");
+			continue;
+		} else {
+			printf("le name is %s\n", act->name);
+		}
+
+		if (xmlStrEqual(act->name, var_name)) {
+			printf("found\n");
+			return act->value;
+		}
+
+		act = act->next;
+
+	}
+
+	printf("not found\n");
+	return NULL;
+
 }
+
+
 
 
 
@@ -727,15 +410,12 @@ xmlXPathObjectPtr loadDataFromXpath(xmlChar* xpath) {
 
 	printf("xpath: %s\n", xpath);
 
-	xmlChar *full_xpath = enhance_xpath(enhanced_xpath, (const xmlChar *) "disam");
+	xmlChar * enhanced_xpath = process_variable(xpath);
 
-<<<<<<< .working
-=======
 	printf("enhanced_xpath: %s\n", enhanced_xpath);
 
 	xmlChar *full_xpath = enhance_xpath(enhanced_xpath, (const xmlChar *) "disam");
 
->>>>>>> .merge-right.r29
 	printf("full xpath: %s\n", full_xpath);
 
 	context = xmlXPathNewContext(data);
@@ -758,6 +438,8 @@ xmlXPathObjectPtr loadDataFromXpath(xmlChar* xpath) {
 		xmlXPathFreeObject(result);
 		printf("No result detected\n");
 		result = NULL;
+	} else {
+		printf("have results oh yeah\n");
 	}
 
 	xmlFree(full_xpath);

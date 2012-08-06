@@ -38,16 +38,14 @@ typedef struct {
 void loadViewAndData();
 struct s_table_data *createTable(xmlNodePtr);
 void parseTree(xmlNodePtr tree);
-<<<<<<< .working
-void parseTreeNode(PtTreeItem_t *parent_item, xmlNodePtr tree_node);
-=======
 void parseVarNode(xmlNodePtr, xmlChar *);
 void parseTreeNode(xmlNodePtr,xmlNodePtr);
 //void parseTableNode(xmlNodePtr,xmlNodePtr);
 //void (*parseTagPtr(xmlNodePtr))(xmlNodePtr,xmlNodePtr);
->>>>>>> .merge-right.r29
 xmlXPathObjectPtr loadDataFromXpath(xmlChar* xpath);
 int parseFile(char *, char *);
+xmlChar * process_variable(xmlChar *xpath);
+xmlChar * get_variable_value(xmlChar * var_name);
 t_table_data *newTableData(PtWidget_t *, xmlNodePtr);
 
 void init();
