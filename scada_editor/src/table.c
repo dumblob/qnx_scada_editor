@@ -4,7 +4,6 @@
  */
 
 #include <assert.h>
-#include <stdbool.h>
 #include "table.h"
 
 int tblDestructionCB(PtWidget_t *w, void *data, PtCallbackInfo_t *cbinfo)
@@ -21,7 +20,7 @@ int tblDestructionCB(PtWidget_t *w, void *data, PtCallbackInfo_t *cbinfo)
 
   free(tbl);
 
-  return( Pt_CONTINUE );
+  return Pt_CONTINUE;
 }
 
 PtWidget_t *tblInit(PtWidget_t *parent, PhPoint_t pos, PhDim_t dim)
@@ -111,10 +110,12 @@ int tblSetSize(PtWidget_t *scrollCon, int cols, int rows)
       PtExit(EXIT_FAILURE);
   }
 
+  PtReRealizeWidget(scrollCon);
+
   return 1;
 }
 
-int tblLastIndex(PtWidget_t *scrollCon, short row)
+int tblLastIndex(PtWidget_t *scrollCon, bool row)
 {
   tblWidget_t *tbl = NULL;
 
@@ -167,13 +168,16 @@ int tblExeOnCellArea(PtWidget_t *scrollCon,
   assert(class == NULL           ||
          class == PtButton       ||
          class == PtText         ||
+         class == PtToggleButton ||
          class == PtNumericFloat ||
          class == PtNumericInteger);
 
   if (args == NULL)
     assert(n_args == 0);
+  /* n_args < 0 is for internal usage
   else
     assert(n_args > 0);
+  */
 
   /* we will be setting all unset cells */
   if (tlx < 0 || tly < 0 || brx < 0 || bry < 0)
@@ -185,7 +189,7 @@ int tblExeOnCellArea(PtWidget_t *scrollCon,
     bry = tbl->rows -1;
   }
 
-  /* FIXME nasty hack needed for proper compilation */
+  /* FIXME nasty hack needed for proper compilation with QNX gcc */
   i = tlx; j = tly;
 
   for (tly = j; tly <= bry; tly++)
@@ -217,16 +221,18 @@ int tblExeOnCellArea(PtWidget_t *scrollCon,
           else
           {
             /* update widget's (if any) properties */
-            /* FIXME if (tbl->m[tlx][tly] == NULL) ...??? */
-            PtSetResources(tbl->m[tlx][tly], n_args, args);
+            if (n_args > 0)
+            {
+              if (tbl->m[tlx][tly] != NULL)
+                PtSetResources(tbl->m[tlx][tly], n_args, args);
+            }
+            /* else do "nothing" => update only widget's geometry (this
+             * is used internally - see tblRemoveRows() and tblAddRows() */
           }
         }
         else
         {
-          /* destroy widget and create a new one with desired properties */
           PtDestroyWidget(tbl->m[tlx][tly]);
-
-          /* create new widget */
           tbl->m[tlx][tly] = PtCreateWidget(class, scrollCon, n_args, args);
           PtSetArg(&argsCell[c++], Pt_ARG_BASIC_FLAGS,
           /*PtSetResource(tbl->m[tlx][tly], Pt_ARG_BASIC_FLAGS,*/
@@ -287,6 +293,8 @@ int tblSetColWidth(PtWidget_t *scrollCon, int col, int size)
   col = col; size = size;
   scrollCon = scrollCon;
 
+  fprintf(stderr, "tblSetColWidth() is not yet implemented\n");
+
   return 1;
 }
 
@@ -295,5 +303,179 @@ int tblSetRowHeight(PtWidget_t *scrollCon, int row, int size)
   row = row; size = size;
   scrollCon = scrollCon;
 
+  fprintf(stderr, "tblSetRowHeight() is not yet implemented\n");
+
   return 1;
+}
+
+int tblGetFocusedCoord(PtWidget_t *scrollCon, int *col, int *row)
+{
+  tblWidget_t *tbl = NULL;
+  PtWidget_t *focused_widget = NULL;
+  int i, j;
+
+  assert(col != NULL || row != NULL);
+
+  focused_widget = PtContainerFindFocus(scrollCon);
+
+  /* focused widget not found in the table */
+  if (PtGetParent(focused_widget, PtScrollContainer) != scrollCon)
+    return 0;
+
+  /* FIXME undefined reference to PtChildType()... WTF?
+  if (PtChildType(scrollCon, focused_widget) == Pt_FALSE)
+    return 0;
+  */
+
+  if (PtGetResource(scrollCon, Pt_ARG_POINTER, &tbl, 0) != 0)
+    return 0;
+
+  for (i = 0; i < tbl->cols; i++)
+    for (j = 0; j < tbl->rows; j++)
+      if (tbl->m[i][j] == focused_widget)
+      {
+        if (col != NULL) *col = i;
+        if (row != NULL) *row = j;
+        return 1;
+      }
+
+  /* this shall never be reached */
+  return 0;
+}
+
+int tblAddRows(PtWidget_t *scrollCon, bool before, int row, int cnt,
+    PtWidgetClassRef_t *class, int n_args, PtArg_t const *args)
+{
+  tblWidget_t *tbl = NULL;
+  int i, j, k;
+  PtWidget_t **mi;
+  PtWidgetClassRef_t **m_typei;
+  /* some shit, but not NULL */
+  PtArg_t *args_ptr = (PtArg_t *)(NULL + 1);
+
+  if (cnt == 0) return 1;
+
+  if (PtGetResource(scrollCon, Pt_ARG_POINTER, &tbl, 0) != 0)
+    return 0;
+
+  assert(row >= 0 && row < tbl->rows && cnt > 0);
+  row += (before) ? 0 : 1;
+
+  for (i = 0; i < tbl->cols; i++)
+  {
+    mi = tbl->m[i];
+    m_typei = tbl->m_type[i];
+
+    if ((tbl->m[i] = (PtWidget_t **)malloc(
+        sizeof(PtWidget_t **) * (tbl->rows + cnt))) == NULL)
+      PtExit(EXIT_FAILURE);
+
+    if ((tbl->m_type[i] = (PtWidgetClassRef_t **)malloc(
+        sizeof(PtWidgetClassRef_t **) * (tbl->rows + cnt))) == NULL)
+      PtExit(EXIT_FAILURE);
+
+    /* move the "after" block forward to the end */
+    for (j = 0, k = 0; j < tbl->rows + cnt; j++, k++)
+    {
+      if (j == row)
+        do
+          tbl->m[i][j++] = NULL;
+        while (j < row + cnt);
+
+      if (j == tbl->rows + cnt) break;
+
+      tbl->m[i][j] = mi[k];
+      tbl->m_type[i][j] = m_typei[k];
+    }
+
+    free(mi);
+    free(m_typei);
+  }
+
+  tbl->rows += cnt;
+
+  if (!(k = tblExeOnCellArea(scrollCon,
+      0,            row,
+      tbl->cols -1, row + cnt -1,
+      class, n_args, args)))
+    return k;
+
+  /* there are no remaining rows to be redrawn */
+  if (row + cnt >= tbl->rows)
+    return 1;
+
+  /* recalculate the geometry of the rest rows */
+  return tblExeOnCellArea(scrollCon,
+      0,            row + cnt,
+      tbl->cols -1, tbl->rows -1,
+      NULL, 0, args_ptr);
+}
+
+int tblRemoveRows(PtWidget_t *scrollCon, int from, int to)
+{
+  tblWidget_t *tbl = NULL;
+  int i, j, k;
+  PtWidget_t **mi;
+  PtWidgetClassRef_t **m_typei;
+  /* some shit, but not NULL */
+  PtArg_t *args_ptr = (PtArg_t *)(NULL + 1);
+
+  if (PtGetResource(scrollCon, Pt_ARG_POINTER, &tbl, 0) != 0)
+    return 0;
+
+  assert(from >= 0 && to < tbl->rows);
+
+  if ((to - from) < 0) return 0;
+
+  to++; /* be C compatible (the "to" was last index to be removed) */
+
+  for (i = 0; i < tbl->cols; i++)
+  {
+    mi = tbl->m[i];
+    m_typei = tbl->m_type[i];
+
+    if ((tbl->m[i] = (PtWidget_t **)malloc(
+        sizeof(PtWidget_t **) * tbl->rows)) == NULL)
+      PtExit(EXIT_FAILURE);
+
+    if ((tbl->m_type[i] = (PtWidgetClassRef_t **)malloc(
+        sizeof(PtWidgetClassRef_t **) * tbl->rows)) == NULL)
+      PtExit(EXIT_FAILURE);
+
+    /* move the "after" block backwards */
+    for (j = 0, k = 0; j < tbl->rows ; j++, k++)
+    {
+      if (k == from)
+        do
+          PtDestroyWidget(mi[k++]);
+        while (k < to);
+
+      if (k == tbl->rows) break;
+
+      tbl->m[i][j] = mi[k];
+      tbl->m_type[i][j] = m_typei[k];
+    }
+
+    free(mi);
+    free(m_typei);
+  }
+
+  tbl->rows -= to - from;
+
+  /* needed, because of tblExeOnCellArea() asserts */
+  if (from >= tbl->rows)
+  {
+    if (PtReRealizeWidget(scrollCon) == 0)
+      return 1;
+    else
+      return 0;
+  }
+  else
+  {
+    /* recalculate the geometry of the "changed" rows */
+    return tblExeOnCellArea(scrollCon,
+        0,            from,
+        tbl->cols -1, tbl->rows -1,
+        NULL, 0, args_ptr);
+  }
 }

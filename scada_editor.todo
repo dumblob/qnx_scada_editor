@@ -1,0 +1,25 @@
+testy
+  ulozeni souboru (tzn. bez cehokoliv nacteneho/otevreneho)
+  otevreni cfgview.xml
+  otevreni kom_map.xml
+  zavreni bez ulozeni kom_map.xml
+  otevreni jineho kom_map.xml
+  ulozeni do xml
+  ulozeni do xml + src
+
+funcionalita
+  uvolnovat xmlFree(xml_info->string); free(xml_info) z polozek v prvnim
+      radku tabulky
+    pri
+      nacitani noveho souboru
+      ukoncovani programu
+  ozivit tlacitko "pridat radek pred/za aktualni"
+  ozivit tlacitko "odebrat aktualni radek"
+  dat uzivateli vedet, ze se ulozil kom_map.xml a kom_map.src v poradku (
+    dialogove okno)!
+  prevod z danych typu v exportu do src
+  pamatovat si otevreny adresar (tzn. ten, kde byl cfgview.xml) z prvniho
+    dialogoveho okna otevirani souboru
+
+  novy typ id, nebo pouzit number? (protoze jinak se id generuje v uvozovkach)
+  radek non-simatic dat v src muze koncit strednikem?

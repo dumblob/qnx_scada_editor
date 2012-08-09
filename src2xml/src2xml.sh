@@ -35,7 +35,8 @@ exit_fn()
   exit "$1"
 }
 
-if file "$F_IN" | grep 'XML document text'; then
+
+if file "$F_IN" | cut -b $(echo "$F_IN" | wc -c)- | grep 'XML' > /dev/null; then
   echo "It is an XML document yet." >&2
   exit_fn 0
 else
@@ -96,8 +97,8 @@ else
       next
     }
 
-    # new section {{{
     else if (sub(/^[[:space:]]*:/, "", $0)) {
+    # new section {{{
       print_footers()
 
       # normalize FIXME what about other chars like &"''<>
@@ -118,8 +119,8 @@ else
     }
     # }}}
 
-    # comment {{{
     else if (sub(/^[[:space:]]*#[[:space:]]*/, "", $0)) {
+    # comment {{{
       if (allow_cmt) {
         if (backslashfound)
           format[ii] = format[ii] $0
@@ -231,8 +232,8 @@ else
       }
       # }}}
 
-      # there was a one-line comment {{{
       else {
+      # there was a one-line comment {{{
         if (!formatprocessed) {
           sub(/[][,;]+$/, "", format[0])
           format_fin[-1] = split(format[0], format_fin, /[][,;]+/)
@@ -296,4 +297,4 @@ else
   exit_fn 1
 fi
 
-# vim: set ft=awk:
+# vim: set ft=sh:

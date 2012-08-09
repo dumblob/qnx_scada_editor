@@ -8,7 +8,7 @@
      napr. pomoci Ctrl+sipky
    prohazovani radku a sloupcu
    PtCreateWidgetClass()
-   use Pt_ARG_DATA instead of Pt_ARG_POINTER (useful for PhAB)
+   use Pt_ARG_USER_DATA instead of Pt_ARG_POINTER (useful for PhAB)
    tblSetDim()
      @param type of column width resize (TBL_RESIZE_COL...)
        proportionally (de|in)crease width of all columns
@@ -34,14 +34,17 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdbool.h>
 #include <Pt.h>
 
 #define TBL_INIT_CELL_WIDTH 100  /* pixels */
 #define TBL_INIT_CELL_HEIGHT 26  /* pixels */
-#define TBL_INDEX_COL 0  /* tblLastIndex(tbl_widget_ref, TBL_INDEX_COL) */
-#define TBL_INDEX_ROW 1  /* tblLastIndex(tbl_widget_ref, TBL_INDEX_ROW) */
-#define tblLastCol(ptr) tblLastIndex((ptr), TBL_INDEX_COL)
-#define tblLastRow(ptr) tblLastIndex((ptr), TBL_INDEX_ROW)
+#define tblLastCol(ptr) tblLastIndex((ptr), false)
+#define tblLastRow(ptr) tblLastIndex((ptr), true)
+#define tblAddRowsBefore(a, b, c, d, e, f) \
+  tblAddRows((a), true, (b), (c), (d), (e), (f))
+#define tblAddRowsAfter(a, b, c, d, e, f) \
+  tblAddRows((a), false, (b), (c), (d), (e), (f))
 
 typedef struct
 {
@@ -87,7 +90,7 @@ int tblSetSize(PtWidget_t *, int, int);
  * @param which index to return; 0 column, 1 row
  * @return last column or row index
  */
-int tblLastIndex(PtWidget_t *, short);
+int tblLastIndex(PtWidget_t *, bool);
 
 /**
  * change table widget dimensions
@@ -152,5 +155,38 @@ int tblSetColWidth(PtWidget_t *, int, int);
  * @return 1 if OK; otherwise 0
  */
 int tblSetRowHeight(PtWidget_t *, int, int);
+
+/**
+ * get coordinates of the focused cell
+ *   Note: One of col/row index could be NULL, but not both!
+ * @param ScrollContainer containing tbl widget
+ * @param column index
+ * @param row index
+ * @return 1 if focused widget found in tbl; 0 if not found
+ */
+int tblGetFocusedCoord(PtWidget_t *, int *, int *);
+
+/**
+ * add row before/behind the given row index
+ * @param ScrollContainer containing tbl widget
+ * @param TBL_BEFORE_ROW/TBL_AFTER_ROW
+ * @param row index (the "fixed point")
+ * @param how many rows to add
+ * @param widget class (see tblExeOnCellArea())
+ * @param number of arguments (see tblExeOnCellArea())
+ * @param pointer to an array (see tblExeOnCellArea())
+ * @return 1 if OK; otherwise 0
+ */
+int tblAddRows(PtWidget_t *, bool, int, int,
+    PtWidgetClassRef_t *, int, PtArg_t const *);
+
+/**
+ * remove rows
+ * @param ScrollContainer containing tbl widget
+ * @param row index from
+ * @param row index to
+ * @return 1 if OK; otherwise 0
+ */
+int tblRemoveRows(PtWidget_t *, int, int);
 
 #endif

@@ -65,7 +65,7 @@ int on_tree_selection(PtWidget_t *widget, ApInfo_t *apinfo,
 		tbl = tbldt->table;
 		tblSetDim(tbl, tblPos, tblDim);
 		//printf("OK\n");
-		printf("xpath: %s \n", tbldt->xpath);
+		//printf("xpath: %s \n", tbldt->xpath);//FIXME
 
 	}
 	return (Pt_CONTINUE);

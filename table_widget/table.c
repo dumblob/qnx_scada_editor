@@ -168,6 +168,7 @@ int tblExeOnCellArea(PtWidget_t *scrollCon,
   assert(class == NULL           ||
          class == PtButton       ||
          class == PtText         ||
+         class == PtToggleButton ||
          class == PtNumericFloat ||
          class == PtNumericInteger);
 

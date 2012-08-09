@@ -168,7 +168,6 @@ void generateSrcFromTree(FILE *f)
 
   while (gen != NULL)
   {
-printf("DEBUG: saving item: \"%s\"\n", ((PtTreeItem_t *)gen)->string); //FIXME
     /* t_table_data */
     assert(((PtTreeItem_t *)gen)->data != NULL);
     assert(((t_table_data *)((PtTreeItem_t *)gen)->data)->xpath != NULL);
@@ -203,10 +202,9 @@ printf("DEBUG: saving item: \"%s\"\n", ((PtTreeItem_t *)gen)->string); //FIXME
     fprintf(f, ":%s\n", label);
     free(label);
 
-printf("_HOWK01_\n");  //FIXME
     /* attributes */
     saveAttrToSrc(gen, f, 0);
-printf("__HOWK02__\n");  //FIXME
+
     /* values */
     saveValToSrc(gen, f, 0);
 
@@ -222,8 +220,47 @@ printf("__HOWK02__\n");  //FIXME
     for (__i = 1; __i <= (cnt); ++__i) fputs(str, file); \
   } while (0)
 
+void printTableLines(PtWidget_t *tbl, int col, int colm, int row, int rowm,
+    FILE *f, char *tbl_label)
+{
+  char *s = NULL;
+
+  for (; row <= rowm; ++row)
+  {
+    for (; col <= colm; ++col)
+    {
+      if (col != 0) fputs(", ", f);
+
+      /* FIXME should work with PtNumeric etc. too */
+      tblGetCellResource(tbl, col, row, Pt_ARG_TEXT_STRING, &s, 0);
+
+      if (s == NULL || *s == '\0')
+      {
+        printf("ERROR: Unset value in the table \"%s\" on %d %d. Using 0.\n",
+            tbl_label, col, row);
+        s = "0";
+      }
+
+      t_xml_info *info = NULL;
+      tblGetCellResource(tbl, col, 0, Pt_ARG_POINTER, &info, 0);
+
+      switch (info->type)
+      {
+        case SCADA_EDITOR_XML_ATTR_TYPE_STRING:
+          fprintf(f, "\"%s\"", s);
+          break;
+        case SCADA_EDITOR_XML_ATTR_TYPE_NUMBER:
+        case SCADA_EDITOR_XML_ATTR_TYPE_CHAR: //FIXME zustane tam i ten prefix?
+        case SCADA_EDITOR_XML_ATTR_TYPE_BOOL:
+        default:
+          fputs(s, f);
+      }
+    }
+  }
+}
+
 void saveAttrToSrc(PtGenTreeItem_t *gen, FILE *f, unsigned short depth)
-{  /* {{{ */
+{
   PtWidget_t *tbl = ((t_table_data *)((PtTreeItem_t *)gen)->data)->table;
 
   /* no further nesting - we are at the floor */
@@ -242,7 +279,7 @@ void saveAttrToSrc(PtGenTreeItem_t *gen, FILE *f, unsigned short depth)
 
     /* print the line with attributes */
     fputs("# ", f);
-    FPUTS_N(depth, "  ", f);
+    FPUTS_N((depth) ? depth +1: depth, "  ", f);
     assert(tbl != NULL);
     int col_max = tblLastCol(tbl);
     t_xml_info *info = NULL;
@@ -269,30 +306,14 @@ void saveAttrToSrc(PtGenTreeItem_t *gen, FILE *f, unsigned short depth)
     if (depth != 0)
      {
       fputs("# ", f);
-      FPUTS_N(depth, "  ", f);
-      fputs("...\n", f);
+      FPUTS_N(depth +1, "  ", f);
+      fputs("...\n# ", f);
+      FPUTS_N(depth +1, "  ", f);
 
-      int row_max = tblLastRow(tbl);
-      char *s = NULL;
-
-      int col;
       /* the last table line contains values we are interested in */
-      for (col = 0; col <= col_max; col++)
-      {
-        if (col != 0) fputs(", ", f);
-
-        /* FIXME should work with PtNumeric etc. too */
-        tblGetCellResource(tbl, col, row_max, Pt_ARG_TEXT_STRING, &s, 0);
-
-        if (s == NULL)
-        {
-          printf("ERROR: Unset value in the table \"%s\" on %d %d. Using 0.\n",
-              ((PtTreeItem_t *)gen)->string, col, row_max);
-          s = "0";
-        }
-
-        fputs(s, f);
-      }
+      int row_max = tblLastRow(tbl);
+      printTableLines(tbl, 0, col_max, row_max, row_max,
+            f, ((PtTreeItem_t *)gen)->string);
 
       /* footer */
       fputs(";\n# ", f);
@@ -309,23 +330,21 @@ void saveAttrToSrc(PtGenTreeItem_t *gen, FILE *f, unsigned short depth)
     fputs("id, subtypes_total;\n# ", f);
     FPUTS_N(depth, "  ", f);
     fputs("{\n", f);
-printf("AAA\n");//FIXME
-    /* FIXME WTF? Why is it twice in kom_map.src? */
-    saveAttrToSrc(gen->son, f, depth +1);
+    if (depth == 0) assert(gen->son != NULL);
+    saveAttrToSrc((depth) ? gen->son : gen->son->son, f, depth +1);
 
     fputs("# ", f);
-    FPUTS_N(depth, "  ", f);
+    FPUTS_N(depth +1, "  ", f);
     fputs("...\n", f);
-printf("BBB\n");//FIXME
-    saveAttrToSrc(gen->son, f, depth +1);
+    /* FIXME WTF? Why is it twice in kom_map.src? */
+    saveAttrToSrc((depth) ? gen->son : gen->son->son, f, depth +1);
 
     /* footer */
     fputs("# ", f);
     FPUTS_N(depth, "  ", f);
     fputs("}\n", f);
-printf("CCC\n");//FIXME
   }
-}  /* }}} */
+}
 
 int getGenTreeItemCount(PtGenTreeItem_t *gen)
 {
@@ -341,56 +360,21 @@ int getGenTreeItemCount(PtGenTreeItem_t *gen)
 }
 
 void saveValToSrc(PtGenTreeItem_t *gen, FILE *f, unsigned short depth)
-{  /* {{{ */
+{
   /* no further nesting => print table content */
   if (gen->son == NULL)
   {
     PtWidget_t *tbl = ((t_table_data *)((PtTreeItem_t *)gen)->data)->table;
     int col_max = tblLastCol(tbl);
     int row_max = tblLastRow(tbl);
-    char *s = NULL;
-
-    FPUTS_N(depth, "  ", f);
 
     int row;
+    /* at 0 index, there are labels, not values */
     for (row = 1; row <= row_max; row++)
     {
-      int col;
-      /* at 0 index, there are labels, not values */
-      for (col = 0; col <= col_max; col++)
-      {
-        if (col != 0) fputs(", ", f);
-
-        //FIXME otestovat TEXT_STRING na PtNumenicInteger/Float, Button, ...
-        //  dat bacha, kdyz oznacene cislo prepisu textem a nezmenim focus,
-        //  tak jestli se to objevi i tady nebo jestli ten vstup nejde zadat
-        tblGetCellResource(tbl, col, row, Pt_ARG_TEXT_STRING, &s, 0);
-
-        if (s == NULL)
-        {
-          printf("ERROR: Unset value in the table \"%s\" on %d %d. Using 0.\n",
-              ((PtTreeItem_t *)gen)->string, col, row_max);
-          s = "0";
-        }
-
-        t_xml_info *info = NULL;
-        tblGetCellResource(tbl, col, 0, Pt_ARG_POINTER, &info, 0);
-
-        //FIXME repair cfgview.xml types!
-        switch (info->type)
-        {
-          case SCADA_EDITOR_XML_ATTR_TYPE_STRING:
-            fprintf(f, "\"%s\"", s);
-            break;
-          //case SCADA_EDITOR_XML_ATTR_TYPE_NUMBER:
-          //case SCADA_EDITOR_XML_ATTR_TYPE_HEXNUMBER:
-          //case SCADA_EDITOR_XML_ATTR_TYPE_CHAR:
-          //case SCADA_EDITOR_XML_ATTR_TYPE_BOOL:
-          default:
-            fputs(s, f);
-        }
-      }
-
+      FPUTS_N(depth, "  ", f);
+      printTableLines(tbl, 0, col_max, row, row,
+            f, ((PtTreeItem_t *)gen)->string);
       fputs(";\n", f);
     }
   }
@@ -412,8 +396,8 @@ void saveValToSrc(PtGenTreeItem_t *gen, FILE *f, unsigned short depth)
       FPUTS_N(depth, "  ", f);
       fputs("{\n", f);
 
-      /* data (= FIXME another bounding box or table) */
-      saveAttrToSrc(gen, f, depth +1);
+      /* data (another bounding box or table) */
+      saveValToSrc(gen, f, depth +1);
 
       /* footer */
       FPUTS_N(depth, "  ", f);
@@ -422,4 +406,4 @@ void saveValToSrc(PtGenTreeItem_t *gen, FILE *f, unsigned short depth)
       gen = gen->brother;
     }
   }
-}  /* }}} */
+}

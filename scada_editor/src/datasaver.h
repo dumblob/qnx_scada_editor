@@ -20,5 +20,10 @@ void save_data();
 void generateXMLfromTree();
 void save_table(PtWidget_t *table, const xmlChar *xpath, xmlNodePtr root_node);
 
+void generateSrcFromTree(FILE *);
+void printTableLines(PtWidget_t *, int, int, int, int, FILE *, char *);
+void saveAttrToSrc(PtGenTreeItem_t *, FILE *, unsigned short);
+int getGenTreeItemCount(PtGenTreeItem_t *);
+void saveValToSrc(PtGenTreeItem_t *, FILE *, unsigned short);
 
 #endif /* DATASAVER_H_ */

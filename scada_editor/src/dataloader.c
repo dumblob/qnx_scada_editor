@@ -6,6 +6,9 @@
  */
 
 #include "dataloader.h"
+#include <assert.h>
+
+extern char *arg_conversion_script;
 
 t_variable_list *first = NULL;
 t_variable_list *last = NULL;
@@ -15,30 +18,115 @@ xmlDocPtr view;
 
 PtTreeItem_t *last_item = NULL;
 
+/* data, format */
 int parseFile(char *filename, char *viewname) {
 	init();
-
 	xmlInitParser();
 	LIBXML_TEST_VERSION
 
-	if (filename) {
-		data = xmlParseFile(filename);
-	} else {
-		data = xmlNewDoc(BAD_CAST "1.0");
-	}
+	//FIXME wtf?
+	//if (filename) {
+	//	data = xmlParseFile(filename);
+	//} else {
+	//	data = xmlNewDoc(BAD_CAST "1.0");
+	//}
 
-	view = xmlParseFile(viewname);
-
-	if (data == NULL) {
-		fprintf(stderr, "Data file not parsed successfully. \n");
+	if (viewname == NULL || (view = xmlParseFile(viewname)) == NULL) {
+		fprintf(stderr, "CFG View not parsed successfully.\n");
 		return -1;
 	}
 
-	if (view == NULL) {
-		fprintf(stderr, "CFG View not parsed successfully. \n");
+	if (filename == NULL) {
+		fprintf(stderr, "Non-existent data file.\n");
 		return -1;
 	}
-	fprintf(stderr, "1\n");
+
+	/* {{{ construct the whole command */
+	char *dst_postfix = ".xml";
+	size_t script_len = strlen(arg_conversion_script);
+	size_t filename_len = strlen(filename);
+	size_t dst_len = filename_len + strlen(dst_postfix);
+
+	char *dst = (char *)malloc(sizeof(char) * (dst_len +1));
+	if (dst == NULL) PtExit(EXIT_FAILURE);
+	char *command = (char *)malloc(sizeof(char) * (
+		/* "arg_conversion_script" "filename" "dst"\0 */
+		1 + script_len + 3 + filename_len + 3 + dst_len + 2
+		));
+	if (command == NULL) PtExit(EXIT_FAILURE);
+
+	/* dst construction */
+	char *p = dst;
+	char *pp = filename;
+	while (*pp != '\0') {
+		*p = *pp;
+		++p;
+		++pp;
+	}
+	pp = dst_postfix;
+	while (*pp != '\0') {
+		*p = *pp;
+		++p;
+		++pp;
+	}
+	*p = '\0';
+
+	/* final command construction */
+	p = command;
+	*p = '"'; ++p;
+	pp = arg_conversion_script;
+	while (*pp != '\0') {
+		*p = *pp;
+		++p;
+		++pp;
+	}
+	*p = '"'; ++p;
+	*p = ' '; ++p;
+	*p = '"'; ++p;
+	pp = filename;
+	while (*pp != '\0') {
+		*p = *pp;
+		++p;
+		++pp;
+	}
+	*p = '"'; ++p;
+	*p = ' '; ++p;
+	*p = '"'; ++p;
+	pp = dst;
+	while (*pp != '\0') {
+		*p = *pp;
+		++p;
+		++pp;
+	}
+	*p = '"'; ++p;
+	*p = '\0';
+	/* }}} */
+
+	switch (WEXITSTATUS(system(command)))
+	{
+		/* filename was already xml */
+		case 0:
+			if ((data = xmlParseFile(filename)) == NULL) {
+				fprintf(stderr, "Data file \"%s\" not parsed successfully.\n", filename);
+				free(dst);
+				free(command);
+				return -1;
+			}
+			break;
+		/* conversion success */
+		case 1:
+			if ((data = xmlParseFile(dst)) == NULL) {
+				fprintf(stderr, "Data file \"%s\" not parsed successfully.\n", dst);
+				free(dst);
+				free(command);
+				return -1;
+			}
+			break;
+		default:
+			fprintf(stderr, "Error occured during conversion script execution.\n");
+			return -1;
+	}
+
 	loadViewAndData();
 
 	destroy();
@@ -80,10 +168,10 @@ void parseTree(xmlNodePtr tree) {
 
 	//void (*funcptr)(xmlNodePtr, xmlNodePtr) = NULL;
 
-	printf("its a tree tag: %s\n", tree->name);
+	//printf("its a tree tag: %s\n", tree->name);//FIXME
 
 	while (tree_child != NULL) {
-		printf("child of tree is: %s\n", tree_child->name);
+		//printf("child of tree is: %s\n", tree_child->name);//FIXME
 
 		if (!xmlStrcmp(tree_child->name, (const xmlChar *) "tree-node")) {
 			parseTreeNode(tree_child, tree);
@@ -117,6 +205,7 @@ void (*parseTagPtr(xmlNodePtr next_node))(xmlNodePtr,xmlNodePtr) {
 }
 */
 
+/* tree_node_child, tree_node */
 void parseTreeNode(xmlNodePtr tree_node, xmlNodePtr parent_node) {
 
 	xmlChar* name = NULL;
@@ -145,7 +234,7 @@ void parseTreeNode(xmlNodePtr tree_node, xmlNodePtr parent_node) {
 				attr = xmlGetProp(nodeset->nodeTab[i], name+1);
 				item = PtTreeAllocItem(ABW_tree_wgt, (char *) attr, -1, -1);
 
-				printf("loaded tree-mode name is %s\n", attr);
+				//printf("loaded tree-mode name is %s\n", attr);//FIXME
 
 				/*pridava itemy korektne ale v opacnem poradi - opravit
 				 * pridat volani pro children
@@ -170,12 +259,13 @@ void parseTreeNode(xmlNodePtr tree_node, xmlNodePtr parent_node) {
 
 				while (tree_node_child != NULL) {
 
-					printf("its a: %s\n", tree_node_child->name);
+					//printf("its a: %s\n", tree_node_child->name);//FIXME
 
 					if ((!xmlStrcmp(tree_node_child->name,(const xmlChar *) "table"))) {
 						item->data = createTable(tree_node_child);
 					} else if (!xmlStrcmp(tree_node_child->name, (const xmlChar *) "tree-node")) {
 						parseTreeNode(tree_node_child, tree_node);
+						item->data = newTableData(NULL, tree_node_child);//FIXME dumblob
 					} else if (!xmlStrcmp(tree_node_child->name,(const xmlChar *) "variable")) {
 						have_variable = 1;
 						parseVarNode(tree_node_child, attr);
@@ -225,7 +315,7 @@ void parseTreeNode(xmlNodePtr tree_node, xmlNodePtr parent_node) {
 
 			while (tree_node_child != NULL) {
 
-				printf("its a: %s\n", tree_node_child->name);
+				//printf("its a: %s\n", tree_node_child->name);//FIXME
 				/*funcptr = parseTagPtr(tree_node_child);
 
 				 if (funcptr != NULL) {
@@ -236,6 +326,7 @@ void parseTreeNode(xmlNodePtr tree_node, xmlNodePtr parent_node) {
 					item->data = createTable(tree_node_child);
 				} else if (!xmlStrcmp(tree_node_child->name, (const xmlChar *) "tree-node")) {
 					parseTreeNode(tree_node_child, tree_node);
+					item->data = newTableData(NULL, tree_node_child);//FIXME dumblob
 				}
 
 				tree_node_child = tree_node_child->next;
@@ -271,7 +362,7 @@ void parseVarNode(xmlNodePtr node, xmlChar * variable) {
 	//select = xmlGetProp(node, (const xmlChar *) "select");
 	//parent_name = xmlGetProp(parent_node, (const xmlChar *) "name");
 
-	printf("its a variable tag: %s\n", node->name);
+	//printf("its a variable tag: %s\n", node->name);//FIXME
 
 
 	//stary kod, predelat - polozky do menu ted korekte pridava parseTreeNode
@@ -283,7 +374,7 @@ void parseVarNode(xmlNodePtr node, xmlChar * variable) {
 	this->value = xmlStrdup(variable);
 	this->next = NULL;
 
-	printf("le wild name: %s\n", this->name);
+	//printf("le wild name: %s\n", this->name);//FIXME
 
 	if (first == NULL) {
 		first = this;
@@ -316,7 +407,7 @@ xmlChar * process_variable(xmlChar *xpath) {
 	xmlChar *var_name = NULL;
 	xmlChar *var_value = NULL;
 
-	printf("processing xpath : %s\n", xpath);
+	//printf("processing xpath : %s\n", xpath);  //FIXME
 
 	var_start = xmlStrchr(xpath, dolar);
 
@@ -334,12 +425,12 @@ xmlChar * process_variable(xmlChar *xpath) {
 		} else {
 
 			var_name = xmlCharStrndup((const char *) var_start + 1, var_end - var_start - 1);
-			printf("varname found %s \n", var_name);
+			//printf("varname found %s \n", var_name); //FIXME
 
 			var_value = get_variable_value(var_name);
 
 			if (var_value != NULL) {
-				printf("var_value %s \n", var_value);
+				//printf("var_value %s \n", var_value); //FIXME
 				enhanced_xpath = xmlStrcat(enhanced_xpath, var_value);
 
 			} else {
@@ -363,7 +454,7 @@ xmlChar * process_variable(xmlChar *xpath) {
 	return enhanced_xpath;
 
 	if (enhanced_xpath != NULL) {
-		printf("replaced x path %s \n", enhanced_xpath);
+		//printf("replaced x path %s \n", enhanced_xpath); //FIXME
 		xmlFree(enhanced_xpath);
 	}
 
@@ -371,21 +462,21 @@ xmlChar * process_variable(xmlChar *xpath) {
 
 xmlChar * get_variable_value(xmlChar * var_name) {
 
-	printf("searching value for %s\n", var_name);
+	//printf("searching value for %s\n", var_name);//FIXME
 
 	t_variable_list *act = first;
-			//printf("le name is %s\n", act->name);
+	//printf("le name is %s\n", act->name);
 
 	while (act != NULL) {
 		if (act->name == NULL) {
-			printf("le name is null\n");
+			//printf("le name is null\n");//FIXME
 			continue;
-		} else {
-			printf("le name is %s\n", act->name);
+		//} else {
+		//	printf("le name is %s\n", act->name);//FIXME
 		}
 
 		if (xmlStrEqual(act->name, var_name)) {
-			printf("found\n");
+			//printf("found\n");//FIXME
 			return act->value;
 		}
 
@@ -408,15 +499,15 @@ xmlXPathObjectPtr loadDataFromXpath(xmlChar* xpath) {
 	xmlXPathContextPtr context;
 	xmlXPathObjectPtr result;
 
-	printf("xpath: %s\n", xpath);
+	//printf("xpath: %s\n", xpath); //FIXME
 
 	xmlChar * enhanced_xpath = process_variable(xpath);
 
-	printf("enhanced_xpath: %s\n", enhanced_xpath);
+	//printf("enhanced_xpath: %s\n", enhanced_xpath); //FIXME
 
 	xmlChar *full_xpath = enhance_xpath(enhanced_xpath, (const xmlChar *) "disam");
 
-	printf("full xpath: %s\n", full_xpath);
+	//printf("full xpath: %s\n", full_xpath); //FIXME
 
 	context = xmlXPathNewContext(data);
 
@@ -436,10 +527,10 @@ xmlXPathObjectPtr loadDataFromXpath(xmlChar* xpath) {
 
 	if (xmlXPathNodeSetIsEmpty(result->nodesetval)) {
 		xmlXPathFreeObject(result);
-		printf("No result detected\n");
+		//printf("No result detected\n"); //FIXME
 		result = NULL;
-	} else {
-		printf("have results oh yeah\n");
+	//} else {
+	//	printf("have results oh yeah\n"); //FIXME
 	}
 
 	xmlFree(full_xpath);
@@ -454,7 +545,7 @@ xmlXPathObjectPtr loadDataFromXpath(xmlChar* xpath) {
 t_table_data * createTable(xmlNodePtr node) {
 	xmlChar* source = xmlGetProp(node, (const xmlChar *) "source");
 
-	printf("its table source: %s .\n", source);
+	//printf("its table source: %s .\n", source);//FIXME
 	xmlNodePtr column = node->xmlChildrenNode;
 
 	PtWidget_t *tbl = NULL;
@@ -471,7 +562,6 @@ t_table_data * createTable(xmlNodePtr node) {
 	if (result != NULL) {
 		nodeset = result->nodesetval;
 		rows_count = nodeset->nodeNr;
-
 	}
 
 	while (column != NULL) {
@@ -480,9 +570,8 @@ t_table_data * createTable(xmlNodePtr node) {
 		}
 		column = column->next;
 	}
-	printf("its table columns and rows: %d %d\n", columns_count, rows_count);
+	//printf("its table columns and rows: %d %d\n", columns_count, rows_count);//FIXME
 	column = node->xmlChildrenNode;
-	printf("all ok 0\n");
 	tblPos.x = 000;
 	tblPos.y = 000;
 	tblDim.w = ABW_table_pane->area.size.w;
@@ -491,13 +580,15 @@ t_table_data * createTable(xmlNodePtr node) {
 	tbl = tblInit(ABW_table_pane, tblPos, tblDim);
 	tblSetSize(tbl, columns_count, rows_count + 1);
 
-	int cell = 0;
-
-	PtArg_t args[2];
-	xmlChar* attr = NULL;
-	xmlChar* tmp_s = NULL;
-	xmlChar *label;
+	PtArg_t args[6];
+	PtWidgetClassRef_t *class;
 	t_xml_info *info = NULL;
+
+	xmlChar *attr = NULL;
+	xmlChar *tmp_s = NULL;
+	xmlChar *label;
+
+	int cell = 0;
 	int i;
 	while (column != NULL) {
 		if ((!xmlStrcmp(column->name, (const xmlChar *) "column"))) {
@@ -508,42 +599,75 @@ t_table_data * createTable(xmlNodePtr node) {
 			info->source = xmlGetProp(column, (const xmlChar *) "source");
 			tmp_s        = xmlGetProp(column, (const xmlChar *) "type");
 
-			/* cfgview.xml <... type="bool" ...> */
+			/* cfgview.xml <... type="bool/number/char/..." ...> */
 			if      (strcmp((const char*)tmp_s, "number") == 0)
 				info->type = SCADA_EDITOR_XML_ATTR_TYPE_NUMBER;
-			else if (strcmp((const char*)tmp_s, "string") == 0)
-				info->type = SCADA_EDITOR_XML_ATTR_TYPE_STRING;
 			else if (strcmp((const char*)tmp_s, "char"  ) == 0)
 				info->type = SCADA_EDITOR_XML_ATTR_TYPE_CHAR;
 			else if (strcmp((const char*)tmp_s, "bool"  ) == 0)
 				info->type = SCADA_EDITOR_XML_ATTR_TYPE_BOOL;
+			/* "string" */
 			else
 			{
-				fprintf(stderr, "ERROR: Unknown type=\"%s\" found in cfgview.xml!", tmp_s);
-				/* recovery */
+				if    (strcmp((const char*)tmp_s, "string") != 0)
+					fprintf(stderr, "ERROR: Unknown type=\"%s\" found in cfgview.xml!", tmp_s);
+
 				info->type = SCADA_EDITOR_XML_ATTR_TYPE_STRING;
 			}
 
-			PtSetArg(&args[0], Pt_ARG_TEXT_STRING, label, 0);
-			PtSetArg(&args[1], Pt_ARG_POINTER, info, 0); //FIXME dumblob
-			tblExeOnCellArea(tbl, cell, 0, cell, 0, PtButton, 2, args);
+			int c = 0;
 
-			if (result != NULL) {
-				for (i = 0; i < nodeset->nodeNr; i++) {
-					//printf("keyword: %s\n", nodeset->nodeTab[i]->name);
-					//printf("cs: %s\n", info->source +1);
-					attr = xmlGetProp(nodeset->nodeTab[i], info->source +1);
-					//printf("attr: %s\n", attr);
-					PtSetArg(&args[0], Pt_ARG_TEXT_STRING, attr, 0);
-					tblExeOnCellArea(tbl, cell, i + 1, cell, i + 1, PtText, 1, args);
+			PtSetArg(&args[c++], Pt_ARG_TEXT_STRING, label, 0);
+			PtSetArg(&args[c++], Pt_ARG_POINTER, info, 0);
+			PtSetArg(&args[c++], Pt_ARG_FLAGS, Pt_FALSE, Pt_GETS_FOCUS);
+			PtSetArg(&args[c++], Pt_ARG_SECONDARY_H_ALIGN, Pt_LEFT, 0);
+			PtSetArg(&args[c++], Pt_ARG_LABEL_FLAGS, Pt_TRUE, Pt_SHOW_BALLOON);
+			PtSetArg(&args[c++], Pt_ARG_BALLOON_POSITION, Pt_BALLOON_BOTTOM, 0);
+			tblExeOnCellArea(tbl, cell, 0, cell, 0, PtButton, c, args);
 
-					xmlFree(attr);
+			assert(result != NULL);
+
+			for (i = 0; i < nodeset->nodeNr; i++) {
+				if ((attr = xmlGetProp(nodeset->nodeTab[i], info->source +1)) == NULL)
+				{
+					fprintf(stderr, "ERROR: Missing atribute \"%s\" in %s.\n",
+							info->source +1, nodeset->nodeTab[i]->name);
 				}
+
+				c = 0;
+
+				switch (info->type)
+				{
+					case SCADA_EDITOR_XML_ATTR_TYPE_NUMBER:
+						PtSetArg(&args[c++], Pt_ARG_NUMERIC_VALUE,
+								strtol((attr == NULL) ? "0" : (const char *)attr, NULL, 16), 0);
+						class = PtNumericInteger;
+						break;
+					case SCADA_EDITOR_XML_ATTR_TYPE_CHAR:
+						PtSetArg(&args[c++], Pt_ARG_NUMERIC_VALUE,
+								strtol((attr == NULL) ? "0" : (const char *)attr, NULL, 16), 0);
+						PtSetArg(&args[c++], Pt_ARG_NUMERIC_PREFIX, "0x", 0);
+						PtSetArg(&args[c++], Pt_ARG_NUMERIC_FLAGS, Pt_TRUE, Pt_NUMERIC_HEXADECIMAL);
+						class = PtNumericInteger;
+						break;
+					case SCADA_EDITOR_XML_ATTR_TYPE_BOOL:
+						PtSetArg(&args[c++], Pt_ARG_FLAGS,
+								(attr == NULL || *attr == '0') ? Pt_FALSE : Pt_TRUE, Pt_SET);
+						class = PtToggleButton;
+						break;
+					/* SCADA_EDITOR_XML_ATTR_TYPE_STRING */
+					default:
+						PtSetArg(&args[c++], Pt_ARG_TEXT_STRING, attr, 0);
+						class = PtText;
+				}
+
+				tblExeOnCellArea(tbl, cell, i + 1, cell, i + 1, class, c +1, args);
+				xmlFree(attr);
 			}
 
 			cell++;
 			xmlFree(label);
-			xmlFree(tmp_s); //FIXME dumblob
+			xmlFree(tmp_s);
 
 		}
 		column = column->next;
@@ -609,7 +733,6 @@ void destroy() {
 	}
 }
 
-//FIXME dumblob
 t_table_data *newTableData(PtWidget_t *tbl, xmlNodePtr node)
 {
 	t_table_data *data = (t_table_data *)malloc(sizeof(t_table_data));
