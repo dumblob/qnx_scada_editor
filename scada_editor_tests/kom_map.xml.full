@@ -2,11 +2,11 @@
 <disam:configuration id="/home/honza/src/qnx/proj0/kom_map" version="1.0" xmlns:disam="http://www.disam.cz/Xmlns/Scada/Configuration">
 
 <disam:protocol-setup>
-<disam:protocol-item id="01" kom-task-mbx="1" kom-in-mbx="1" leading-char-value="0x0" end-char-value="0x0" stuff-char-usage="0" stuff-char-value="0x0" checksum-usage="1" checksum-id="0" checksum-len="2" max-mesage-len="2000" description="SIMATIC-DRT"/>
-<disam:protocol-item id="02" kom-task-mbx="1" kom-in-mbx="1" leading-char-value="0x0" end-char-value="0x0" stuff-char-usage="0" stuff-char-value="0x0" checksum-usage="1" checksum-id="1" checksum-len="2" max-mesage-len="2000" description="SIMATIC-300"/>
-<disam:protocol-item id="03" kom-task-mbx="1" kom-in-mbx="0" leading-char-value="0x0" end-char-value="0x0" stuff-char-usage="0" stuff-char-value="0x0" checksum-usage="0" checksum-id="0" checksum-len="0" max-mesage-len="0" description="AUTEL"/>
-<disam:protocol-item id="04" kom-task-mbx="1" kom-in-mbx="0" leading-char-value="0x0" end-char-value="0x0" stuff-char-usage="0" stuff-char-value="0x0" checksum-usage="0" checksum-id="0" checksum-len="0" max-mesage-len="0" description="AUTEL-SRV"/>
-<disam:protocol-item id="05" kom-task-mbx="0" kom-in-mbx="0" leading-char-value="0x0" end-char-value="0x0" stuff-char-usage="0" stuff-char-value="0x0" checksum-usage="0" checksum-id="0" checksum-len="0" max-mesage-len="0" description=""/>
+<disam:protocol-item id="01" kom-task-mbx="1" kom-in-mbx="1" leading-char-value="0x1" end-char-value="0x0" stuff-char-usage="0" stuff-char-value="0x0" checksum-usage="1" checksum-id="0" checksum-len="2" max-mesage-len="2000" description="SIMATIC-DRT"/>
+<disam:protocol-item id="02" kom-task-mbx="1" kom-in-mbx="1" leading-char-value="0x2" end-char-value="0x0" stuff-char-usage="0" stuff-char-value="0x0" checksum-usage="1" checksum-id="1" checksum-len="2" max-mesage-len="2000" description="SIMATIC-300"/>
+<disam:protocol-item id="03" kom-task-mbx="1" kom-in-mbx="0" leading-char-value="0x3" end-char-value="0x0" stuff-char-usage="0" stuff-char-value="0x0" checksum-usage="0" checksum-id="0" checksum-len="0" max-mesage-len="0" description="AUTEL"/>
+<disam:protocol-item id="04" kom-task-mbx="1" kom-in-mbx="0" leading-char-value="0x4" end-char-value="0x0" stuff-char-usage="0" stuff-char-value="0x0" checksum-usage="0" checksum-id="0" checksum-len="0" max-mesage-len="0" description="AUTEL-SRV"/>
+<disam:protocol-item id="05" kom-task-mbx="0" kom-in-mbx="0" leading-char-value="0xafafafa245456" end-char-value="0x0" stuff-char-usage="0" stuff-char-value="0x0" checksum-usage="0" checksum-id="0" checksum-len="0" max-mesage-len="0" description=""/>
 </disam:protocol-setup>
 
 <disam:com-setup>
