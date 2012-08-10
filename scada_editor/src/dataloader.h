@@ -46,6 +46,7 @@ int parseFile(char *, char *);
 xmlChar * process_variable(xmlChar *xpath);
 xmlChar * get_variable_value(xmlChar * var_name);
 t_table_data *newTableData(PtWidget_t *, xmlNodePtr);
+int setTypeAndContentOfCell(PtWidget_t *, int, int, const char *, t_xml_attr_type);
 
 void init();
 void destroy();

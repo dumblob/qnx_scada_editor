@@ -332,12 +332,15 @@ int tblGetFocusedCoord(PtWidget_t *scrollCon, int *col, int *row)
 
   for (i = 0; i < tbl->cols; i++)
     for (j = 0; j < tbl->rows; j++)
+    {
+printf("[i, j] == [%d, %d] m %p %p\n", i, j, tbl->m[i][j], focused_widget);//FIXME
       if (tbl->m[i][j] == focused_widget)
       {
         if (col != NULL) *col = i;
         if (row != NULL) *row = j;
         return 1;
       }
+    }
 
   /* this shall never be reached */
   return 0;

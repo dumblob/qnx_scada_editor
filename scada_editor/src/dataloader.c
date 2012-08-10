@@ -41,7 +41,7 @@ int parseFile(char *filename, char *viewname) {
 		return -1;
 	}
 
-	/* construct the whole command */
+	/* construct the whole shell command */
 	char *dst_postfix = ".xml";
 	size_t script_len = strlen(arg_conversion_script);
 	size_t filename_len = strlen(filename);
@@ -86,6 +86,9 @@ int parseFile(char *filename, char *viewname) {
 			fprintf(stderr, "Error occured during conversion script execution.\n");
 			return -1;
 	}
+
+	free(command);
+	free(dst);
 
 	loadViewAndData();
 
@@ -501,6 +504,46 @@ xmlXPathObjectPtr loadDataFromXpath(xmlChar* xpath) {
 
 
 
+int setTypeAndContentOfCell(PtWidget_t *tbl, int col, int row,
+		const char *attr, t_xml_attr_type info_type)
+{
+	int c = 0;
+	PtWidgetClassRef_t *class;
+	PtArg_t args[3];
+
+	switch (info_type)
+	{
+		case SCADA_EDITOR_XML_ATTR_TYPE_NUMBER:
+			PtSetArg(&args[c++], Pt_ARG_NUMERIC_VALUE,
+					strtol((attr == NULL) ? "0" : (const char *)attr, NULL, 10), 0);
+			class = PtNumericInteger;
+			break;
+
+		case SCADA_EDITOR_XML_ATTR_TYPE_CHAR:
+			PtSetArg(&args[c++], Pt_ARG_NUMERIC_VALUE,
+					strtol((attr == NULL) ? "0" : (const char *)attr, NULL, 16), 0);
+			PtSetArg(&args[c++], Pt_ARG_NUMERIC_PREFIX, "0x", 0);
+			PtSetArg(&args[c++], Pt_ARG_NUMERIC_FLAGS, Pt_TRUE, Pt_NUMERIC_HEXADECIMAL);
+			class = PtNumericInteger;
+			break;
+
+		case SCADA_EDITOR_XML_ATTR_TYPE_BOOL:
+			PtSetArg(&args[c++], Pt_ARG_FLAGS,
+					(attr == NULL || *attr == '\0' || *attr == '0') ? Pt_FALSE : Pt_TRUE, Pt_SET);
+			class = PtToggleButton;
+			break;
+
+		/* SCADA_EDITOR_XML_ATTR_TYPE_STRING */
+		default:
+			PtSetArg(&args[c++], Pt_ARG_TEXT_STRING, attr, 0);
+			class = PtText;
+	}
+
+	return tblExeOnCellArea(tbl, col, row, col, row, class, c, args);
+}
+
+
+
 
 t_table_data * createTable(xmlNodePtr node) {
 	xmlChar* source = xmlGetProp(node, (const xmlChar *) "source");
@@ -519,7 +562,10 @@ t_table_data * createTable(xmlNodePtr node) {
 
 	result = loadDataFromXpath(source);
 
-	if (result != NULL) {
+	if (result == NULL) {
+		fprintf(stderr, "ERROR: Empty tree item found in %s.\n", node->name);
+	}
+	else {
 		nodeset = result->nodesetval;
 		rows_count = nodeset->nodeNr;
 	}
@@ -541,8 +587,8 @@ t_table_data * createTable(xmlNodePtr node) {
 	tblSetSize(tbl, columns_count, rows_count + 1);
 
 	PtArg_t args[6];
-	PtWidgetClassRef_t *class;
 	t_xml_info *info = NULL;
+	int c;
 
 	xmlChar *attr = NULL;
 	xmlChar *tmp_s = NULL;
@@ -575,8 +621,7 @@ t_table_data * createTable(xmlNodePtr node) {
 				info->type = SCADA_EDITOR_XML_ATTR_TYPE_STRING;
 			}
 
-			int c = 0;
-
+			c = 0;
 			PtSetArg(&args[c++], Pt_ARG_TEXT_STRING, label, 0);
 			PtSetArg(&args[c++], Pt_ARG_POINTER, info, 0);
 			PtSetArg(&args[c++], Pt_ARG_FLAGS, Pt_FALSE, Pt_GETS_FOCUS);
@@ -585,47 +630,18 @@ t_table_data * createTable(xmlNodePtr node) {
 			PtSetArg(&args[c++], Pt_ARG_BALLOON_POSITION, Pt_BALLOON_BOTTOM, 0);
 			tblExeOnCellArea(tbl, cell, 0, cell, 0, PtButton, c, args);
 
-			assert(result != NULL);
+			if (result != NULL)
+			{
+				for (i = 0; i < nodeset->nodeNr; i++) {
+					if ((attr = xmlGetProp(nodeset->nodeTab[i], info->source +1)) == NULL)
+					{
+						fprintf(stderr, "ERROR: Missing atribute \"%s\" in %s.\n",
+								info->source +1, nodeset->nodeTab[i]->name);
+					}
 
-			for (i = 0; i < nodeset->nodeNr; i++) {
-				if ((attr = xmlGetProp(nodeset->nodeTab[i], info->source +1)) == NULL)
-				{
-					fprintf(stderr, "ERROR: Missing atribute \"%s\" in %s.\n",
-							info->source +1, nodeset->nodeTab[i]->name);
+					setTypeAndContentOfCell(tbl, cell, i +1, (const char *)attr, info->type);
+					xmlFree(attr);
 				}
-
-				c = 0;
-
-				switch (info->type)
-				{
-					case SCADA_EDITOR_XML_ATTR_TYPE_NUMBER:
-						PtSetArg(&args[c++], Pt_ARG_NUMERIC_VALUE,
-								strtol((attr == NULL) ? "0" : (const char *)attr, NULL, 10), 0);
-						class = PtNumericInteger;
-						break;
-
-					case SCADA_EDITOR_XML_ATTR_TYPE_CHAR:
-						PtSetArg(&args[c++], Pt_ARG_NUMERIC_VALUE,
-								strtol((attr == NULL) ? "0" : (const char *)attr, NULL, 16), 0);
-						PtSetArg(&args[c++], Pt_ARG_NUMERIC_PREFIX, "0x", 0);
-						PtSetArg(&args[c++], Pt_ARG_NUMERIC_FLAGS, Pt_TRUE, Pt_NUMERIC_HEXADECIMAL);
-						class = PtNumericInteger;
-						break;
-
-					case SCADA_EDITOR_XML_ATTR_TYPE_BOOL:
-						PtSetArg(&args[c++], Pt_ARG_FLAGS,
-								(attr == NULL || *attr == '0') ? Pt_FALSE : Pt_TRUE, Pt_SET);
-						class = PtToggleButton;
-						break;
-
-					/* SCADA_EDITOR_XML_ATTR_TYPE_STRING */
-					default:
-						PtSetArg(&args[c++], Pt_ARG_TEXT_STRING, attr, 0);
-						class = PtText;
-				}
-
-				tblExeOnCellArea(tbl, cell, i + 1, cell, i + 1, class, c +1, args);
-				xmlFree(attr);
 			}
 
 			cell++;
