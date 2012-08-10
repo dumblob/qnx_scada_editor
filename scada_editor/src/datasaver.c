@@ -223,7 +223,8 @@ void generateSrcFromTree(FILE *f)
 void printTableLines(PtWidget_t *tbl, int col, int colm, int row, int rowm,
     FILE *f, char *tbl_label)
 {
-  char *s = NULL;
+  char *s;
+  long *flags;
 
   for (; row <= rowm; ++row)
   {
@@ -231,28 +232,36 @@ void printTableLines(PtWidget_t *tbl, int col, int colm, int row, int rowm,
     {
       if (col != 0) fputs(", ", f);
 
-      /* FIXME should work with PtNumeric etc. too */
-      tblGetCellResource(tbl, col, row, Pt_ARG_TEXT_STRING, &s, 0);
-
-      if (s == NULL || *s == '\0')
-      {
-        printf("ERROR: Unset value in the table \"%s\" on %d %d. Using 0.\n",
-            tbl_label, col, row);
-        s = "0";
-      }
-
       t_xml_info *info = NULL;
       tblGetCellResource(tbl, col, 0, Pt_ARG_POINTER, &info, 0);
 
       switch (info->type)
       {
-        case SCADA_EDITOR_XML_ATTR_TYPE_STRING:
-          fprintf(f, "\"%s\"", s);
-          break;
-        case SCADA_EDITOR_XML_ATTR_TYPE_NUMBER:
-        case SCADA_EDITOR_XML_ATTR_TYPE_CHAR: //FIXME zustane tam i ten prefix?
         case SCADA_EDITOR_XML_ATTR_TYPE_BOOL:
+          tblGetCellResource(tbl, col, row, Pt_ARG_FLAGS, &flags, 0);
+          //FIXME otestovat
+          fprintf(f, "%d", (*flags & Pt_SET) ? 1 : 0);
+          break;
+
+        case SCADA_EDITOR_XML_ATTR_TYPE_STRING:
+          s = NULL;
+          tblGetCellResource(tbl, col, row, Pt_ARG_TEXT_STRING, &s, 0);
+          fprintf(f, "\"%s\"", (s == NULL) ? "" : s);
+          break;
+
+        /* SCADA_EDITOR_XML_ATTR_TYPE_NUMBER FIXME otestovat */
+        /* SCADA_EDITOR_XML_ATTR_TYPE_CHAR FIXME otestovat */
         default:
+          s = NULL;
+          tblGetCellResource(tbl, col, row, Pt_ARG_TEXT_STRING, &s, 0);
+
+          if (s == NULL || *s == '\0') { \
+            fprintf(stderr, "ERROR: Unset value in the table \"%s\" on [%d, %d]. Using 0.\n", \
+                tbl_label, col, row); \
+              s = "0"; \
+          }
+
+          //FIXME zustane tam i ten prefix?
           fputs(s, f);
       }
     }
@@ -300,7 +309,7 @@ void saveAttrToSrc(PtGenTreeItem_t *gen, FILE *f, unsigned short depth)
         fputs(" (0/1)", f);
     }
 
-    fputs(";\n", f);
+    fputs((depth == 0) ? "\n" : ";\n", f);
 
     /* only for SIMATIC APL DATA */
     if (depth != 0)
@@ -375,7 +384,7 @@ void saveValToSrc(PtGenTreeItem_t *gen, FILE *f, unsigned short depth)
       FPUTS_N(depth, "  ", f);
       printTableLines(tbl, 0, col_max, row, row,
             f, ((PtTreeItem_t *)gen)->string);
-      fputs(";\n", f);
+      fputs((depth == 0) ? "\n" : ";\n", f);
     }
   }
   /* nest deeper => print bounding boxes */
@@ -390,8 +399,8 @@ void saveValToSrc(PtGenTreeItem_t *gen, FILE *f, unsigned short depth)
       FPUTS_N(depth, "  ", f);
       fprintf(f, "%s, %d\n", ((PtTreeItem_t *)gen)->string,
           (gen->son == NULL) ?
-            tblLastRow(((t_table_data *)((PtTreeItem_t *)gen)->data)->table) +1 :
-            getGenTreeItemCount(gen->son)
+          tblLastRow(((t_table_data *)((PtTreeItem_t *)gen)->data)->table) :
+          getGenTreeItemCount(gen->son)
           );
       FPUTS_N(depth, "  ", f);
       fputs("{\n", f);

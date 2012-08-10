@@ -41,7 +41,7 @@ int parseFile(char *filename, char *viewname) {
 		return -1;
 	}
 
-	/* {{{ construct the whole command */
+	/* construct the whole command */
 	char *dst_postfix = ".xml";
 	size_t script_len = strlen(arg_conversion_script);
 	size_t filename_len = strlen(filename);
@@ -56,51 +56,11 @@ int parseFile(char *filename, char *viewname) {
 	if (command == NULL) PtExit(EXIT_FAILURE);
 
 	/* dst construction */
-	char *p = dst;
-	char *pp = filename;
-	while (*pp != '\0') {
-		*p = *pp;
-		++p;
-		++pp;
-	}
-	pp = dst_postfix;
-	while (*pp != '\0') {
-		*p = *pp;
-		++p;
-		++pp;
-	}
-	*p = '\0';
+	snprintf(dst, dst_len +1, "%s%s", filename, dst_postfix);
 
 	/* final command construction */
-	p = command;
-	*p = '"'; ++p;
-	pp = arg_conversion_script;
-	while (*pp != '\0') {
-		*p = *pp;
-		++p;
-		++pp;
-	}
-	*p = '"'; ++p;
-	*p = ' '; ++p;
-	*p = '"'; ++p;
-	pp = filename;
-	while (*pp != '\0') {
-		*p = *pp;
-		++p;
-		++pp;
-	}
-	*p = '"'; ++p;
-	*p = ' '; ++p;
-	*p = '"'; ++p;
-	pp = dst;
-	while (*pp != '\0') {
-		*p = *pp;
-		++p;
-		++pp;
-	}
-	*p = '"'; ++p;
-	*p = '\0';
-	/* }}} */
+	snprintf(command, 1 + script_len + 3 + filename_len + 3 + dst_len + 2,
+			"\"%s\" \"%s\" \"%s\"", arg_conversion_script, filename, dst);
 
 	switch (WEXITSTATUS(system(command)))
 	{
@@ -140,12 +100,12 @@ void loadViewAndData() {
 
 	viewnode = xmlDocGetRootElement(view);
 	if (viewnode == NULL) {
-		fprintf(stderr, "empty document\n");
+		fprintf(stderr, "Empty document given.\n");
 		return;
 	}
 
 	if (xmlStrcmp(viewnode->name, (const xmlChar *) "config-view")) {
-		fprintf(stderr, "document of the wrong type, root node != config-view");
+		fprintf(stderr, "Document of wrong type (root node != config-view).\n");
 		return;
 	}
 
@@ -153,7 +113,7 @@ void loadViewAndData() {
 	viewnode = viewnode->next; //text node skip
 
 	if (xmlStrcmp(viewnode->name, (const xmlChar *) "tree")) {
-		fprintf(stderr, "document of the wrong type, tree node not found");
+		fprintf(stderr, "Document of wrong type (tree node not found).\n");
 		return;
 	}
 
@@ -640,9 +600,10 @@ t_table_data * createTable(xmlNodePtr node) {
 				{
 					case SCADA_EDITOR_XML_ATTR_TYPE_NUMBER:
 						PtSetArg(&args[c++], Pt_ARG_NUMERIC_VALUE,
-								strtol((attr == NULL) ? "0" : (const char *)attr, NULL, 16), 0);
+								strtol((attr == NULL) ? "0" : (const char *)attr, NULL, 10), 0);
 						class = PtNumericInteger;
 						break;
+
 					case SCADA_EDITOR_XML_ATTR_TYPE_CHAR:
 						PtSetArg(&args[c++], Pt_ARG_NUMERIC_VALUE,
 								strtol((attr == NULL) ? "0" : (const char *)attr, NULL, 16), 0);
@@ -650,11 +611,13 @@ t_table_data * createTable(xmlNodePtr node) {
 						PtSetArg(&args[c++], Pt_ARG_NUMERIC_FLAGS, Pt_TRUE, Pt_NUMERIC_HEXADECIMAL);
 						class = PtNumericInteger;
 						break;
+
 					case SCADA_EDITOR_XML_ATTR_TYPE_BOOL:
 						PtSetArg(&args[c++], Pt_ARG_FLAGS,
 								(attr == NULL || *attr == '0') ? Pt_FALSE : Pt_TRUE, Pt_SET);
 						class = PtToggleButton;
 						break;
+
 					/* SCADA_EDITOR_XML_ATTR_TYPE_STRING */
 					default:
 						PtSetArg(&args[c++], Pt_ARG_TEXT_STRING, attr, 0);
