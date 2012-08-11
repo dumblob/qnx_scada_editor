@@ -189,4 +189,13 @@ int tblAddRows(PtWidget_t *, bool, int, int,
  */
 int tblRemoveRows(PtWidget_t *, int, int);
 
+/**
+ * give focus to cell
+ * @param ScrollContainer containing tbl widget
+ * @param col index
+ * @param row index
+ * @return focused widget ptr (see PtGiveFocus())
+ */
+PtWidget_t *tblFocusCell(PtWidget_t *, int, int);
+
 #endif

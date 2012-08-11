@@ -332,15 +332,12 @@ int tblGetFocusedCoord(PtWidget_t *scrollCon, int *col, int *row)
 
   for (i = 0; i < tbl->cols; i++)
     for (j = 0; j < tbl->rows; j++)
-    {
-printf("[i, j] == [%d, %d] m %p %p\n", i, j, tbl->m[i][j], focused_widget);//FIXME
       if (tbl->m[i][j] == focused_widget)
       {
         if (col != NULL) *col = i;
         if (row != NULL) *row = j;
         return 1;
       }
-    }
 
   /* this shall never be reached */
   return 0;
@@ -481,4 +478,17 @@ int tblRemoveRows(PtWidget_t *scrollCon, int from, int to)
         tbl->cols -1, tbl->rows -1,
         NULL, 0, args_ptr);
   }
+}
+
+PtWidget_t *tblFocusCell(PtWidget_t *scrollCon, int col, int row)
+{
+  tblWidget_t *tbl = NULL;
+
+  if (PtGetResource(scrollCon, Pt_ARG_POINTER, &tbl, 0) != 0)
+    return NULL;
+
+  assert(col >= 0 && col < tbl->cols &&
+         row >= 0 && row < tbl->rows);
+
+  return PtGiveFocus(tbl->m[col][row], NULL);
 }

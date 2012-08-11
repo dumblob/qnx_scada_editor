@@ -544,7 +544,6 @@ int setTypeAndContentOfCell(PtWidget_t *tbl, int col, int row,
 
 
 
-
 t_table_data * createTable(xmlNodePtr node) {
 	xmlChar* source = xmlGetProp(node, (const xmlChar *) "source");
 
