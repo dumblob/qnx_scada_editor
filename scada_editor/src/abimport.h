@@ -25,6 +25,7 @@ int new_file( PtWidget_t *widget, ApInfo_t *data, PtCallbackInfo_t *cbinfo );
 int cb_rem_row( PtWidget_t *widget, ApInfo_t *data, PtCallbackInfo_t *cbinfo );
 int cb_add_row_after( PtWidget_t *widget, ApInfo_t *data, PtCallbackInfo_t *cbinfo );
 int cb_add_row_before( PtWidget_t *widget, ApInfo_t *data, PtCallbackInfo_t *cbinfo );
+int cb_destroyed_base( PtWidget_t *widget, ApInfo_t *data, PtCallbackInfo_t *cbinfo );
 #ifdef __cplusplus
 }
 #endif

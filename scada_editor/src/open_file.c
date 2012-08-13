@@ -15,6 +15,7 @@
 
 #include "dataloader.h"
 #include "open_file.h"
+#include "free_memory.h"
 
 char *filepath = NULL;
 char *viewpath = NULL;
@@ -36,14 +37,15 @@ int open_file(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
 
   if (dataf != -1)
   {
+    freeAllMemory();
+
     if (filepath != NULL) free(filepath);
-
     if (viewpath != NULL) free(viewpath);
-
     filepath = (char*) malloc(sizeof(datafile.path));
     viewpath = (char*) malloc(sizeof(formatfile.path));
     strcpy(filepath, datafile.path);
     strcpy(viewpath, formatfile.path);
+
     parseFile(datafile.path, formatfile.path);
   }
 

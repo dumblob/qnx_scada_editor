@@ -239,7 +239,6 @@ void printTableLines(PtWidget_t *tbl, int col, int colm, int row, int rowm,
       {
         case SCADA_EDITOR_XML_ATTR_TYPE_BOOL:
           tblGetCellResource(tbl, col, row, Pt_ARG_FLAGS, &flags, 0);
-          //FIXME otestovat
           fprintf(f, "%d", (*flags & Pt_SET) ? 1 : 0);
           break;
 
@@ -249,8 +248,8 @@ void printTableLines(PtWidget_t *tbl, int col, int colm, int row, int rowm,
           fprintf(f, "\"%s\"", (s == NULL) ? "" : s);
           break;
 
-        /* SCADA_EDITOR_XML_ATTR_TYPE_NUMBER FIXME otestovat */
-        /* SCADA_EDITOR_XML_ATTR_TYPE_CHAR FIXME otestovat */
+        /* SCADA_EDITOR_XML_ATTR_TYPE_NUMBER */
+        /* SCADA_EDITOR_XML_ATTR_TYPE_CHAR */
         default:
           s = NULL;
           tblGetCellResource(tbl, col, row, Pt_ARG_TEXT_STRING, &s, 0);
@@ -261,7 +260,6 @@ void printTableLines(PtWidget_t *tbl, int col, int colm, int row, int rowm,
               s = "0"; \
           }
 
-          //FIXME zustane tam i ten prefix?
           fputs(s, f);
       }
     }

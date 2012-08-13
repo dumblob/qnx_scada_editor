@@ -6,6 +6,7 @@ static const ApEventLink_t AbApplLinks[] = {
 	};
 
 static const ApEventLink_t AbLinks_base[] = {
+	{ 8, 0, 0L, 0L, 0L, NULL, NULL, "base", 1009, cb_destroyed_base, 0, 0, 0, 0, },
 	{ 8, 0, 0L, 0L, 0L, NULL, NULL, "tree_wgt", 23022, on_tree_selection, 0, 0, 0, 0, },
 	{ 5, 0, 0L, 0L, 0L, &file_menu, NULL, "bm_file", 2007, NULL, 0, 1, 0, 0, },
 	{ 8, 0, 0L, 0L, 0L, NULL, NULL, "b_open", 2007, open_file, 0, 0, 0, 0, },

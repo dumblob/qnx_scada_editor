@@ -7,20 +7,24 @@ testy
   + otevreni cfgview.xml namisto kom_map.xml a vice versa => vypise chybu
 
 funcionalita
+  obracene poradi pri nacitani opravit
   uvolnovat xmlFree(xml_info->string); free(xml_info) z polozek v prvnim
       radku tabulky
     pri
-      nacitani noveho souboru
+      nacitani noveho souboru (=> zmenit popisek pro otevirani souboru)
       ukoncovani programu
-  ozivit tlacitko "pridat radek pred/za aktualni"
-  ozivit tlacitko "odebrat aktualni radek"
-  prevod z danych typu v exportu do src
   pamatovat si otevreny adresar (tzn. ten, kde byl cfgview.xml) z prvniho
     dialogoveho okna otevirani souboru
-  obracene poradi pri nacitani opravit
+  uzamknout GUI v pripade delsiho trvani operace
+    nacitani souboru (xml/src)
+    ukladani souboru
+    uvolnovani pameti
 
+otazky do mailu
   novy typ id, nebo pouzit number? (protoze jinak se id generuje v uvozovkach)
-  radek non-simatic dat v src muze koncit strednikem?
+  prosim zkontrolujte vystup do src oproti originalu - zdali vyhovuje (protoze z ukazkoveho src jsou prepisovaci pravidla gramatiky na tvorbu src souboru nedeterministicka)
   tlacitko otevrit zavre nemilosrdne aktualni a otevre uplne novy soubor
-  dat uzivateli vedet, ze se ulozil kom_map.xml a kom_map.src v poradku (
-    dialogove okno)?
+  dat uzivateli vedet, ze se ulozil kom_map.xml a kom_map.src v poradku (dialogove okno)?
+  PATH=/cesta/k/src2xml.sh:"$PATH"
+
+vim: set wrap:

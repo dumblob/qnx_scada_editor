@@ -48,11 +48,14 @@ int parseFile(char *filename, char *viewname) {
 	size_t dst_len = filename_len + strlen(dst_postfix);
 
 	char *dst = (char *)malloc(sizeof(char) * (dst_len +1));
+
 	if (dst == NULL) PtExit(EXIT_FAILURE);
+
 	char *command = (char *)malloc(sizeof(char) * (
 		/* "arg_conversion_script" "filename" "dst"\0 */
 		1 + script_len + 3 + filename_len + 3 + dst_len + 2
 		));
+
 	if (command == NULL) PtExit(EXIT_FAILURE);
 
 	/* dst construction */
@@ -577,8 +580,8 @@ t_table_data * createTable(xmlNodePtr node) {
 	}
 	//printf("its table columns and rows: %d %d\n", columns_count, rows_count);//FIXME
 	column = node->xmlChildrenNode;
-	tblPos.x = 000;
-	tblPos.y = 000;
+	tblPos.x = 0;
+	tblPos.y = 0;
 	tblDim.w = ABW_table_pane->area.size.w;
 	tblDim.h = ABW_table_pane->area.size.h;
 
