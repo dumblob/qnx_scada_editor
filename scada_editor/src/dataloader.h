@@ -25,7 +25,6 @@ typedef struct s_variable_list {
 typedef enum {
   SCADA_EDITOR_XML_ATTR_TYPE_STRING,
   SCADA_EDITOR_XML_ATTR_TYPE_NUMBER,
-  SCADA_EDITOR_XML_ATTR_TYPE_HEXNUMBER,
   SCADA_EDITOR_XML_ATTR_TYPE_CHAR,
   SCADA_EDITOR_XML_ATTR_TYPE_BOOL
 } t_xml_attr_type;
@@ -40,13 +39,14 @@ struct s_table_data *createTable(xmlNodePtr);
 void parseTree(xmlNodePtr tree);
 void parseVarNode(xmlNodePtr, xmlChar *);
 void parseTreeNode(xmlNodePtr,xmlNodePtr);
-//void parseTableNode(xmlNodePtr,xmlNodePtr);
-//void (*parseTagPtr(xmlNodePtr))(xmlNodePtr,xmlNodePtr);
+//void parseTableNode(xmlNodePtr,xmlNodePtr); //FIXME wtf?
+//void (*parseTagPtr(xmlNodePtr))(xmlNodePtr,xmlNodePtr); //FIXME wtf?
 xmlXPathObjectPtr loadDataFromXpath(xmlChar* xpath);
 int parseFile(char *, char *);
 xmlChar * process_variable(xmlChar *xpath);
 xmlChar * get_variable_value(xmlChar * var_name);
 t_table_data *newTableData(PtWidget_t *, xmlNodePtr);
+int setTypeAndContentOfCell(PtWidget_t *, int, int, const char *, t_xml_attr_type);
 
 void init();
 void destroy();

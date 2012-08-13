@@ -13,6 +13,9 @@
 #include "abimport.h"
 #include "proto.h"
 
+#include "dataloader.h"
+#include "open_file.h"
+
 extern char *viewpath;
 
 int
