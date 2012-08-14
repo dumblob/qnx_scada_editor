@@ -7,18 +7,8 @@ testy
   + otevreni cfgview.xml namisto kom_map.xml a vice versa => vypise chybu
 
 funcionalita
-  obracene poradi pri nacitani opravit
-  uvolnovat xmlFree(xml_info->string); free(xml_info) z polozek v prvnim
-      radku tabulky
-    pri
-      nacitani noveho souboru (=> zmenit popisek pro otevirani souboru)
-      ukoncovani programu
-  pamatovat si otevreny adresar (tzn. ten, kde byl cfgview.xml) z prvniho
-    dialogoveho okna otevirani souboru
-  uzamknout GUI v pripade delsiho trvani operace
-    nacitani souboru (xml/src)
-    ukladani souboru
-    uvolnovani pameti
+  bug: uvolnovani PtTree NEFUNGUJE! wtf?
+  bug: pridavani radku - problem s focusem (jedna pametova bunka ma 2 adresy! wtf?)
 
 otazky do mailu
   novy typ id, nebo pouzit number? (protoze jinak se id generuje v uvozovkach)
@@ -26,5 +16,10 @@ otazky do mailu
   tlacitko otevrit zavre nemilosrdne aktualni a otevre uplne novy soubor
   dat uzivateli vedet, ze se ulozil kom_map.xml a kom_map.src v poradku (dialogove okno)?
   PATH=/cesta/k/src2xml.sh:"$PATH"
+  pamatovat si otevreny adresar (tzn. ten, kde byl cfgview.xml) z prvniho dialogoveho okna otevirani souboru
+  uzamknout GUI v pripade delsiho trvani operace (asi neni potreba)
+    nacitani souboru (xml/src)
+    ukladani souboru
+    uvolnovani pameti
 
 vim: set wrap:
