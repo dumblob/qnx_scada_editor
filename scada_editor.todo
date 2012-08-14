@@ -9,6 +9,8 @@ testy
 funcionalita
   bug: uvolnovani PtTree NEFUNGUJE! wtf?
   bug: pridavani radku - problem s focusem (jedna pametova bunka ma 2 adresy! wtf?)
+  bug: nevypisovat ani WARNING ani ERROR pri nacitani prazdneho souboru (kontrolovat filename == NULL)
+  feature: pridavani polozek do PtTree
 
 otazky do mailu
   novy typ id, nebo pouzit number? (protoze jinak se id generuje v uvozovkach)
