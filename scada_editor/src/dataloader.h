@@ -53,9 +53,4 @@ void destroy();
 
 xmlChar* enhance_xpath(const xmlChar *xpath, const xmlChar * namespace);
 
-void generateSrcFromTree(FILE *);
-int getGenTreeItemCount(PtGenTreeItem_t *);
-void saveAttrToSrc(PtGenTreeItem_t *, FILE *, unsigned short);
-void saveValToSrc(PtGenTreeItem_t *, FILE *, unsigned short);
-
 #endif

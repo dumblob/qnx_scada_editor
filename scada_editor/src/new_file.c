@@ -15,43 +15,35 @@
 
 #include "dataloader.h"
 #include "open_file.h"
+#include "free_memory.h"
 
 extern char *viewpath;
 
-int
-new_file( PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo )
+int new_file(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
+{
+  /* eliminate 'unreferenced' warnings */
+  widget = widget, apinfo = apinfo, cbinfo = cbinfo;
 
-	{
+  int formatf = -1;
 
-	/* eliminate 'unreferenced' warnings */
-	widget = widget, apinfo = apinfo, cbinfo = cbinfo;
+  PtFileSelectionInfo_t formatfile;
+  formatf = showFileSelector(&formatfile, "Select format file...");
 
+  if (formatf == -1)
+  {
+    return (Pt_CONTINUE);
+  }
+  else
+  {
+    freeAllMemory();
 
+    if (viewpath != NULL) free(viewpath);
 
+    viewpath = (char*) malloc(sizeof(formatfile.path));
+    strcpy(viewpath, formatfile.path);
+    parseFile(NULL, formatfile.path);
+  }
 
-		int formatf = -1;
-
-		PtFileSelectionInfo_t formatfile;
-		formatf = showFileSelector(&formatfile, "Select format file...");
-
-
-		if (formatf == -1) {
-			return (Pt_CONTINUE);
-		} else {
-
-
-			if (viewpath != NULL) {
-				free(viewpath);
-			}
-
-
-			viewpath = (char*) malloc(sizeof(formatfile.path));
-			strcpy(viewpath, formatfile.path);
-			parseFile(NULL, formatfile.path);
-		}
-
-
-	return( Pt_CONTINUE );
-
-	}
+  return Pt_CONTINUE;
+}
 

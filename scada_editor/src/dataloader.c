@@ -24,74 +24,69 @@ int parseFile(char *filename, char *viewname) {
 	xmlInitParser();
 	LIBXML_TEST_VERSION
 
-	//FIXME wtf?
-	//if (filename) {
-	//	data = xmlParseFile(filename);
-	//} else {
-	//	data = xmlNewDoc(BAD_CAST "1.0");
-	//}
-
 	if (viewname == NULL || (view = xmlParseFile(viewname)) == NULL) {
 		fprintf(stderr, "CFG View not parsed successfully.\n");
 		return -1;
 	}
 
-	if (filename == NULL) {
-		fprintf(stderr, "Non-existent data file.\n");
-		return -1;
-	}
-
-	/* construct the whole shell command */
-	char *dst_postfix = ".xml";
-	size_t script_len = strlen(arg_conversion_script);
-	size_t filename_len = strlen(filename);
-	size_t dst_len = filename_len + strlen(dst_postfix);
-
-	char *dst = (char *)malloc(sizeof(char) * (dst_len +1));
-
-	if (dst == NULL) PtExit(EXIT_FAILURE);
-
-	char *command = (char *)malloc(sizeof(char) * (
-		/* "arg_conversion_script" "filename" "dst"\0 */
-		1 + script_len + 3 + filename_len + 3 + dst_len + 2
-		));
-
-	if (command == NULL) PtExit(EXIT_FAILURE);
-
-	/* dst construction */
-	snprintf(dst, dst_len +1, "%s%s", filename, dst_postfix);
-
-	/* final command construction */
-	snprintf(command, 1 + script_len + 3 + filename_len + 3 + dst_len + 2,
-			"\"%s\" \"%s\" \"%s\"", arg_conversion_script, filename, dst);
-
-	switch (WEXITSTATUS(system(command)))
+	if (filename == NULL)
 	{
-		/* filename was already xml */
-		case 0:
-			if ((data = xmlParseFile(filename)) == NULL) {
-				fprintf(stderr, "Data file \"%s\" not parsed successfully.\n", filename);
-				free(dst);
-				free(command);
-				return -1;
-			}
-			break;
-		/* conversion success */
-		case 1:
-			if ((data = xmlParseFile(dst)) == NULL) {
-				fprintf(stderr, "Data file \"%s\" not parsed successfully.\n", dst);
-				free(dst);
-				free(command);
-				return -1;
-			}
-			break;
-		default:
-			fprintf(stderr, "Error occured during conversion script execution.\n");
-			return -1;
+		data = xmlNewDoc(BAD_CAST "1.0");
 	}
+	else
+	{
+		/* construct the whole shell command */
+		char *dst_postfix = ".xml";
+		size_t script_len = strlen(arg_conversion_script);
+		size_t filename_len = strlen(filename);
+		size_t dst_len = filename_len + strlen(dst_postfix);
 
-	free(command);
-	free(dst);
+		char *dst = (char *)malloc(sizeof(char) * (dst_len +1));
+
+		if (dst == NULL) PtExit(EXIT_FAILURE);
+
+		char *command = (char *)malloc(sizeof(char) * (
+					/* "arg_conversion_script" "filename" "dst"\0 */
+					1 + script_len + 3 + filename_len + 3 + dst_len + 2
+					));
+
+		if (command == NULL) PtExit(EXIT_FAILURE);
+
+		/* dst construction */
+		snprintf(dst, dst_len +1, "%s%s", filename, dst_postfix);
+
+		/* final command construction */
+		snprintf(command, 1 + script_len + 3 + filename_len + 3 + dst_len + 2,
+				"\"%s\" \"%s\" \"%s\"", arg_conversion_script, filename, dst);
+
+		switch (WEXITSTATUS(system(command)))
+		{
+			/* filename was already xml */
+			case 0:
+				if ((data = xmlParseFile(filename)) == NULL) {
+					fprintf(stderr, "Data file \"%s\" not parsed successfully.\n", filename);
+					free(dst);
+					free(command);
+					return -1;
+				}
+				break;
+			/* conversion success */
+			case 1:
+				if ((data = xmlParseFile(dst)) == NULL) {
+					fprintf(stderr, "Data file \"%s\" not parsed successfully.\n", dst);
+					free(dst);
+					free(command);
+					return -1;
+				}
+				break;
+			default:
+				fprintf(stderr, "Error occured during conversion script execution.\n");
+				return -1;
+		}
+
+		free(command);
+		free(dst);
+	}
 
 	loadViewAndData();
 
@@ -202,50 +197,69 @@ void parseTreeNode(xmlNodePtr tree_node, xmlNodePtr parent_node) {
 
 				//printf("loaded tree-mode name is %s\n", attr);//FIXME
 
-				/*pridava itemy korektne ale v opacnem poradi - opravit
-				 * pridat volani pro children
-				 * nejak predat hodnotu pro variable*/
-				if ((!xmlStrcmp(parent_node->name, (const xmlChar *) "tree-node"))) {
-					PtTreeAddFirst(ABW_tree_wgt, item, last_item);
-				}else{
-					if (last_item != NULL) {
-						PtTreeAddAfter(ABW_tree_wgt, item, last_item);
-					} else {
+				if (!xmlStrcmp(parent_node->name, (const xmlChar *)"tree-node"))
+				{
+					PtGenTreeItem_t *gen = ((PtGenTreeItem_t *)last_item)->son;
+
+					/* add as son (before any existing son, if any) */
+					if (last_item == NULL || gen == NULL)
+					{
 						PtTreeAddFirst(ABW_tree_wgt, item, last_item);
 					}
+					/* find last brother item of sublist */
+					else
+					{
+						while (gen->brother != NULL) gen = gen->brother;
+
+						PtTreeAddAfter(ABW_tree_wgt, item, (PtTreeItem_t *)gen);
+					}
 				}
+				else
+				{
+					/* the tree widget is empty, we found first item, yeah! */
+					if (last_item == NULL)
+						/* add to the root of the given tree widget */
+						PtTreeAddFirst(ABW_tree_wgt, item, NULL);
+					else
+						/* add as brother to last_item */
+						PtTreeAddAfter(ABW_tree_wgt, item, last_item);
+				}
+
 				PtTreeExpand(ABW_tree_wgt, last_item, NULL);
 				tmpitem = last_item;
+				/* temporary reset global variable for nested function calls */
 				last_item = item;
 				have_variable = 0;
 
-				t_variable_list * last_tmp = last;
+				t_variable_list *last_tmp = last;
 
 				tree_node_child = tree_node->xmlChildrenNode;
 
 				while (tree_node_child != NULL) {
-
 					//printf("its a: %s\n", tree_node_child->name);//FIXME
-
-					if ((!xmlStrcmp(tree_node_child->name,(const xmlChar *) "table"))) {
+					if (!xmlStrcmp(tree_node_child->name, (const xmlChar *)"table"))
+					{
 						item->data = createTable(tree_node_child);
-					} else if (!xmlStrcmp(tree_node_child->name, (const xmlChar *) "tree-node")) {
+					}
+					else if (!xmlStrcmp(tree_node_child->name, (const xmlChar *)"tree-node"))
+					{
 						parseTreeNode(tree_node_child, tree_node);
 						item->data = newTableData(NULL, tree_node_child);//FIXME dumblob
-					} else if (!xmlStrcmp(tree_node_child->name,(const xmlChar *) "variable")) {
+					}
+					else if (!xmlStrcmp(tree_node_child->name, (const xmlChar *)"variable"))
+					{
 						have_variable = 1;
 						parseVarNode(tree_node_child, attr);
 					}
 
 					tree_node_child = tree_node_child->next;
-
 				}
+
 				last_item = tmpitem;
 
-				if(have_variable){
-					if(first == last){
-						first = NULL;
-					}
+				if (have_variable){
+					/* nothing new added */
+					if (first == last) first = NULL;
 
 					free(last->name);
 					free(last->value);

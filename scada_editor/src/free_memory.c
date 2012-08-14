@@ -7,19 +7,26 @@
 void freeAllMemory()
 {
   /* free tables, xpaths, etc. */
-  freeInnerStructures((PtGenTreeItem_t *)PtTreeRootItem(ABW_tree_wgt));
+  //freeInnerStructures((PtGenTreeItem_t *)PtTreeRootItem(ABW_tree_wgt));
 
   /* free ABW_tree_wgt content */
   //FIXME wtf, why does it not work (SIGSEGV)?
-  //PtTreeFreeAllItems(ABW_tree_wgt);
+  //PtGenTreeFreeAllItems(ABW_tree_wgt);
 
-  //void PtTreeRemoveList(PtWidget_t *tree, PtTreeItem_t *first);
-  //PtTreeItem_t *PtTreeRootItem(PtTreeWidget_t const *tree);
-  //int PtTreeFreeItems( PtTreeItem_t *item );
+  /* really nasty hack to overcome the issue above */
+  //PhPoint_t pos;
+  //PhDim_t dim;
+  //PtGetResource(ABW_tree_wgt, Pt_ARG_POS, &pos, 0);
+  //PtGetResource(ABW_tree_wgt, Pt_ARG_DIM, &dim, 0);
 
-  //PtTreeItem_t *tmp = PtTreeRootItem(ABW_tree_wgt);
-  //PtTreeRemoveList(ABW_tree_wgt, tmp);
-  //PtTreeFreeItems(tmp);
+  //PtDestroyWidget(ABW_tree_wgt);
+
+  //PtArg_t args[2];
+  //PtSetArg(&args[0], Pt_ARG_POS, &pos, 0);
+  //PtSetArg(&args[1], Pt_ARG_DIM, &dim, 0);
+  //ABW_tree_wgt = PtCreateWidget(PtTree, ABW_base, 2, args);
+
+  //PtReRealizeWidget(ABW_tree_wgt);
 }
 
 void freeInnerStructures(PtGenTreeItem_t *gen)
@@ -33,22 +40,25 @@ void freeInnerStructures(PtGenTreeItem_t *gen)
       /* no further nesting */
       if (gen->son == NULL)
       {
-        assert(data->table != NULL);
-        int col_max = tblLastCol(data->table);
-        int x;
-
-        /* free the structures in the first table line */
-        for (x = 0; x <= col_max; ++x)
+        /* occurs when there is a new file */
+        if (data->table != NULL)
         {
-          t_xml_info *info = NULL;
-          tblGetCellResource(data->table, x, 0, Pt_ARG_POINTER, &info, 0);
-          assert(info != NULL);
-          assert(info->source != NULL);
-          xmlFree(info->source);
-          free(info);
-        }
+          int col_max = tblLastCol(data->table);
+          int x;
 
-        PtDestroyWidget(data->table);
+          /* free the structures in the first table line */
+          for (x = 0; x <= col_max; ++x)
+          {
+            t_xml_info *info = NULL;
+            tblGetCellResource(data->table, x, 0, Pt_ARG_POINTER, &info, 0);
+            assert(info != NULL);
+            assert(info->source != NULL);
+            xmlFree(info->source);
+            free(info);
+          }
+
+          PtDestroyWidget(data->table);
+        }
       }
       /* nest deeper */
       else
