@@ -220,7 +220,7 @@ void parseTreeNode(xmlNodePtr tree_node, xmlNodePtr parent_node) {
 					else if (!xmlStrcmp(tree_node_child->name, (const xmlChar *)"tree-node"))
 					{
 						parseTreeNode(tree_node_child, tree_node);
-						item->data = newTableData(NULL, tree_node_child);//FIXME dumblob
+						item->data = newTableData(NULL, tree_node_child);
 					}
 					else if (!xmlStrcmp(tree_node_child->name, (const xmlChar *)"variable"))
 					{
@@ -512,7 +512,7 @@ t_table_data *newTableData(PtWidget_t *tbl, xmlNodePtr node)
 
 	data->table = tbl;
 	data->xpath = xmlGetProp(node, (const xmlChar *)"source");
-
+	data->enhanced_xpath = process_variable(data->xpath);
 	return data;
 }
 

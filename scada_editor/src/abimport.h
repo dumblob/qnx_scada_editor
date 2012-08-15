@@ -3,9 +3,10 @@
 #include "abdefine.h"
 
 extern ApWindowLink_t base;
-extern ApWidget_t AbWidgets[ 12 ];
+extern ApWidget_t AbWidgets[ 13 ];
 
 extern ApMenuLink_t file_menu;
+extern ApMenuLink_t src_menu;
 
 #ifdef __cplusplus
 extern "C" {
@@ -26,6 +27,8 @@ int cb_rem_row( PtWidget_t *widget, ApInfo_t *data, PtCallbackInfo_t *cbinfo );
 int cb_add_row_after( PtWidget_t *widget, ApInfo_t *data, PtCallbackInfo_t *cbinfo );
 int cb_add_row_before( PtWidget_t *widget, ApInfo_t *data, PtCallbackInfo_t *cbinfo );
 int cb_destroyed_base( PtWidget_t *widget, ApInfo_t *data, PtCallbackInfo_t *cbinfo );
+int import_src( PtWidget_t *widget, ApInfo_t *data, PtCallbackInfo_t *cbinfo );
+int export_src( PtWidget_t *widget, ApInfo_t *data, PtCallbackInfo_t *cbinfo );
 #ifdef __cplusplus
 }
 #endif
