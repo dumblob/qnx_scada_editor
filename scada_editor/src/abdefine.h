@@ -7,7 +7,6 @@
 #define ABW_table_pane                       AbGetABW( ABN_table_pane )
 #define ABW_tree_wgt                         AbGetABW( ABN_tree_wgt )
 #define ABW_bm_file                          AbGetABW( ABN_bm_file )
-#define ABW_bm_src                           AbGetABW( ABN_bm_src )
 #define ABW_b_open                           AbGetABW( ABN_b_open )
 #define ABW_b_save                           AbGetABW( ABN_b_save )
 #define ABW_b_cut                            AbGetABW( ABN_b_cut )
@@ -20,7 +19,5 @@
 #define AbGetABW( n ) ( AbWidgets[ n ].wgt )
 
 /* 'file_menu' Menu link */
-
-/* 'src_menu' Menu link */
 
 #define AB_OPTIONS "s:x:y:h:w:S:"

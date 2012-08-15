@@ -91,8 +91,6 @@ void generateXML(t_table_data *data){
 
 	xmlChar *enhanced_xpath = data->enhanced_xpath;
 	xmlChar *xpath = data->xpath;
-	printf("%s\n", enhanced_xpath);
-	printf("%s\n", xpath);
 
 	xmlChar *sep = enhanced_xpath;
 	xmlChar *last_exist_path = xmlCharStrdup("/");
@@ -138,7 +136,7 @@ void generateXML(t_table_data *data){
 			}
 
 			nodename = xmlStrndup(enhanced_xpath + f2, xmlStrlen(enhanced_xpath + f2));
-
+			//lastnode = process_node(lastnode, nodename);//FIXME
 
 
 			xmlXPathContextPtr context = xmlXPathNewContext(view);
@@ -174,21 +172,23 @@ void generateXML(t_table_data *data){
 
 			nodeset = result->nodesetval;
 
-			int rows = tblLastRow((PtWidget_t *)data->table);
-			printf("last %d\n", rows);
-			int r = 1;
 			xmlNodePtr column;
 			xmlNodePtr node;
 			int clmn;
 
-			while(r <= rows){
+			int rows = tblLastRow((PtWidget_t *)data->table);
+			int r;
+
+			for (r = 1; r <= rows; ++r)
+			{
 				column = nodeset->nodeTab[0]->xmlChildrenNode;
 				clmn = 0;
 				node = process_node(lastnode, nodename);
-				while (column != NULL) {
 
-					if ((!xmlStrcmp(column->name, (const xmlChar *) "column"))) {
-
+				while (column != NULL)
+				{
+					if ((!xmlStrcmp(column->name, (const xmlChar *) "column")))
+					{
 						source = xmlGetProp(column, (const xmlChar *) "source");
 						char *cell_text;
 						tblGetCellResource((PtWidget_t *)data->table, clmn, r, Pt_ARG_TEXT_STRING, &cell_text, 0);
@@ -198,17 +198,14 @@ void generateXML(t_table_data *data){
 						xmlFree(source);
 						clmn++;
 					}
+
 					column = column->next;
 				}
-
-				r++;
-				}
+			}
 		}
+
 		xmlFree(nodename);
-
 	}
-
-
 }
 
 xmlNodePtr process_node(xmlNodePtr lastnode, xmlChar * nodename){
