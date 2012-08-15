@@ -2,7 +2,7 @@ testy
   ulozeni souboru (tzn. bez cehokoliv nacteneho/otevreneho)
   + zavreni bez ulozeni kom_map.xml => OK
   - otevreni jineho kom_map.xml => prida se proste za existujici strom
-  ulozeni do xml
+  ulozeni do xml (kontrola oproti xml ze skriptu)
   ulozeni do xml + src
   + otevreni cfgview.xml namisto kom_map.xml a vice versa => vypise chybu
 
@@ -11,6 +11,9 @@ funcionalita
   bug: pridavani radku - problem s focusem (jedna pametova bunka ma 2 adresy! wtf?)
   bug: nevypisovat ani WARNING ani ERROR pri nacitani prazdneho souboru (kontrolovat filename == NULL)
   feature: pridavani polozek do PtTree
+  feature: odstranit import
+  bug: zkusit zamenit v datasaver.c t_table_data->xpath za enhanced_xpath
+  bug: dataloader.h libxml/tree.h not needed?
 
 otazky do mailu
   novy typ id, nebo pouzit number? (protoze jinak se id generuje v uvozovkach)
