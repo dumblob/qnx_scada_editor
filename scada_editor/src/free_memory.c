@@ -3,11 +3,12 @@
 #include "free_memory.h"
 #include "dataloader.h"
 #include <assert.h>
+#include <stdbool.h>
 
 void freeAllMemory()
 {
   /* free tables, xpaths, etc. */
-  //freeInnerStructures((PtGenTreeItem_t *)PtTreeRootItem(ABW_tree_wgt));
+  freeInnerStructures((PtGenTreeItem_t *)PtTreeRootItem(ABW_tree_wgt), false);
 
   /* free ABW_tree_wgt content */
   //FIXME wtf, why does it not work (SIGSEGV)?
@@ -30,53 +31,86 @@ void freeAllMemory()
 
   /* try to remove the list itself by hand (also not functional) */
   //PtTreeItem_t *tmp = PtTreeRootItem(ABW_tree_wgt);
-  //PtTreeRemoveList(ABW_tree_wgt, tmp);
-  //PtTreeFreeItems(tmp);
+
+  //if (tmp != NULL)
+  //{
+  //  PtTreeRemoveList(ABW_tree_wgt, tmp);
+  //  PtTreeFreeItems(tmp);
+  //}
+  //else
+//printf("NO tree root item found!\n");//FIXME
 }
 
-void freeInnerStructures(PtGenTreeItem_t *gen)
+
+void freeTableAndContent(PtWidget_t *tbl)
+{
+  int col_max = tblLastCol(tbl);
+  int x;
+
+  /* free the structures in the first table line */
+  for (x = 0; x <= col_max; ++x)
+  {
+    t_xml_info *info = NULL;
+    tblGetCellResource(tbl, x, 0, Pt_ARG_POINTER, &info, 0);
+    assert(info != NULL);
+    assert(info->source != NULL);
+    xmlFree(info->source);
+    free(info);
+  }
+
+  PtDestroyWidget(tbl);
+}
+
+
+void freeInnerStructures(PtGenTreeItem_t *gen, bool keep_first)
 {
   while (gen != NULL)
   {
     t_table_data *data = ((PtTreeItem_t *)gen)->data;
+    bool keep_first_final = (keep_first && gen->father->son == gen);
 
-    if (data != NULL)
+    assert(data != NULL);//FIXME
     {
       /* no further nesting */
       if (gen->son == NULL)
       {
-        /* occurs when there is a new file */
-        if (data->table != NULL)
-        {
-          int col_max = tblLastCol(data->table);
-          int x;
+        assert(data->table != NULL);
 
-          /* free the structures in the first table line */
-          for (x = 0; x <= col_max; ++x)
-          {
-            t_xml_info *info = NULL;
-            tblGetCellResource(data->table, x, 0, Pt_ARG_POINTER, &info, 0);
-            assert(info != NULL);
-            assert(info->source != NULL);
-            xmlFree(info->source);
-            free(info);
-          }
-
-          PtDestroyWidget(data->table);
-        }
+        if (keep_first_final)
+          tblRemoveRows(data->table, 1, tblLastRow(data->table));
+        else
+          freeTableAndContent(data->table);
       }
       /* nest deeper */
       else
       {
         assert(data->table == NULL);
-        freeInnerStructures(gen->son);
+        freeInnerStructures(gen->son, keep_first_final);
       }
 
-      assert(data->xpath != NULL);
-      xmlFree(data->xpath);
-      free(data);
+      if (!keep_first_final)
+      {
+        assert(data->xpath != NULL);
+printf("volnuji %s\n", data->xpath);//FIXME
+        xmlFree(data->xpath);
+        data->xpath = NULL;//FIXME
+        assert(data->enhanced_xpath != NULL);
+printf("volnuji enhanced %s\n", data->enhanced_xpath);//FIXME
+        xmlFree(data->enhanced_xpath);
+        data->enhanced_xpath = NULL;//FIXME
+        free(data);
+        data = NULL;//FIXME
+printf("END\n");//FIXME
+      }
     }
 
+    PtGenTreeItem_t *tmp = gen;
     gen = gen->brother;
+
+    if (!keep_first_final)
+    {
+      PtTreeRemoveItem(ABW_tree_wgt, (PtTreeItem_t *)tmp);
+      PtTreeFreeItems((PtTreeItem_t *)tmp);
+    }
   }
 }

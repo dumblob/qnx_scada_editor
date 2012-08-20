@@ -41,6 +41,7 @@ int open_file(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
 
     if (filepath != NULL) free(filepath);
     if (viewpath != NULL) free(viewpath);
+
     filepath = (char*) malloc(sizeof(datafile.path));
     viewpath = (char*) malloc(sizeof(formatfile.path));
     strcpy(filepath, datafile.path);

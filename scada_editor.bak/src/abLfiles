@@ -1,3 +1,0 @@
-include $(PROJECT_ROOT)/src/indLfiles
-ABLIB = $(MYLIB) -l Ap -l ph -l m
-

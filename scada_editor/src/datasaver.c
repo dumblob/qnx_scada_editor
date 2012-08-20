@@ -8,48 +8,41 @@ extern char *viewpath;
 xmlDocPtr save_doc;
 xmlNsPtr ns;
 
-void save_data() {
-
+void save_data()
+{
 	generateXMLfromTree();
-	return;
-
 }
 
 
-void exportToSrc(char * path) {
-	FILE *fp;
+void exportToSrc(char *path)
+{
+	FILE *fp = fopen(path, "w");
 
-	fp = fopen(path, "w");
-
-	if (fp != NULL) {
-
-		/*save data to xml here!*/
+	if (fp != NULL)
+	{
 		generateSrcFromTree(fp);
-
 		fclose(fp);
-	} else {
+	}
+	else
+	{
 		fprintf(stderr, "\nFile open error.\n");
 	}
-
 }
 
 
-void generateXMLfromTree() {
-
-
+void generateXMLfromTree()
+{
 	xmlNodePtr root_node = NULL;
 	save_doc = xmlNewDoc(BAD_CAST "1.0");
 
 	//FIXME some magic ;), do not touch!
 	ns = xmlNewNs(NULL, (const xmlChar *) "http://www.disam.cz/Xmlns/Scada/Configuration", (const xmlChar *) "disam");
 	root_node = xmlNewNode(ns, BAD_CAST "configuration");
-	ns = xmlNewNs(root_node, (const xmlChar *) "http://www.disam.cz/Xmlns/Scada/Configuration", (const xmlChar *) "disam");
-
+	xmlNewNs(root_node, (const xmlChar *) "http://www.disam.cz/Xmlns/Scada/Configuration", (const xmlChar *) "disam");
 
 	xmlDocSetRootElement(save_doc, root_node);
 	xmlNewProp(root_node, BAD_CAST "id", BAD_CAST "kom_map");
 	xmlNewProp(root_node, BAD_CAST "version", BAD_CAST "1.0");
-
 
 	PtGenTreeItem_t *gen = (PtGenTreeItem_t *)PtTreeRootItem(ABW_tree_wgt);
 	walkOverTreeBranch(gen);
@@ -58,28 +51,27 @@ void generateXMLfromTree() {
 
 	xmlFreeDoc(save_doc);
 	xmlCleanupParser();
-
 }
 
-void walkOverTreeBranch(PtGenTreeItem_t *gen){
 
+void walkOverTreeBranch(PtGenTreeItem_t *gen)
+{
+	while (gen != NULL)
+	{
+		/* t_table_data */
+		assert(((PtTreeItem_t *)gen)->data != NULL);
+		assert(((t_table_data *)((PtTreeItem_t *)gen)->data)->xpath != NULL);
 
-	 while (gen != NULL)
-	  {
-	    /* t_table_data */
-	    assert(((PtTreeItem_t *)gen)->data != NULL);
-	    assert(((t_table_data *)((PtTreeItem_t *)gen)->data)->xpath != NULL);
-	    generateXML(((PtTreeItem_t *)gen)->data);
-	    if (gen->son != NULL){
-				walkOverTreeBranch(gen->son);
-	    }
+		generateXML(((PtTreeItem_t *)gen)->data);
 
-	    gen = gen->brother;
-	  }
+		if (gen->son != NULL) walkOverTreeBranch(gen->son);
+
+		gen = gen->brother;
+	}
 }
 
-void generateXML(t_table_data *data){
-
+void generateXML(t_table_data *data)
+{
 	xmlXPathObjectPtr result = NULL;
 	xmlNodeSetPtr nodeset;
 	xmlNodePtr lastnode = NULL;
@@ -104,33 +96,25 @@ void generateXML(t_table_data *data){
 			nodename = xmlStrndup(enhanced_xpath + f2, sep - enhanced_xpath - f2);
 			last_exist_path = xmlStrcat(last_exist_path,nodename);
 
-
-			if(!new_prop){
-			result = loadDataFromXpathNS(last_exist_path, save_doc);
-			}else{
+			if (!new_prop) {
+				result = loadDataFromXpathNS(last_exist_path, save_doc, false);
+			} else {
 				result = NULL;
 			}
 
 			if (result != NULL){
-				//node existuje, load node to lastnode and skip
+				/* node exists => load node to lastnode and skip */
 				nodeset = result->nodesetval;
 				lastnode = nodeset->nodeTab[0];
-
-				//FIXME smazat pozdeji
-				if(nodeset->nodeNr > 1){
-					printf("NONONO nacetl vice jak 1 polozku!\n");
-				}
-
-
-			}else{
+        assert(nodeset->nodeNr <= 1);
+			} else {
 				new_prop = 1;
 				lastnode = process_node(lastnode, nodename);
 			}
+
 			last_exist_path = xmlStrcat(last_exist_path,(xmlChar *)"/");
 		} else {
-
-
-			if(data->table == NULL){
+			if (data->table == NULL) {
 				printf("no table data\n");
 				continue;
 			}
@@ -138,15 +122,14 @@ void generateXML(t_table_data *data){
 			nodename = xmlStrndup(enhanced_xpath + f2, xmlStrlen(enhanced_xpath + f2));
 			//lastnode = process_node(lastnode, nodename);//FIXME
 
-
 			xmlXPathContextPtr context = xmlXPathNewContext(view);
 
 			if (xmlXPathRegisterNs(
 					context,
-					(const xmlChar *) "disam",
-					(const xmlChar *) "http://www.disam.cz/Xmlns/Scada/ConfigEditor/Layout")
+					BAD_CAST "disam",
+					BAD_CAST "http://www.disam.cz/Xmlns/Scada/ConfigEditor/Layout")
 					!= 0) {
-				printf("error ns ");
+				fprintf(stderr, "ERROR while registering namespace.");
 				continue;
 			};
 
@@ -155,8 +138,6 @@ void generateXML(t_table_data *data){
 
 			tablepath = xmlStrcat(tablepath, xpath);
 			tablepath = xmlStrcat(tablepath, (const xmlChar *)"']");
-
-
 
 			result = xmlXPathEvalExpression(tablepath, context);
 
@@ -187,11 +168,12 @@ void generateXML(t_table_data *data){
 
 				while (column != NULL)
 				{
-					if ((!xmlStrcmp(column->name, (const xmlChar *) "column")))
+					if ((!xmlStrcmp(column->name, BAD_CAST "column")))
 					{
-						source = xmlGetProp(column, (const xmlChar *) "source");
+						source = xmlGetProp(column, BAD_CAST "source");
 						char *cell_text;
-						tblGetCellResource((PtWidget_t *)data->table, clmn, r, Pt_ARG_TEXT_STRING, &cell_text, 0);
+						tblGetCellResource((PtWidget_t *)data->table, clmn, r,
+                Pt_ARG_TEXT_STRING, &cell_text, 0);
 
 						xmlNewProp(node, source+1 , BAD_CAST cell_text);
 
@@ -210,19 +192,19 @@ void generateXML(t_table_data *data){
 
 xmlNodePtr process_node(xmlNodePtr lastnode, xmlChar * nodename){
 	xmlNodePtr tmp;
-	if(node_have_attribude(nodename)){
 
+	if (node_have_attribude(nodename))
+	{
 		xmlChar *attrname = getAttrNameFrom(nodename);
 		xmlChar *attrvalue = getAttrValueFrom(nodename);
-		xmlChar *nodename_pure =getPureNodeNameFrom(nodename);
+		xmlChar *nodename_pure = getPureNodeNameFrom(nodename);
 		tmp = xmlNewChild(lastnode, ns, BAD_CAST nodename_pure, NULL);
 		xmlNewProp(tmp, BAD_CAST attrname, BAD_CAST attrvalue);
 	}else{
 		tmp = xmlNewChild(lastnode, ns, BAD_CAST nodename, NULL);
-
 	}
-	return tmp;
 
+	return tmp;
 }
 
 
@@ -383,10 +365,12 @@ void saveAttrToSrc(PtGenTreeItem_t *gen, FILE *f, unsigned short depth)
       fputs("{\n", f);
     }
 
+    /* SIMATIC APL DATA have no subitems => we can not construct anything */
+    if (tbl == NULL) return;
+
     /* print the line with attributes */
     fputs("# ", f);
     FPUTS_N((depth) ? depth +1: depth, "  ", f);
-    assert(tbl != NULL);
     int col_max = tblLastCol(tbl);
     t_xml_info *info = NULL;
 
@@ -471,6 +455,10 @@ void saveValToSrc(PtGenTreeItem_t *gen, FILE *f, unsigned short depth)
   if (gen->son == NULL)
   {
     PtWidget_t *tbl = ((t_table_data *)((PtTreeItem_t *)gen)->data)->table;
+
+    /* SIMATIC APL DATA have no subitems => we can not construct anything */
+    if (tbl == NULL) return;
+
     int col_max = tblLastCol(tbl);
     int row_max = tblLastRow(tbl);
 

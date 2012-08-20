@@ -14,6 +14,7 @@
 #include "ablibs.h"
 #include "abimport.h"
 #include "proto.h"
+#include "stdbool.h"
 
 typedef struct s_variable_list {
   xmlChar *name;
@@ -22,8 +23,8 @@ typedef struct s_variable_list {
 } t_variable_list;
 
 xmlChar * process_variable(xmlChar *xpath);
-xmlChar * get_variable_value(xmlChar * var_name);
-xmlXPathObjectPtr loadDataFromXpathNS(xmlChar* xpath, xmlDocPtr);
+xmlChar * get_variable_value(xmlChar *var_name);
+xmlXPathObjectPtr loadDataFromXpathNS(xmlChar *, xmlDocPtr, bool);
 
 xmlChar* enhance_xpath(const xmlChar *xpath, const xmlChar * namespace);
 

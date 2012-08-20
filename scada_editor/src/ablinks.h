@@ -5,7 +5,7 @@ extern ApContext_t AbContext;
 ApWindowLink_t base = {
 	"base.wgtw",
 	&AbContext,
-	AbLinks_base, 0, 11
+	AbLinks_base, 0, 13
 	};
 
 static ApItem_t ApItems_file_menu[ 8 ] = {
@@ -27,6 +27,6 @@ ApMenuLink_t file_menu = {
 	ApItems_file_menu,
 	& AbContext,
 	AbLinks_file_menu,
-	12, 6, 7
+	14, 6, 7
 	};
 
