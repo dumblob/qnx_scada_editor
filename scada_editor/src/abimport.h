@@ -3,7 +3,7 @@
 #include "abdefine.h"
 
 extern ApWindowLink_t base;
-extern ApWidget_t AbWidgets[ 12 ];
+extern ApWidget_t AbWidgets[ 14 ];
 
 extern ApMenuLink_t file_menu;
 
@@ -11,8 +11,8 @@ extern ApMenuLink_t file_menu;
 extern "C" {
 #endif
 int cb_pre_realize( PtWidget_t *widget, ApInfo_t *data, PtCallbackInfo_t *cbinfo );
-int open_file( PtWidget_t *widget, ApInfo_t *data, PtCallbackInfo_t *cbinfo );
-int save_file( PtWidget_t *widget, ApInfo_t *data, PtCallbackInfo_t *cbinfo );
+int addTreeItemBefore( PtWidget_t *widget, ApInfo_t *data, PtCallbackInfo_t *cbinfo );
+int addTreeItemAfter( PtWidget_t *widget, ApInfo_t *data, PtCallbackInfo_t *cbinfo );
 int cut_text( PtWidget_t *widget, ApInfo_t *data, PtCallbackInfo_t *cbinfo );
 int copy_text( PtWidget_t *widget, ApInfo_t *data, PtCallbackInfo_t *cbinfo );
 int paste_text( PtWidget_t *widget, ApInfo_t *data, PtCallbackInfo_t *cbinfo );
@@ -26,6 +26,9 @@ int cb_rem_row( PtWidget_t *widget, ApInfo_t *data, PtCallbackInfo_t *cbinfo );
 int cb_add_row_after( PtWidget_t *widget, ApInfo_t *data, PtCallbackInfo_t *cbinfo );
 int cb_add_row_before( PtWidget_t *widget, ApInfo_t *data, PtCallbackInfo_t *cbinfo );
 int cb_destroyed_base( PtWidget_t *widget, ApInfo_t *data, PtCallbackInfo_t *cbinfo );
+int export_src( PtWidget_t *widget, ApInfo_t *data, PtCallbackInfo_t *cbinfo );
+int removeTreeItem( PtWidget_t *widget, ApInfo_t *data, PtCallbackInfo_t *cbinfo );
+int renameTreeItem( PtWidget_t *widget, ApInfo_t *data, PtCallbackInfo_t *cbinfo );
 #ifdef __cplusplus
 }
 #endif

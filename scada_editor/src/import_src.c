@@ -12,21 +12,13 @@
 #include "ablibs.h"
 #include "abimport.h"
 #include "proto.h"
-#include "datasaver.h"
 
 
-extern char *filepath;
-
-int save_file( PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo )
+int import_src(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
 {
-	/* eliminate 'unreferenced' warnings */
-	widget = widget, apinfo = apinfo, cbinfo = cbinfo;
 
-	if (filepath == NULL) {
-		return save_file_as(widget, apinfo, cbinfo);
-	}
+  /* eliminate 'unreferenced' warnings */
+  widget = widget, apinfo = apinfo, cbinfo = cbinfo;
 
-	save_data();
-
-	return( Pt_CONTINUE );
+  return Pt_CONTINUE;
 }

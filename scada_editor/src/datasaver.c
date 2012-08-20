@@ -1,157 +1,238 @@
 #include "datasaver.h"
 #include "dataloader.h"
-
-#include <fcntl.h>  //FIXME debug
+#include "xml_func.h"
 
 extern char *filepath;
+extern char *viewpath;
 
-void save_data() {
+xmlDocPtr save_doc;
+xmlNsPtr ns;
 
-	//generateXMLfromTree();
-	//return;
-
-	FILE *fp;
-
-	fp = fopen(filepath, "w");
-  fcntl(fileno(fp), F_SETFL, fcntl(fileno(fp), F_GETFL)
-      | O_SYNC | O_DSYNC);//FIXME debug
-      //O_SYNC O_DSYNC O_RSYNC
-
-	if (fp != NULL) {
-
-		/*save data to xml here!*/
-    generateSrcFromTree(fp);
-
-		fclose(fp);
-	} else {
-		fprintf(stderr, "\nFile open error.\n");
-	}
-
+void save_data()
+{
+	generateXMLfromTree();
 }
 
-void generateXMLfromTree() {
 
-	xmlDocPtr doc = NULL;
+void exportToSrc(char *path)
+{
+	FILE *fp = fopen(path, "w");
+
+	if (fp != NULL)
+	{
+		generateSrcFromTree(fp);
+		fclose(fp);
+	}
+	else
+	{
+		fprintf(stderr, "\nFile open error.\n");
+	}
+}
+
+
+void generateXMLfromTree()
+{
 	xmlNodePtr root_node = NULL;
-	//xmlAttrPtr newattr;  /* FIXME unused => remove? */
+	save_doc = xmlNewDoc(BAD_CAST "1.0");
 
-	doc = xmlNewDoc(BAD_CAST "1.0");
-	root_node = xmlNewNode(NULL, BAD_CAST "disam:configuration");
-	xmlDocSetRootElement(doc, root_node);
+	//FIXME some magic ;), do not touch!
+	ns = xmlNewNs(NULL, (const xmlChar *) "http://www.disam.cz/Xmlns/Scada/Configuration", (const xmlChar *) "disam");
+	root_node = xmlNewNode(ns, BAD_CAST "configuration");
+	xmlNewNs(root_node, (const xmlChar *) "http://www.disam.cz/Xmlns/Scada/Configuration", (const xmlChar *) "disam");
+
+	xmlDocSetRootElement(save_doc, root_node);
 	xmlNewProp(root_node, BAD_CAST "id", BAD_CAST "kom_map");
 	xmlNewProp(root_node, BAD_CAST "version", BAD_CAST "1.0");
-	xmlNewProp(root_node, BAD_CAST "xmlns:disam",
-			BAD_CAST "http://www.disam.cz/Xmlns/Scada/Configuration");
 
-	PtTreeItem_t *item, **buf;
-	PtWidget_t *tbl = NULL;
-	t_table_data *tbldt = NULL;
+	PtGenTreeItem_t *gen = (PtGenTreeItem_t *)PtTreeRootItem(ABW_tree_wgt);
+	walkOverTreeBranch(gen);
 
-	buf = PtTreeAllItems(ABW_tree_wgt, NULL);
-	int i = 0;
-	for (i = 0; (item = buf[i]) != NULL; ++i) {
-		printf("nulling ");
-		if (item->data != NULL && ((t_table_data *)item->data)->table != NULL) {
-			tbldt = item->data;
-			tbl = tbldt->table;
-			save_table(tbl, tbldt->xpath, root_node);
+	xmlSaveFormatFileEnc(filepath, save_doc, "UTF-8", 2);
 
-		}
-	}
-
-	free(buf);
-	xmlSaveFormatFileEnc("test.xml", doc, "UTF-8", 2);
-	xmlFreeDoc(doc);
+	xmlFreeDoc(save_doc);
 	xmlCleanupParser();
 }
 
-void save_table(PtWidget_t *table, const xmlChar *xpath, xmlNodePtr root_node) {
 
-	xmlChar *nodename = NULL;
-	xmlNodePtr lastnode = root_node;
-	xmlNodePtr table_cfg;
-	int f2 = 1;
-	xmlChar *sep;
+void walkOverTreeBranch(PtGenTreeItem_t *gen)
+{
+	while (gen != NULL)
+	{
+		/* t_table_data */
+		assert(((PtTreeItem_t *)gen)->data != NULL);
+		assert(((t_table_data *)((PtTreeItem_t *)gen)->data)->xpath != NULL);
 
-	xmlDocPtr view = xmlParseFile("cfgview.xml");
-	xmlXPathContextPtr context;
+		generateXML(((PtTreeItem_t *)gen)->data);
 
-	context = xmlXPathNewContext(view);
+		if (gen->son != NULL) walkOverTreeBranch(gen->son);
 
-	if (xmlXPathRegisterNs(
-			context,
-			(const xmlChar *) "disam",
-			(const xmlChar *) "http://www.disam.cz/Xmlns/Scada/ConfigEditor/Layout")
-			!= 0) {
-		printf("error ns ");
+		gen = gen->brother;
+	}
+}
 
-	};
-
-	//xmlChar *tablepath = BAD_CAST "//disam:table[@source=";
-	xmlChar *tablepath;
-	tablepath = xmlCharStrdup("//disam:table[@source='");
-
-	tablepath = xmlStrcat(tablepath, xpath);
-	tablepath = xmlStrcat(tablepath, (const xmlChar *)"']");
-
-	printf("%s \n", tablepath);
-
-	xmlXPathObjectPtr result;
+void generateXML(t_table_data *data)
+{
+	xmlXPathObjectPtr result = NULL;
 	xmlNodeSetPtr nodeset;
-
-	result = xmlXPathEvalExpression(tablepath, context);
-
-	if (xmlXPathNodeSetIsEmpty(result->nodesetval)) {
-		xmlXPathFreeObject(result);
-		printf("No result\n");
-		result = NULL;
-	}
-
-  /* FIXME nodeset could be uninitialized! */
-	if (result != NULL) {
-		nodeset = result->nodesetval;
-		printf("Results is: %d\n", nodeset->nodeNr);
-		table_cfg = nodeset->nodeTab[0];
-	}
-
+	xmlNodePtr lastnode = NULL;
+	xmlChar *nodename = NULL;
 	xmlChar* source;
+	int f2 = 1;
 
-	sep = (xmlChar *)xmlStrchr(xpath + 1, (xmlChar) '/');
+	xmlDocPtr view = xmlParseFile(viewpath);
+
+	xmlChar *enhanced_xpath = data->enhanced_xpath;
+	xmlChar *xpath = data->xpath;
+
+	xmlChar *sep = enhanced_xpath;
+	xmlChar *last_exist_path = xmlCharStrdup("/");
+	int new_prop = 0;
+
 	while (sep != NULL) {
-		nodename = xmlCharStrdup("disam:");
-		f2 = sep - xpath + 1;
+
+		f2 = sep - enhanced_xpath + 1;
 		sep = (xmlChar *)xmlStrchr(sep + 1, (xmlChar) '/');
 		if (sep != NULL) {
-			nodename = xmlStrncat(nodename, xpath + f2, sep - xpath - f2);
-			lastnode = xmlNewChild(lastnode, NULL, BAD_CAST nodename, NULL);
-		} else {
-			nodename = xmlStrncat(nodename, xpath + f2, xmlStrlen(xpath + f2));
-			lastnode = xmlNewChild(lastnode, NULL, BAD_CAST nodename, NULL);
+			nodename = xmlStrndup(enhanced_xpath + f2, sep - enhanced_xpath - f2);
+			last_exist_path = xmlStrcat(last_exist_path,nodename);
 
-			xmlNodePtr column = nodeset->nodeTab[0]->xmlChildrenNode;
-			int clmn = 0;
-			while (column != NULL) {
-				if ((!xmlStrcmp(column->name, (const xmlChar *) "column"))) {
-
-					source = xmlGetProp(column, (const xmlChar *) "source");
-					char *cell_text;
-					tblGetCellResource((PtWidget_t *)table, clmn, 1, Pt_ARG_TEXT_STRING, &cell_text, 0);
-					printf("OBSAH cell 0,0: %s\n", cell_text);
-
-					xmlNewProp(lastnode, source+1 , BAD_CAST cell_text);
-
-					xmlFree(source);
-					clmn++;
-				}
-				column = column->next;
+			if (!new_prop) {
+				result = loadDataFromXpathNS(last_exist_path, save_doc, false);
+			} else {
+				result = NULL;
 			}
 
-		}
-		xmlFree(nodename);
+			if (result != NULL){
+				/* node exists => load node to lastnode and skip */
+				nodeset = result->nodesetval;
+				lastnode = nodeset->nodeTab[0];
+        assert(nodeset->nodeNr <= 1);
+			} else {
+				new_prop = 1;
+				lastnode = process_node(lastnode, nodename);
+			}
 
+			last_exist_path = xmlStrcat(last_exist_path,(xmlChar *)"/");
+		} else {
+			if (data->table == NULL) {
+				printf("no table data\n");
+				continue;
+			}
+
+			nodename = xmlStrndup(enhanced_xpath + f2, xmlStrlen(enhanced_xpath + f2));
+			//lastnode = process_node(lastnode, nodename);//FIXME
+
+			xmlXPathContextPtr context = xmlXPathNewContext(view);
+
+			if (xmlXPathRegisterNs(
+					context,
+					BAD_CAST "disam",
+					BAD_CAST "http://www.disam.cz/Xmlns/Scada/ConfigEditor/Layout")
+					!= 0) {
+				fprintf(stderr, "ERROR while registering namespace.");
+				continue;
+			};
+
+			xmlChar *tablepath;
+			tablepath = xmlCharStrdup("//disam:table[@source='");
+
+			tablepath = xmlStrcat(tablepath, xpath);
+			tablepath = xmlStrcat(tablepath, (const xmlChar *)"']");
+
+			result = xmlXPathEvalExpression(tablepath, context);
+
+			if (result == NULL){
+				printf("no table data \n");
+				continue;
+			}
+
+			if (xmlXPathNodeSetIsEmpty(result->nodesetval)) {
+					xmlXPathFreeObject(result);
+					continue;
+			}
+
+			nodeset = result->nodesetval;
+
+			xmlNodePtr column;
+			xmlNodePtr node;
+			int clmn;
+
+			int rows = tblLastRow((PtWidget_t *)data->table);
+			int r;
+
+			for (r = 1; r <= rows; ++r)
+			{
+				column = nodeset->nodeTab[0]->xmlChildrenNode;
+				clmn = 0;
+				node = process_node(lastnode, nodename);
+
+				while (column != NULL)
+				{
+					if ((!xmlStrcmp(column->name, BAD_CAST "column")))
+					{
+						source = xmlGetProp(column, BAD_CAST "source");
+						char *cell_text;
+						tblGetCellResource((PtWidget_t *)data->table, clmn, r,
+                Pt_ARG_TEXT_STRING, &cell_text, 0);
+
+						xmlNewProp(node, source+1 , BAD_CAST cell_text);
+
+						xmlFree(source);
+						clmn++;
+					}
+
+					column = column->next;
+				}
+			}
+		}
+
+		xmlFree(nodename);
+	}
+}
+
+xmlNodePtr process_node(xmlNodePtr lastnode, xmlChar * nodename){
+	xmlNodePtr tmp;
+
+	if (node_have_attribude(nodename))
+	{
+		xmlChar *attrname = getAttrNameFrom(nodename);
+		xmlChar *attrvalue = getAttrValueFrom(nodename);
+		xmlChar *nodename_pure = getPureNodeNameFrom(nodename);
+		tmp = xmlNewChild(lastnode, ns, BAD_CAST nodename_pure, NULL);
+		xmlNewProp(tmp, BAD_CAST attrname, BAD_CAST attrvalue);
+	}else{
+		tmp = xmlNewChild(lastnode, ns, BAD_CAST nodename, NULL);
 	}
 
+	return tmp;
 }
+
+
+int node_have_attribude(xmlChar * nodename){
+	const xmlChar *tmp = xmlStrchr(nodename,'@');
+	return (tmp == NULL) ? 0 : 1 ;
+}
+
+xmlChar* getAttrNameFrom(xmlChar * nodename){
+	const xmlChar *start = xmlStrchr(nodename,'@');
+	const xmlChar *stop = xmlStrchr(nodename,'=');
+	return xmlStrndup(start+1, stop-start-1);
+
+}
+
+xmlChar* getAttrValueFrom(xmlChar * nodename){
+	const xmlChar *start = xmlStrchr(nodename,'=');
+	const xmlChar *stop = xmlStrchr(nodename,']');
+	return xmlStrndup(start+1, stop-start-1);
+
+}
+
+xmlChar* getPureNodeNameFrom(xmlChar * nodename){
+	const xmlChar *stop = xmlStrchr(nodename,'[');
+	return xmlStrndup(nodename, stop-nodename);
+
+}
+
 
 /* dashes into underscores */
 #define DASH_TO_UNDERSCORE(p) { \
@@ -284,10 +365,12 @@ void saveAttrToSrc(PtGenTreeItem_t *gen, FILE *f, unsigned short depth)
       fputs("{\n", f);
     }
 
+    /* SIMATIC APL DATA have no subitems => we can not construct anything */
+    if (tbl == NULL) return;
+
     /* print the line with attributes */
     fputs("# ", f);
     FPUTS_N((depth) ? depth +1: depth, "  ", f);
-    assert(tbl != NULL);
     int col_max = tblLastCol(tbl);
     t_xml_info *info = NULL;
 
@@ -372,6 +455,10 @@ void saveValToSrc(PtGenTreeItem_t *gen, FILE *f, unsigned short depth)
   if (gen->son == NULL)
   {
     PtWidget_t *tbl = ((t_table_data *)((PtTreeItem_t *)gen)->data)->table;
+
+    /* SIMATIC APL DATA have no subitems => we can not construct anything */
+    if (tbl == NULL) return;
+
     int col_max = tblLastCol(tbl);
     int row_max = tblLastRow(tbl);
 

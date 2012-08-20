@@ -14,7 +14,7 @@
 #include "proto.h"
 
 #include "dataloader.h"
-#include "open_file.h"
+#include "filepicker.h"
 #include "free_memory.h"
 
 extern char *viewpath;
@@ -27,7 +27,7 @@ int new_file(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
   int formatf = -1;
 
   PtFileSelectionInfo_t formatfile;
-  formatf = showFileSelector(&formatfile, "Select format file...");
+  formatf = showFileSelector(&formatfile, "Select format file...","Select");
 
   if (formatf == -1)
   {

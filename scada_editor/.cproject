@@ -43,7 +43,7 @@
 </target>
 <target name="postbuild" path="" targetID="com.qnx.tools.ide.qde.core.cbuilder">
 <buildCommand>make</buildCommand>
-<buildArguments></buildArguments>
+<buildArguments/>
 <buildTarget>postbuild</buildTarget>
 <stopOnError>false</stopOnError>
 <useDefaultCommand>true</useDefaultCommand>
@@ -51,6 +51,7 @@
 </target>
 </buildTargets>
 </storageModule>
+<storageModule moduleId="com.qnx.tools.ide.qde.core.QNXProjectProperties"/>
 </cconfiguration>
 </storageModule>
 </cproject>

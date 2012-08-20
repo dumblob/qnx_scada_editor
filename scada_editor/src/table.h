@@ -133,7 +133,7 @@ int tblExeOnCellArea(PtWidget_t *, int, int, int, int,
  * @param row index
  * @param type (e.g. Pt_ARG_COLOR)
  * @param address of the appropriate pointer (to store the value)
- * @param length of the resource type
+ * @param length of the resource type (used primarily for arrays)
  * @return 1 if OK; otherwise 0
  */
 int tblGetCellResource(PtWidget_t *, int, int, long, void *, long);

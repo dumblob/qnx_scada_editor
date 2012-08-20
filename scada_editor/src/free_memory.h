@@ -4,8 +4,10 @@
 #define FREE_MEMORY_H
 
 #include "ablibs.h"
+#include <stdbool.h>
 
 void freeAllMemory();
-void freeInnerStructures(PtGenTreeItem_t *);
+void freeTableAndContent(PtWidget_t *);
+void freeInnerStructures(PtGenTreeItem_t *, bool);
 
 #endif
