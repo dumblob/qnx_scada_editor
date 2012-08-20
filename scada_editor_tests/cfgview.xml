@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <disam:config-view version="1.0"
-  xmlns:disam="http://www.disam.cz/Xmlns/Scada/ConfigEditor/Layout"
-  xmlns:xsl="http://www.xsl.com">
+    xmlns:disam="http://www.disam.cz/Xmlns/Scada/ConfigEditor/Layout"
+    xmlns:xsl="http://www.xsl.com">
   <disam:tree preserve-order="true">
 
     <disam:tree-node name="Protocol Setup">
