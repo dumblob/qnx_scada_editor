@@ -13,14 +13,12 @@ funcionalita
   bug: pridavani radku - problem s focusem (jedna pametova bunka ma 2 adresy! wtf?)
   bug: PtPrompt() hodi textovy kurzor na konec, ale pri vstupu zacne vkladat na zacatek
   bug: neciselna id zpusobi nenacteni subtree - wtf? to neodpovida XML specifikaci od W3C
+  feature: kontrolovat pritomnost " ve stringu v pripade src vystupu a v pripade xml vystupu kontrolovat <>"& (tyto prevest na &lt;&gt; atd.)
 
-otazky do mailu
-  novy typ id, nebo pouzit number? (protoze jinak se id generuje v uvozovkach)
-  prosim zkontrolujte vystup do src oproti originalu - zdali vyhovuje (protoze z ukazkoveho src jsou prepisovaci pravidla gramatiky na tvorbu src souboru nedeterministicka)
-  tlacitko otevrit zavre nemilosrdne aktualni a otevre uplne novy soubor
-  dat uzivateli vedet, ze se ulozil kom_map.xml a kom_map.src v poradku (dialogove okno)?
-  PATH=/cesta/k/src2xml.sh:"$PATH"
-  pamatovat si otevreny adresar (tzn. ten, kde byl cfgview.xml) z prvniho dialogoveho okna otevirani souboru
-  kontrola novych ID na spravnost (mohou obsahovat pouze viz. kom_map.xml)
+src2xml
+  do --help pridat info, ze nesmi zadat existujici soubor (skript hodi chybu)
+  pridat kontrolu, zdali vystupni soubor neexistuje
+  pridat parametr -f, ktery ignoruje vyse uvedene kontroly
+  otestovat skript na QNX 6.4.1 (cut nezna argument -b)
 
 vim: set wrap:
