@@ -245,7 +245,7 @@ else
             sub(/[[:space:]]+$/, "", format_fin[x])
 
             if (match(format_fin[x], /[[:space:]]*\([^)]*\)$/)) {
-              print "line " NR ": viewcfg.xml constraint `" \
+              print "line " NR ": cfgview.xml constraint `" \
                     substr(format_fin[x], RSTART, RLENGTH) \
                     "'"'"' found on one of previous lines" | "cat 1>&2"
               format_fin[x] = substr(format_fin[x], 1, RSTART -1)
