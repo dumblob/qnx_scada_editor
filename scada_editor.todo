@@ -1,3 +1,19 @@
+highest priority functionality
+  dokumentace
+    datovy X konfiguracni/???
+    pridat vsude obrazky
+  jmenne prostory + verze "sjednotit" a respektovat v editoru
+    respektovat verzi z XML konfiguraku (novejsi nez X.X editor odmitne otevrit!)
+    1) update src2xml.sh (bajty -> znaky; XML novinky + verzovani?)
+  rozsirit funkcionalitu tabulkoveho widgetu
+    nove typy (parita...) => nove widgety (combo-box atd.)
+    sirka sloupce jako atribut cfgview.xml
+  limity (min, max) u cisel; zacervenit a pri ukladani modalni dialog...
+  bug: resize/zvetseni okna => presunuti tabulky na jine souradnice
+    zarovna se pravy horni roh "tabulky" (tzn. take container) k tomu
+    "container" widgetu
+  bug: cut/copy/paste nejak nefunguje???
+
 testy
   + ulozeni souboru (tzn. bez cehokoliv nacteneho/otevreneho) => pouze header je vystupem
   + zavreni bez ulozeni kom_map.xml => OK
@@ -5,11 +21,11 @@ testy
   + ulozeni do src (kontrola oproti src originalu) => OK
   + otevreni cfgview.xml namisto kom_map.xml a vice versa => vypise chybu
   - otevreni jineho kom_map.xml => prida se proste za existujici strom
+  ? otevreni znovu stejneho (jiz otevreneho) cfgview.xml
 
 funcionalita
-  bug: uvolnovani pameti NEFUNGUJE
-    PtTree list nejde - mozna protoze nekde menim rucne item->name namisto pouziti PtTreeModifyItemString()
-    xmlFree(data->enhanced_path) hazi SIGSEGV (xmlStrdup() nebo xmlStrcat() vraci nejaky pointer, ktery se neda uvolnit pomoci xmlFree() ???)
+  zavirani fd?
+  bug: sigsegv (viz. obrazek ./qnx_sigsegv.png)
   bug: pridavani radku - problem s focusem (jedna pametova bunka ma 2 adresy! wtf?)
   bug: PtPrompt() hodi textovy kurzor na konec, ale pri vstupu zacne vkladat na zacatek
   bug: neciselna id zpusobi nenacteni subtree - wtf? to neodpovida XML specifikaci od W3C
