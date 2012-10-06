@@ -144,6 +144,8 @@ xmlChar *process_variable(xmlChar *xpath)
 
 	if (var_start != NULL)
 		enhanced_xpath = xmlCharStrndup((const char*)xpath, var_start - xpath);
+	else
+		enhanced_xpath = xmlCharStrdup((const char*)xpath);
 
 	while (var_start != NULL)
 	{
@@ -168,7 +170,7 @@ xmlChar *process_variable(xmlChar *xpath)
 			{
 				fprintf(stderr, "ERROR xls:variable \"%s\" not found.\n", var_name);
 				xmlFree(var_name);
-				return xmlStrdup(xpath);
+				return enhanced_xpath;
 			}
 
 			xmlFree(var_name);

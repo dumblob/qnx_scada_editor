@@ -241,7 +241,7 @@ int removeTreeItem(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinf
         NULL, /* PhPoint_t const *location */
         "Remove item", /* char const *title */
         NULL, /* PhImage_t const *image */
-        "Are you sure to remove the selected item?", /* char const *message */
+        "Are you sure you want to remove the selected item\nand its descendants?", /* char const *message */
         NULL, /* char const *msgFont */
         2, /* int btnCount */
         (const char *[]){"&Yes", "&No"}, /* char const **buttons */

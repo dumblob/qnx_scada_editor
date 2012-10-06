@@ -29,21 +29,33 @@ int open_file(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
   int formatf = -1;
   PtFileSelectionInfo_t datafile;
   PtFileSelectionInfo_t formatfile;
+
   formatf = showFileSelector(&formatfile, "Select format file...", "Open");
 
   if (formatf == -1) return Pt_CONTINUE;
 
-  dataf   = showFileSelector(&datafile,   "Select data file...", "Open");
+  dataf = showFileSelector(&datafile, "Select data file...", "Open");
 
   if (dataf != -1)
   {
     freeAllMemory();
 
-    if (filepath != NULL) free(filepath);
-    if (viewpath != NULL) free(viewpath);
+    if (filepath != NULL) {
+      free(filepath);
+      filepath = NULL;
+    }
 
-    filepath = (char*) malloc(sizeof(datafile.path));
-    viewpath = (char*) malloc(sizeof(formatfile.path));
+    if (viewpath != NULL) {
+      free(viewpath);
+      viewpath = NULL;
+    }
+
+    if ((filepath = (char*)malloc(sizeof(datafile.path))) == NULL)
+      PtExit(EXIT_FAILURE);
+
+    if ((viewpath = (char*)malloc(sizeof(formatfile.path))) == NULL)
+      PtExit(EXIT_FAILURE);
+
     strcpy(filepath, datafile.path);
     strcpy(viewpath, formatfile.path);
 

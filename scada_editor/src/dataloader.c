@@ -382,7 +382,8 @@ t_table_data * createTable(xmlNodePtr node)
 
 	if (result == NULL) {
 		if (filepath != NULL)
-			fprintf(stderr, "WARNING: Empty tree item found in XML node \"%s\".\n", node->name);
+			fprintf(stderr, "WARNING: Empty tree item found in XML node \"%s\".\n"
+					"source|%s\n", node->name, (char *)source); //FIXME debug
 	}
 	else {
 		nodeset = result->nodesetval;

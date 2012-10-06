@@ -24,4 +24,3 @@ int cb_destroyed_base(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cb
 
   return Pt_CONTINUE;
 }
-
