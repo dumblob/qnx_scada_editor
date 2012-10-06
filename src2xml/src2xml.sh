@@ -36,7 +36,7 @@ exit_fn()
 }
 
 
-if file "$F_IN" | cut -b $(echo "$F_IN" | wc -c)- | grep 'XML' > /dev/null; then
+if file "$F_IN" | cut -c $(echo "$F_IN" | wc -m)- | grep 'XML' > /dev/null; then
   echo "It is an XML document yet." >&2
   exit_fn 0
 else
