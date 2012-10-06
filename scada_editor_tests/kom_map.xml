@@ -1,5 +1,7 @@
-<?xml version="1.0" encoding="utf-8"?>
-<disam:configuration id="kom_map" version="1.0"
+<?xml version="1.0" encoding="utf-8" ?>
+<disam:configuration version="1.0"
+    id="kom_map"
+    config-view="cfgview.xml"
     xmlns:disam="http://www.disam.cz/Xmlns/Scada/Config/1.0/Data">
   <disam:protocol-setup>
     <disam:protocol-item id="01" kom-task-mbx="1" kom-in-mbx="1"
