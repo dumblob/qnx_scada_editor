@@ -52,8 +52,11 @@ else
     if (! f_in) { f_in = ENVIRON["F_IN"] }
 
     print "<?xml version=\"1.0\" encoding=\"utf-8\" ?>"
-    print "<" NMSPC "configuration id=\"" f_in "\" version=\"1.0\"" \
-          " xmlns:disam=\"http://www.disam.cz/Xmlns/Scada/Configuration\">"
+    print "<" NMSPC "configuration" \
+          " id=\"" f_in "\"" \
+          " version=\"1.0\"" \
+          " config-view=\"cfgview.xml\"" \
+          " xmlns:disam=\"http://www.disam.cz/Xmlns/Scada/Config/1.0/Data\">"
 #      RS="[[:space:]]"
   }
 
