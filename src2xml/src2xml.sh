@@ -35,21 +35,28 @@ exit_fn()
   exit "$1"
 }
 
-
-if file "$F_IN" | cut -b $(echo "$F_IN" | wc -c)- | grep 'XML' > /dev/null; then
+if file "$F_IN" | cut -c $(echo "$F_IN" | wc -m)- | grep 'XML' > /dev/null; then
   echo "It is an XML document yet." >&2
   exit_fn 0
 else
-  cat "$F_IN" | awk '
+  cat "$F_IN" | F_IN="$(basename "$F_IN")" awk '
   BEGIN {
     NMSPC = "disam:"  # namespace
     delete footers[0]  # reserve var name for array
     footers_cnt = -1
 
-    sub(/[.][^.]+$/, "", ENVIRON["F_IN"])
+    f_in = ENVIRON["F_IN"]
+    sub(/[.]+$/, "", f_in)  # remove trailing dots
+    sub(/[.][^.]+$/, "", f_in)  # remove once the extension
+    # for case filename was only from dots
+    if (! f_in) { f_in = ENVIRON["F_IN"] }
+
     print "<?xml version=\"1.0\" encoding=\"utf-8\" ?>"
-    print "<" NMSPC "configuration id=\"" ENVIRON["F_IN"] "\" version=\"1.0\"" \
-          " xmlns:disam=\"http://www.disam.cz/Xmlns/Scada/Configuration\">"
+    print "<" NMSPC "configuration" \
+          " id=\"" f_in "\"" \
+          " version=\"1.0\"" \
+          " config-view=\"cfgview.xml\"" \
+          " xmlns:disam=\"http://www.disam.cz/Xmlns/Scada/Config/1.0/Data\">"
 #      RS="[[:space:]]"
   }
 
@@ -69,8 +76,9 @@ else
     for (x in items) { delete items[x] }
     x = 0
 
-    # separate notes from double quotes (and substite them for keys
-    #   into hash table in the form "123")
+    # separate notes from double quotes (and substite them for integer keys
+    # into hash table in the form "123" (double quotes inclusive) used as
+    # an index into notes[] array)
     while (match(line, /"([^"\\]*(\\.[^"\\]*)*)"/)) {
       notes[x] = substr(line, RSTART +1, RLENGTH -2)
       newrec = newrec substr(line, 1, RSTART -1) "\"" x "\""
@@ -92,6 +100,9 @@ else
   }
 
   {
+    # convert CRLF to LF
+    sub(/\r$/, "", $0)
+
     # silently ignore empty lines
     if ($0 ~ /^[[:space:]]*$/) {
       next
@@ -99,6 +110,13 @@ else
 
     else if (sub(/^[[:space:]]*:/, "", $0)) {
     # new section {{{
+      # FIXME
+      #if (eq_sign_found_in_data) {
+      #  print "/>"
+      #  eq_sign_found_in_data=""
+      #}
+      eq_sign_found_in_data=""
+
       print_footers()
 
       # normalize FIXME what about other chars like &"''<>
@@ -116,6 +134,12 @@ else
       depth = 0
 
       allow_cmt = "true"  # next line shall be a coment
+    }
+    # }}}
+
+    else if (sub(/^[[:space:]]*#[[:space:]]*---+[[:space:]]*/, "", $0)) {
+    # human comment {{{
+      print "line " NR ": " $0 | "cat 1>&2"
     }
     # }}}
 
@@ -144,14 +168,14 @@ else
 
     # data
     else {
-      # there was a special multiline comment with {} {{{
       if (1 in format) {
+      # there was a special multiline comment with {} {{{
         # format
         if (!formatprocessed) {
           x = 0
           maxdepth = 0  # maximum nesting depth
-          emerging = ""  # ensure only one "recursion" (assume, each
-                          # item on the same level has the same signature)
+          emerging = ""  # ensure only one "recursion" (assume each
+                         # item on the same level has the same signature)
 
           for (i = 0; i <= ii; ++i) {
             if (format[i] ~ /[[:space:]]*[{][[:space:]]*/) {
@@ -233,55 +257,96 @@ else
       # }}}
 
       else {
-      # there was a one-line comment {{{
-        if (!formatprocessed) {
-          sub(/[][,;]+$/, "", format[0])
-          format_fin[-1] = split(format[0], format_fin, /[][,;]+/)
+        if ($0 ~ /^[[:space:]]*[^[:space:]="]+=.*/) {
+        # special data in the form key=value; {{{
+          if (! formatprocessed) {
+            print "<" NMSPC section ">"
+            footers[++footers_cnt] = "</" NMSPC section ">"
 
-          # remove constraints and if found, write it to stderr
-          for (x = 1; x <= format_fin[-1]; x++) {
-            # remove opening and trailing spaces first
-            sub(/^[[:space:]]+/, "", format_fin[x])
-            sub(/[[:space:]]+$/, "", format_fin[x])
+            formatprocessed = "true"
+          }
 
-            if (match(format_fin[x], /[[:space:]]*\([^)]*\)$/)) {
-              print "line " NR ": cfgview.xml constraint `" \
-                    substr(format_fin[x], RSTART, RLENGTH) \
-                    "'"'"' found on one of previous lines" | "cat 1>&2"
-              format_fin[x] = substr(format_fin[x], 1, RSTART -1)
+          if (! eq_sign_found_in_data) {
+            printf("<%s%s-item", NMSPC, sec_prefix)
+            footers[++footers_cnt] = "/>"
+
+            eq_sign_found_in_data = "true"
+          }
+
+          split($0, key_value_pair, /[[:space:]]*=[[:space:]]*/)
+
+          # normalize key
+          gsub(/[[:space:]_]+/, "-", key_value_pair[1])
+
+          for (x in key_value_pair) {
+            # remove opening and trailing spaces and (semi)colons
+            sub(/^[[:space:]]+/, "", key_value_pair[x])
+            sub(/[[:space:],;]+$/, "", key_value_pair[x])
+          }
+
+          # avoid two consecutive double quotes in XML
+          sub(/^"+/, "", key_value_pair[2])
+          sub(/"+$/, "", key_value_pair[2])
+
+          printf(" %s=\"%s\"", key_value_pair[1], key_value_pair[2])
+        }
+        # }}}
+
+        else {
+        # there was a one-line comment {{{
+          if (! formatprocessed) {
+            sub(/[][,;]+$/, "", format[0])
+            format_fin[-1] = split(format[0], format_fin, /[][,;]+/)
+
+            # remove constraints and if found, write it to stderr
+            for (x = 1; x <= format_fin[-1]; x++) {
+              # remove opening and trailing spaces first
+              sub(/^[[:space:]]+/, "", format_fin[x])
+              sub(/[[:space:]]+$/, "", format_fin[x])
+
+              if (match(format_fin[x], /[[:space:]]*\([^)]*\)$/)) {
+                print "line " NR ": cfgview.xml constraint `" \
+                      substr(format_fin[x], RSTART, RLENGTH) \
+                      "'"'"' found on one of previous lines" | "cat 1>&2"
+                format_fin[x] = substr(format_fin[x], 1, RSTART -1)
+              }
+
+              # normalize
+              gsub(/[[:space:]_]+/, "-", format_fin[x])
             }
 
-            # normalize
-            gsub(/[[:space:]_]+/, "-", format_fin[x])
+            print "<" NMSPC section ">"
+            footers[++footers_cnt] = "</" NMSPC section ">"
+
+            formatprocessed = "true"
           }
 
-          print "<" NMSPC section ">"
-          footers[++footers_cnt] = "</" NMSPC section ">"
+          printf("<%s%s-item", NMSPC, sec_prefix)
 
-          formatprocessed = "true"
+          #FIXME !!!!!!!!!!!!!!!!!!!!! FIXME !!!!!!!!!!!!
+          #assert(! format_fin.empty()) # proste, ze se tam vubec nejaky
+                                       # formatovaci radek objevil
+
+          # creates global array notes[] and items[]
+          item_cnt = handle_item($0)
+
+          for (i = 1; i <= format_fin[-1]; i++) {
+            if (items[i] ~ /^"[0-9]+"$/) {
+              printf(" %s=\"%s\"",
+                      format_fin[i],
+                      notes[substr(items[i], 2, length(items[i]) -2)])
+            }
+            else {
+              printf(" %s=\"%s\"",
+                      format_fin[i],
+                      items[i])
+            }
+          }
+
+          print "/>"
         }
-
-        # creates global array notes[] and items[]
-        item_cnt = handle_item($0)
-
-        printf("<%s%s-item", NMSPC, sec_prefix)
-
-        for (i = 1; i <= format_fin[-1]; i++) {
-          if (items[i] ~ /^"[0-9]+"$/) {
-            printf(" %s=\"%s\"",
-                    format_fin[i],
-                    notes[substr(items[i], 2, length(items[i]) -2)])
-          }
-          else {
-            printf(" %s=\"%s\"",
-                    format_fin[i],
-                    items[i])
-          }
-        }
-
-        print "/>"
+        # }}}
       }
-      # }}}
 
       # no comment on next line expected
       allow_cmt = ""
@@ -289,6 +354,9 @@ else
   }
 
   END {
+    #FIXME
+    #if (eq_sign_found_in_data) { print "/>" }
+
     print_footers()
     print "</" NMSPC "configuration>"
   }

@@ -2,9 +2,10 @@ highest priority functionality
   dokumentace
     datovy(configuration) X konfiguracni/layout/view(config-view)
     pridat vsude obrazky
-  jmenne prostory + verze "sjednotit" a respektovat v editoru
+  jmenne prostory + verze "sjednotit" (datovy + config-view musi byt stejna) a respektovat v editoru
     respektovat verzi z XML konfiguraku (novejsi nez X.X editor odmitne otevrit!)
-    1) update src2xml.sh (bajty -> znaky; XML novinky + verzovani?)
+    datovy: pokud xmlns:config-view="" zacina /, tak se jedna o absolutni cestu
+      jinak relativni (=> dirname "kom_map.xml" .. xmlns:config-view)
   rozsirit funkcionalitu tabulkoveho widgetu
     nove typy (parita...) => nove widgety (combo-box atd.)
     sirka sloupce jako atribut cfgview.xml

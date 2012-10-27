@@ -3,6 +3,11 @@
     id="kom_map"
     config-view="cfgview.xml"
     xmlns:disam="http://www.disam.cz/Xmlns/Scada/Config/1.0/Data">
+
+  <disam:admin-limits>
+    <disam:admin-item max-pnt="30000" max-ttype="400" max-aoi="256" max-nodes="20" kom-devices="1000" max-roc-ctrl="100" max-ss-ctrl="0" max-fb-ctrl="0" max-counter-ctrl="0" />
+  </disam:admin-limits>
+
   <disam:protocol-setup>
     <disam:protocol-item id="01" kom-task-mbx="1" kom-in-mbx="1"
       leading-char-value="0x0" end-char-value="0x0" stuff-char-usage="0" stuff-char-value="0x0"
@@ -31,5 +36,10 @@
 
     </disam:simatic-type>
   </disam:simatic-apl-data>
+
+  <disam:ws-status>
+    <disam:ws-item disc-id="01" logged-id="99001" memory-id="99004" cpu-temp-id"99002" rezerva="-1" />
+    <disam:ws-item disc-id="02" logged-id="99011" memory-id="99014" cpu-temp-id"99012" rezerva="-1" />
+  </disam:ws-status>
 
 </disam:configuration>
