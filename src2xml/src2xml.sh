@@ -35,18 +35,27 @@ exit_fn()
   exit "$1"
 }
 
-
 if file "$F_IN" | cut -c $(echo "$F_IN" | wc -m)- | grep 'XML' > /dev/null; then
   echo "It is an XML document yet." >&2
   exit_fn 0
 else
+  #if type textto > /dev/null 2>&1; then
+  #  textto -l -z "$F_IN"   # -q
+  #elif type dos2unix > /dev/null 2>&1; then
+  #  t
+  #else
+  #  echo ""
+  #  exit_fn 2
+  #fi
+
   cat "$F_IN" | F_IN="$(basename "$F_IN")" awk '
   BEGIN {
     NMSPC = "disam:"  # namespace
     delete footers[0]  # reserve var name for array
     footers_cnt = -1
 
-    sub(/[.][^.]+$/, "", ENVIRON["F_IN"])
+    #FIXME co soubory napr. se tremi teckami?
+    gsub(/[.][^.]*$/, "", ENVIRON["F_IN"])
     print "<?xml version=\"1.0\" encoding=\"utf-8\" ?>"
     print "<" NMSPC "configuration id=\"" ENVIRON["F_IN"] "\" version=\"1.0\"" \
           " xmlns:disam=\"http://www.disam.cz/Xmlns/Scada/Configuration\">"
@@ -93,6 +102,9 @@ else
   }
 
   {
+    # convert CRLF to LF
+    sub(/\r$/, "\n", $0)
+
     # silently ignore empty lines
     if ($0 ~ /^[[:space:]]*$/) {
       next
@@ -100,15 +112,18 @@ else
 
     else if (sub(/^[[:space:]]*:/, "", $0)) {
     # new section {{{
-      if (eq_sign_found_in_data) {
-        print "/>"
-        eq_sign_found_in_data=""
-      }
+      # FIXME
+      #if (eq_sign_found_in_data) {
+      #  print "/>"
+      #  eq_sign_found_in_data=""
+      #}
+      eq_sign_found_in_data=""
 
       print_footers()
-
+print "WTF00 " $0
       # normalize FIXME what about other chars like &"''<>
       gsub(/[[:space:]_]+/, "-", $0)
+print "WTF11 " $0
 
       section = tolower($0)
       match(section, /^[^A-Za-z]*[A-Za-z]+/)
@@ -245,40 +260,13 @@ else
       # }}}
 
       else {
-      # there was a one-line comment {{{
-        if (!formatprocessed) {
-          sub(/[][,;]+$/, "", format[0])
-          format_fin[-1] = split(format[0], format_fin, /[][,;]+/)
-
-          # remove constraints and if found, write it to stderr
-          for (x = 1; x <= format_fin[-1]; x++) {
-            # remove opening and trailing spaces first
-            sub(/^[[:space:]]+/, "", format_fin[x])
-            sub(/[[:space:]]+$/, "", format_fin[x])
-
-            if (match(format_fin[x], /[[:space:]]*\([^)]*\)$/)) {
-              print "line " NR ": cfgview.xml constraint `" \
-                    substr(format_fin[x], RSTART, RLENGTH) \
-                    "'"'"' found on one of previous lines" | "cat 1>&2"
-              format_fin[x] = substr(format_fin[x], 1, RSTART -1)
-            }
-
-            # normalize
-            gsub(/[[:space:]_]+/, "-", format_fin[x])
-          }
-
-          print "<" NMSPC section ">"
-          footers[++footers_cnt] = "</" NMSPC section ">"
-
-          formatprocessed = "true"
-        }
-
-        # special data in the form key=value;
         if ($0 ~ /^[[:space:]]*[^[:space:]="]=.*/) {
+        # special data in the form key=value; {{{
           if (! eq_sign_found_in_data) {
-            eq_sign_found_in_data="true"
-
             printf("<%s%s-item", NMSPC, sec_prefix)
+            footers[++footers_cnt] = "/>"
+
+            eq_sign_found_in_data = "true"
           }
 
           split($0, key_value_pair, /[[:space:]]*=[[:space:]]*/)
@@ -287,7 +275,7 @@ else
           gsub(/[[:space:]_]+/, "-", key_value_pair[1])
 
           for (x in key_vaule_pair) {
-            # remove opening and trailing spaces, (semi)colons
+            # remove opening and trailing spaces and (semi)colons
             sub(/^[[:space:]]+/, "", key_value_pair[x])
             sub(/[[:space:],;]+$/, "", key_value_pair[x])
           }
@@ -298,11 +286,41 @@ else
 
           printf(" %s=\"%s\"", key_value_pair[1], key_value_pair[2])
         }
+        # }}}
+
         else {
+        # there was a one-line comment {{{
+          if (! formatprocessed) {
+            sub(/[][,;]+$/, "", format[0])
+            format_fin[-1] = split(format[0], format_fin, /[][,;]+/)
+
+            # remove constraints and if found, write it to stderr
+            for (x = 1; x <= format_fin[-1]; x++) {
+              # remove opening and trailing spaces first
+              sub(/^[[:space:]]+/, "", format_fin[x])
+              sub(/[[:space:]]+$/, "", format_fin[x])
+
+              if (match(format_fin[x], /[[:space:]]*\([^)]*\)$/)) {
+                print "line " NR ": cfgview.xml constraint `" \
+                      substr(format_fin[x], RSTART, RLENGTH) \
+                      "'"'"' found on one of previous lines" | "cat 1>&2"
+                format_fin[x] = substr(format_fin[x], 1, RSTART -1)
+              }
+
+              # normalize
+              gsub(/[[:space:]_]+/, "-", format_fin[x])
+            }
+
+            print "<" NMSPC section ">"
+            footers[++footers_cnt] = "</" NMSPC section ">"
+
+            formatprocessed = "true"
+          }
+
           printf("<%s%s-item", NMSPC, sec_prefix)
 
           #FIXME !!!!!!!!!!!!!!!!!!!!! FIXME !!!!!!!!!!!!
-          assert(! format_fin.empty()) # proste, ze se tam vubec nejaky
+          #assert(! format_fin.empty()) # proste, ze se tam vubec nejaky
                                        # formatovaci radek objevil
 
           # creates global array notes[] and items[]
@@ -332,7 +350,8 @@ else
   }
 
   END {
-    if (eq_sign_found_in_data) { print "/>" }
+    #FIXME
+    #if (eq_sign_found_in_data) { print "/>" }
 
     print_footers()
     print "</" NMSPC "configuration>"

@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<disam:configuration id="kom_map" version="1.0" xmlns:disam="http://www.disam.cz/Xmlns/Scada/Configuration">
+<disam:configuration id="src2xml.sh" version="1.0" xmlns:disam="http://www.disam.cz/Xmlns/Scada/Configuration">
 
+WTF00 ADMIN_LIMITS
+
+WTF11 ADMIN-LIMITS-
 <disam:admin-limits->
 <disam:admin-item/>
 <disam:admin-item/>
@@ -13,6 +16,9 @@
 <disam:admin-item/>
 </disam:admin-limits->
 
+WTF00 PROTOCOL_SETUP
+
+WTF11 PROTOCOL-SETUP-
 <disam:protocol-setup->
 <disam:protocol-type id="01">
 <disam:protocol-type id="02">
@@ -20,6 +26,9 @@
 </disam:protocol-type>
 </disam:protocol-setup->
 
+WTF00 COM_SETUP
+
+WTF11 COM-SETUP-
 <disam:com-setup->
 <disam:com-type id="01">
 <disam:com-type id="02">
@@ -29,6 +38,9 @@
 </disam:com-type>
 </disam:com-setup->
 
+WTF00 OS_SETUP
+
+WTF11 OS-SETUP-
 <disam:os-setup->
 <disam:os-type id="01">
 <disam:os-type id="02">
@@ -38,6 +50,9 @@
 </disam:os-type>
 </disam:os-setup->
 
+WTF00 SIMATIC_APL_DATA
+
+WTF11 SIMATIC-APL-DATA-
 <disam:simatic-apl-data->
 <disam:simatic-type id="01">
 <disam:simatic-subtype id="1">
@@ -112,6 +127,9 @@
 </disam:simatic-type>
 </disam:simatic-apl-data->
 
+WTF00 WS_STATUS
+
+WTF11 WS-STATUS-
 <disam:ws-status->
 <disam:ws-item disc-id="01" logged-id="99001" memory-id="99004" cpu-temp-id="99002" rezerva="-1" =""/>
 <disam:ws-item disc-id="02" logged-id="99011" memory-id="99014" cpu-temp-id="99012" rezerva="-1" =""/>
