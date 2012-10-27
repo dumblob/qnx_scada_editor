@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<disam:configuration id="kom_map" version="1.0" xmlns:disam="http://www.disam.cz/Xmlns/Scada/Configuration">
+
+<disam:admin-limits->
+<disam:admin-item/>
+<disam:admin-item/>
+<disam:admin-item/>
+<disam:admin-item/>
+<disam:admin-item/>
+<disam:admin-item/>
+<disam:admin-item/>
+<disam:admin-item/>
+<disam:admin-item/>
+</disam:admin-limits->
+
+<disam:protocol-setup->
+<disam:protocol-type id="01">
+<disam:protocol-type id="02">
+</disam:protocol-type>
+</disam:protocol-type>
+</disam:protocol-setup->
+
+<disam:com-setup->
+<disam:com-type id="01">
+<disam:com-type id="02">
+<disam:com-type id="03">
+</disam:com-type>
+</disam:com-type>
+</disam:com-type>
+</disam:com-setup->
+
+<disam:os-setup->
+<disam:os-type id="01">
+<disam:os-type id="02">
+<disam:os-type id="03">
+</disam:os-type>
+</disam:os-type>
+</disam:os-type>
+</disam:os-setup->
+
+<disam:simatic-apl-data->
+<disam:simatic-type id="01">
+<disam:simatic-subtype id="1">
+<disam:simatic-item i-db-no="110" i-offset="0" i-num="120" note="pro skutecne AI na PLC" =""/>
+<disam:simatic-item i-db-no="-1" i-offset="0" i-num="0" note="= no more" =""/>
+</disam:simatic-subtype>
+<disam:simatic-subtype id="2">
+<disam:simatic-item i-db-no="-1" i-offset="0" i-num="0" note="= no more" =""/>
+</disam:simatic-subtype>
+<disam:simatic-subtype id="3">
+<disam:simatic-item i-db-no="-1" i-offset="0" i-num="0" note="= no more" =""/>
+</disam:simatic-subtype>
+<disam:simatic-subtype id="4">
+<disam:simatic-item i-db-no="106" i-offset="0" i-num="120" note="skutecne AI na PLC" =""/>
+<disam:simatic-item i-db-no="107" i-offset="128" i-num="24" note="skutecne AO na PLC" =""/>
+<disam:simatic-item i-db-no="108" i-offset="152" i-num="48" note="interni na PLC" =""/>
+<disam:simatic-item i-db-no="-1" i-offset="0" i-num="0" note="= no more" =""/>
+</disam:simatic-subtype>
+<disam:simatic-subtype id="5">
+<disam:simatic-item i-db-no="109" i-offset="0" i-num="256" note="moje AO pro PLC" =""/>
+<disam:simatic-item i-db-no="-1" i-offset="0" i-num="0" note="= no more" =""/>
+</disam:simatic-subtype>
+<disam:simatic-subtype id="6">
+<disam:simatic-item i-db-no="101" i-offset="0" i-num="256" note="skutecne DI na PLC (32*8)" =""/>
+<disam:simatic-item i-db-no="102" i-offset="256" i-num="256" note="skutecne DO na PLC (32*8)" =""/>
+<disam:simatic-item i-db-no="103" i-offset="512" i-num="256" note="interni na PLC" =""/>
+<disam:simatic-item i-db-no="-1" i-offset="0" i-num="0" note="= no more" =""/>
+</disam:simatic-subtype>
+<disam:simatic-subtype id="7">
+<disam:simatic-item i-db-no="104" i-offset="0" i-num="256" note="moje DO pro PLC" =""/>
+<disam:simatic-item i-db-no="-1" i-offset="0" i-num="0" note="= no more" =""/>
+</disam:simatic-subtype>
+<disam:simatic-subtype id="8">
+<disam:simatic-item i-db-no="-1" i-offset="0" i-num="0" note="= no more" =""/>
+</disam:simatic-subtype>
+</disam:simatic-type>
+<disam:simatic-type id="02">
+<disam:simatic-subtype id="1">
+<disam:simatic-item i-db-no="110" i-offset="0" i-num="120" note="pro skutecne AI na PLC" =""/>
+<disam:simatic-item i-db-no="-1" i-offset="0" i-num="0" note="= no more" =""/>
+</disam:simatic-subtype>
+<disam:simatic-subtype id="2">
+<disam:simatic-item i-db-no="105" i-offset="0" i-num="120" note="pro skutecne raw AI na PLC" =""/>
+<disam:simatic-item i-db-no="-1" i-offset="0" i-num="0" note="= no more" =""/>
+</disam:simatic-subtype>
+<disam:simatic-subtype id="3">
+<disam:simatic-item i-db-no="-1" i-offset="0" i-num="0" note="= no more" =""/>
+</disam:simatic-subtype>
+<disam:simatic-subtype id="4">
+<disam:simatic-item i-db-no="106" i-offset="0" i-num="120" note="skutecne AI na PLC" =""/>
+<disam:simatic-item i-db-no="107" i-offset="128" i-num="24" note="skutecne AO na PLC" =""/>
+<disam:simatic-item i-db-no="108" i-offset="152" i-num="48" note="interni na PLC" =""/>
+<disam:simatic-item i-db-no="-1" i-offset="0" i-num="0" note="= no more" =""/>
+</disam:simatic-subtype>
+<disam:simatic-subtype id="5">
+<disam:simatic-item i-db-no="109" i-offset="0" i-num="256" note="moje AO pro PLC" =""/>
+<disam:simatic-item i-db-no="-1" i-offset="0" i-num="0" note="= no more" =""/>
+</disam:simatic-subtype>
+<disam:simatic-subtype id="6">
+<disam:simatic-item i-db-no="101" i-offset="0" i-num="256" note="skutecne DI na PLC (32*8)" =""/>
+<disam:simatic-item i-db-no="102" i-offset="256" i-num="256" note="skutecne DO na PLC (32*8)" =""/>
+<disam:simatic-item i-db-no="103" i-offset="512" i-num="256" note="interni na PLC" =""/>
+<disam:simatic-item i-db-no="-1" i-offset="0" i-num="0" note="= no more" =""/>
+</disam:simatic-subtype>
+<disam:simatic-subtype id="7">
+<disam:simatic-item i-db-no="104" i-offset="0" i-num="256" note="moje DO pro PLC" =""/>
+<disam:simatic-item i-db-no="-1" i-offset="0" i-num="0" note="= no more" =""/>
+</disam:simatic-subtype>
+<disam:simatic-subtype id="8">
+<disam:simatic-item i-db-no="-1" i-offset="0" i-num="0" note="= no more" =""/>
+</disam:simatic-subtype>
+</disam:simatic-type>
+</disam:simatic-apl-data->
+
+<disam:ws-status->
+<disam:ws-item disc-id="01" logged-id="99001" memory-id="99004" cpu-temp-id="99002" rezerva="-1" =""/>
+<disam:ws-item disc-id="02" logged-id="99011" memory-id="99014" cpu-temp-id="99012" rezerva="-1" =""/>
+</disam:ws-status->
+
+</disam:configuration>

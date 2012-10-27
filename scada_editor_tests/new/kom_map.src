@@ -146,5 +146,6 @@ max_counter_ctrl=0;
 }
 #--- popis polozek viz KFG_S_WS_STAT_LIST (kfg00.h), radky nejsou mandatorni, neuvedene polozky jsou ekvivalentni hodnote -1
 :WS_STATUS
+#disc_id; logged_id, memory_id, cpu_temp_id, rezerva;
 01;99001, 99004, 99002, -1;
 02;99011, 99014, 99012, -1;

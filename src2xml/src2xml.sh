@@ -40,7 +40,7 @@ if file "$F_IN" | cut -c $(echo "$F_IN" | wc -m)- | grep 'XML' > /dev/null; then
   echo "It is an XML document yet." >&2
   exit_fn 0
 else
-  cat "$F_IN" | awk '
+  cat "$F_IN" | F_IN="$(basename "$F_IN")" awk '
   BEGIN {
     NMSPC = "disam:"  # namespace
     delete footers[0]  # reserve var name for array
@@ -69,8 +69,9 @@ else
     for (x in items) { delete items[x] }
     x = 0
 
-    # separate notes from double quotes (and substite them for keys
-    #   into hash table in the form "123")
+    # separate notes from double quotes (and substite them for integer keys
+    # into hash table in the form "123" (double quotes inclusive) used as
+    # an index into notes[] array)
     while (match(line, /"([^"\\]*(\\.[^"\\]*)*)"/)) {
       notes[x] = substr(line, RSTART +1, RLENGTH -2)
       newrec = newrec substr(line, 1, RSTART -1) "\"" x "\""
@@ -99,6 +100,11 @@ else
 
     else if (sub(/^[[:space:]]*:/, "", $0)) {
     # new section {{{
+      if (eq_sign_found_in_data) {
+        print "/>"
+        eq_sign_found_in_data=""
+      }
+
       print_footers()
 
       # normalize FIXME what about other chars like &"''<>
@@ -116,6 +122,12 @@ else
       depth = 0
 
       allow_cmt = "true"  # next line shall be a coment
+    }
+    # }}}
+
+    else if (sub(/^[[:space:]]*#[[:space:]]*---+[[:space:]]*/, "", $0)) {
+    # human comment {{{
+      print "line " NR ": " $0 | "cat 1>&2"
     }
     # }}}
 
@@ -144,14 +156,14 @@ else
 
     # data
     else {
-      # there was a special multiline comment with {} {{{
       if (1 in format) {
+      # there was a special multiline comment with {} {{{
         # format
         if (!formatprocessed) {
           x = 0
           maxdepth = 0  # maximum nesting depth
-          emerging = ""  # ensure only one "recursion" (assume, each
-                          # item on the same level has the same signature)
+          emerging = ""  # ensure only one "recursion" (assume each
+                         # item on the same level has the same signature)
 
           for (i = 0; i <= ii; ++i) {
             if (format[i] ~ /[[:space:]]*[{][[:space:]]*/) {
@@ -261,25 +273,52 @@ else
           formatprocessed = "true"
         }
 
-        # creates global array notes[] and items[]
-        item_cnt = handle_item($0)
+        # special data in the form key=value;
+        if ($0 ~ /^[[:space:]]*[^[:space:]="]=.*/) {
+          if (! eq_sign_found_in_data) {
+            eq_sign_found_in_data="true"
 
-        printf("<%s%s-item", NMSPC, sec_prefix)
+            printf("<%s%s-item", NMSPC, sec_prefix)
+          }
 
-        for (i = 1; i <= format_fin[-1]; i++) {
-          if (items[i] ~ /^"[0-9]+"$/) {
-            printf(" %s=\"%s\"",
-                    format_fin[i],
-                    notes[substr(items[i], 2, length(items[i]) -2)])
+          split($0, key_value_pair, /[[:space:]]*=[[:space:]]*/)
+
+          # normalize key
+          gsub(/[[:space:]_]+/, "-", key_value_pair[1])
+
+          for (x in key_vaule_pair) {
+            # remove opening and trailing spaces, (semi)colons
+            sub(/^[[:space:]]+/, "", key_value_pair[x])
+            sub(/[[:space:],;]+$/, "", key_value_pair[x])
           }
-          else {
-            printf(" %s=\"%s\"",
-                    format_fin[i],
-                    items[i])
-          }
+
+          # avoid two consecutive double quotes in XML
+          sub(/^"+/, "", key_value_pair[2])
+          sub(/"+$/, "", key_value_pair[2])
+
+          printf(" %s=\"%s\"", key_value_pair[1], key_value_pair[2])
         }
+        else {
+          printf("<%s%s-item", NMSPC, sec_prefix)
 
-        print "/>"
+          # creates global array notes[] and items[]
+          item_cnt = handle_item($0)
+
+          for (i = 1; i <= format_fin[-1]; i++) {
+            if (items[i] ~ /^"[0-9]+"$/) {
+              printf(" %s=\"%s\"",
+                      format_fin[i],
+                      notes[substr(items[i], 2, length(items[i]) -2)])
+            }
+            else {
+              printf(" %s=\"%s\"",
+                      format_fin[i],
+                      items[i])
+            }
+          }
+
+          print "/>"
+        }
       }
       # }}}
 
@@ -289,6 +328,8 @@ else
   }
 
   END {
+    if (eq_sign_found_in_data) { print "/>" }
+
     print_footers()
     print "</" NMSPC "configuration>"
   }
