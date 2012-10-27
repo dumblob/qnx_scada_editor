@@ -39,25 +39,20 @@ if file "$F_IN" | cut -c $(echo "$F_IN" | wc -m)- | grep 'XML' > /dev/null; then
   echo "It is an XML document yet." >&2
   exit_fn 0
 else
-  #if type textto > /dev/null 2>&1; then
-  #  textto -l -z "$F_IN"   # -q
-  #elif type dos2unix > /dev/null 2>&1; then
-  #  t
-  #else
-  #  echo ""
-  #  exit_fn 2
-  #fi
-
   cat "$F_IN" | F_IN="$(basename "$F_IN")" awk '
   BEGIN {
     NMSPC = "disam:"  # namespace
     delete footers[0]  # reserve var name for array
     footers_cnt = -1
 
-    #FIXME co soubory napr. se tremi teckami?
-    gsub(/[.][^.]*$/, "", ENVIRON["F_IN"])
+    f_in = ENVIRON["F_IN"]
+    sub(/[.]+$/, "", f_in)  # remove trailing dots
+    sub(/[.][^.]+$/, "", f_in)  # remove once the extension
+    # for case filename was only from dots
+    if (! f_in) { f_in = ENVIRON["F_IN"] }
+
     print "<?xml version=\"1.0\" encoding=\"utf-8\" ?>"
-    print "<" NMSPC "configuration id=\"" ENVIRON["F_IN"] "\" version=\"1.0\"" \
+    print "<" NMSPC "configuration id=\"" f_in "\" version=\"1.0\"" \
           " xmlns:disam=\"http://www.disam.cz/Xmlns/Scada/Configuration\">"
 #      RS="[[:space:]]"
   }
@@ -103,7 +98,7 @@ else
 
   {
     # convert CRLF to LF
-    sub(/\r$/, "\n", $0)
+    sub(/\r$/, "", $0)
 
     # silently ignore empty lines
     if ($0 ~ /^[[:space:]]*$/) {
@@ -120,10 +115,9 @@ else
       eq_sign_found_in_data=""
 
       print_footers()
-print "WTF00 " $0
+
       # normalize FIXME what about other chars like &"''<>
       gsub(/[[:space:]_]+/, "-", $0)
-print "WTF11 " $0
 
       section = tolower($0)
       match(section, /^[^A-Za-z]*[A-Za-z]+/)
@@ -260,8 +254,15 @@ print "WTF11 " $0
       # }}}
 
       else {
-        if ($0 ~ /^[[:space:]]*[^[:space:]="]=.*/) {
+        if ($0 ~ /^[[:space:]]*[^[:space:]="]+=.*/) {
         # special data in the form key=value; {{{
+          if (! formatprocessed) {
+            print "<" NMSPC section ">"
+            footers[++footers_cnt] = "</" NMSPC section ">"
+
+            formatprocessed = "true"
+          }
+
           if (! eq_sign_found_in_data) {
             printf("<%s%s-item", NMSPC, sec_prefix)
             footers[++footers_cnt] = "/>"
@@ -274,7 +275,7 @@ print "WTF11 " $0
           # normalize key
           gsub(/[[:space:]_]+/, "-", key_value_pair[1])
 
-          for (x in key_vaule_pair) {
+          for (x in key_value_pair) {
             # remove opening and trailing spaces and (semi)colons
             sub(/^[[:space:]]+/, "", key_value_pair[x])
             sub(/[[:space:],;]+$/, "", key_value_pair[x])
@@ -341,8 +342,8 @@ print "WTF11 " $0
 
           print "/>"
         }
+        # }}}
       }
-      # }}}
 
       # no comment on next line expected
       allow_cmt = ""
