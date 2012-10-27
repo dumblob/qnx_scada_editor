@@ -301,6 +301,10 @@ else
         else {
           printf("<%s%s-item", NMSPC, sec_prefix)
 
+          #FIXME !!!!!!!!!!!!!!!!!!!!! FIXME !!!!!!!!!!!!
+          assert(! format_fin.empty()) # proste, ze se tam vubec nejaky
+                                       # formatovaci radek objevil
+
           # creates global array notes[] and items[]
           item_cnt = handle_item($0)
 
