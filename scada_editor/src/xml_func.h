@@ -22,10 +22,10 @@ typedef struct s_variable_list {
   struct s_variable_list *next;
 } t_variable_list;
 
-xmlChar * process_variable(xmlChar *xpath);
-xmlChar * get_variable_value(xmlChar *var_name);
-xmlXPathObjectPtr loadDataFromXpathNS(xmlChar *, xmlDocPtr, bool);
+xmlChar *process_variable(xmlChar *, t_variable_list *);
+xmlChar *get_variable_value(xmlChar *);
+xmlXPathObjectPtr loadDataFromXpathNS(xmlChar *, xmlDocPtr, bool, t_variable_list *);
 
-xmlChar* enhance_xpath(const xmlChar *xpath, const xmlChar * namespace);
+xmlChar* enhance_xpath(const xmlChar *, const xmlChar *);
 
 #endif /* XML_FUNC_H_ */

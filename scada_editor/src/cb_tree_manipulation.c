@@ -72,7 +72,7 @@ int newSkeleton(PtGenTreeItem_t *recent, PtGenTreeItem_t *pattern)
   }
 
   ((PtTreeItem_t *)recent)->data = newTableData(tbl,
-    xmlStrdup(pattern_data->xpath));
+    xmlStrdup(pattern_data->xpath), NULL);
 
   PtTreeExpand(ABW_tree_wgt, (PtTreeItem_t *)recent, NULL);
 

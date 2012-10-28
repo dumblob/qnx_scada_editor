@@ -26,13 +26,16 @@ int open_file(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
   widget = widget, apinfo = apinfo, cbinfo = cbinfo;
 
   int dataf = -1;
-  int formatf = -1;
   PtFileSelectionInfo_t datafile;
-  PtFileSelectionInfo_t formatfile;
 
-  formatf = showFileSelector(&formatfile, "Select format file...", "Open");
+  //FIXME
+  //int formatf = -1;
+  //PtFileSelectionInfo_t formatfile;
 
-  if (formatf == -1) return Pt_CONTINUE;
+  //FIXME tohle se provede az po rozparsovani dataf
+  //formatf = showFileSelector(&formatfile, "Select format file...", "Open");
+
+  //if (formatf == -1) return Pt_CONTINUE;
 
   dataf = showFileSelector(&datafile, "Select data file...", "Open");
 
@@ -40,26 +43,31 @@ int open_file(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
   {
     freeAllMemory();
 
-    if (filepath != NULL) {
+    if (filepath != NULL)
+    {
       free(filepath);
       filepath = NULL;
     }
 
-    if (viewpath != NULL) {
-      free(viewpath);
-      viewpath = NULL;
-    }
+    //FIXME
+    //if (viewpath != NULL)
+    //{
+    //  free(viewpath);
+    //  viewpath = NULL;
+    //}
 
     if ((filepath = (char*)malloc(sizeof(datafile.path))) == NULL)
       PtExit(EXIT_FAILURE);
 
-    if ((viewpath = (char*)malloc(sizeof(formatfile.path))) == NULL)
-      PtExit(EXIT_FAILURE);
+    //FIXME
+    //if ((viewpath = (char*)malloc(sizeof(formatfile.path))) == NULL)
+    //  PtExit(EXIT_FAILURE);
 
     strcpy(filepath, datafile.path);
-    strcpy(viewpath, formatfile.path);
+    //FIXME
+    //strcpy(viewpath, formatfile.path);
 
-    parseFile(datafile.path, formatfile.path);
+    parseFile(datafile.path, NULL);
   }
 
   return Pt_CONTINUE;

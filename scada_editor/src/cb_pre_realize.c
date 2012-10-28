@@ -13,20 +13,23 @@
 #include "abimport.h"
 #include "proto.h"
 
+#include "global_vars.h"
+
+/* provided by PhAB */
 extern char **_argv;
 extern int _argc;
 
-/* global variable with the conversion script path */
-char *arg_conversion_script = "src2xml.sh";
+extern struct scada_editor_global_vars_s scada_editor_global_vars;
 
 int cb_pre_realize(PtWidget_t *link_instance, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
 {
-
   /* eliminate 'unreferenced' warnings */
   link_instance = link_instance, apinfo = apinfo, cbinfo = cbinfo;
 
-  int i;
+  /* conversion script path */
+  scada_editor_global_vars.arg_conversion_script = "src2xml.sh";
 
+  int i;
   for (i = 1; i < _argc; ++i)
   {
     if (strcmp(_argv[i], "-p") == 0)
@@ -37,14 +40,13 @@ int cb_pre_realize(PtWidget_t *link_instance, ApInfo_t *apinfo, PtCallbackInfo_t
         return Pt_END;
       }
 
-      arg_conversion_script = _argv[i +1];
+      scada_editor_global_vars.arg_conversion_script = _argv[i +1];
       break;
     }
   }
 
-  printf("Will use script \"%s\" for conversion from src format to XML.\n",
-      arg_conversion_script);
+  printf("Executable \"%s\" chosen for eventual src to XML conversion.\n",
+      scada_editor_global_vars.arg_conversion_script);
 
   return Pt_CONTINUE;
 }
-

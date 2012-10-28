@@ -13,24 +13,21 @@
 #include "abimport.h"
 #include "proto.h"
 
-extern char *filepath;
+#include "global_vars.h"
 
-int
-app_exit( PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo )
+extern struct scada_editor_global_vars_s scada_editor_global_vars;
 
-	{
+int app_exit( PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo )
+{
+  /* eliminate 'unreferenced' warnings */
+  widget = widget, apinfo = apinfo, cbinfo = cbinfo;
 
-	/* eliminate 'unreferenced' warnings */
-	widget = widget, apinfo = apinfo, cbinfo = cbinfo;
+  //FIXME freeMemory() ??????????????????
 
+  if(scada_editor_global_vars.filepath != NULL)
+    free(scada_editor_global_vars.filepath);
 
-	if(filepath != NULL){
-					free(filepath);
-				}
+  PtExit(EXIT_SUCCESS);
 
-	PtExit( EXIT_SUCCESS );
-
-	return( Pt_CONTINUE );
-
-	}
-
+  return( Pt_CONTINUE );
+}

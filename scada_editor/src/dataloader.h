@@ -8,6 +8,7 @@
 #include "libxml/xpathInternals.h"
 #include "proto.h"
 #include "table.h"
+#include "xml_func.h"
 
 typedef struct s_table_data {
   PtWidget_t *table;
@@ -29,14 +30,14 @@ typedef struct {
 
 void loadViewAndData();
 int setHeaderCell(PtWidget_t *, int, int, PtWidgetClassRef_t *, const char *, void *);
-struct s_table_data *createTable(xmlNodePtr);
-void parseTree(xmlNodePtr tree);
-void parseVarNode(xmlNodePtr, xmlChar *);
-void parseTreeNode(xmlNodePtr,xmlNodePtr);
-void generateXML(t_table_data *data);
+struct s_table_data *createTable(xmlNodePtr, t_variable_list *);
+void parseTree(xmlNodePtr);
+//void parseVarNode(xmlNodePtr, xmlChar *);  //FIXME
+void parseTreeNode(xmlNodePtr, xmlNodePtr);
+void generateXML(t_table_data *, xmlDocPtr, xmlNsPtr);
 int parseFile(char *, char *);
 
-t_table_data *newTableData(PtWidget_t *, xmlChar *);
+t_table_data *newTableData(PtWidget_t *, xmlChar *, t_variable_list *);
 int setTypeAndContentOfCell(PtWidget_t *, int, int, const char *, t_xml_attr_type);
 
 void init();

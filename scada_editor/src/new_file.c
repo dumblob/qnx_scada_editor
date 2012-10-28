@@ -16,8 +16,9 @@
 #include "dataloader.h"
 #include "filepicker.h"
 #include "free_memory.h"
+#include "global_vars.h"
 
-extern char *viewpath;
+extern struct scada_editor_global_vars_s scada_editor_global_vars;
 
 int new_file(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
 {
@@ -31,16 +32,23 @@ int new_file(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
 
   if (formatf == -1)
   {
-    return (Pt_CONTINUE);
+    return Pt_CONTINUE;
   }
   else
   {
     freeAllMemory();
 
-    if (viewpath != NULL) free(viewpath);
+    if (scada_editor_global_vars.viewpath != NULL)
+    {
+      free(scada_editor_global_vars.viewpath);
+      scada_editor_global_vars.viewpath = NULL;
+    }
 
-    viewpath = (char*) malloc(sizeof(formatfile.path));
-    strcpy(viewpath, formatfile.path);
+    if ((scada_editor_global_vars.viewpath = (char*)malloc(sizeof(formatfile.path))) == NULL)
+      PtExit(EXIT_FAILURE);
+
+    strcpy(scada_editor_global_vars.viewpath, formatfile.path);
+
     parseFile(NULL, formatfile.path);
   }
 

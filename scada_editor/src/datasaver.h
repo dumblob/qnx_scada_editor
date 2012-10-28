@@ -18,20 +18,19 @@
 
 
 void save_data();
-void exportToSrc(char * path);
-void generateXMLfromTree();
+void exportToSrc(char *);
 
 void generateSrcFromTree(FILE *);
 void printTableLines(PtWidget_t *, int, int, int, int, FILE *, char *);
 void saveAttrToSrc(PtGenTreeItem_t *, FILE *, unsigned short);
 int getGenTreeItemCount(PtGenTreeItem_t *);
 void saveValToSrc(PtGenTreeItem_t *, FILE *, unsigned short);
-void walkOverTreeBranch(PtGenTreeItem_t*);
+void walkOverTreeBranch(PtGenTreeItem_t *, xmlDocPtr, xmlNsPtr);
 
-xmlChar* getAttrNameFrom(xmlChar * nodename);
-xmlChar* getAttrValueFrom(xmlChar * nodename);
-xmlChar* getPureNodeNameFrom(xmlChar * nodename);
-int node_have_attribude(xmlChar * nodename);
-xmlNodePtr process_node(xmlNodePtr lastnode, xmlChar * nodename);
+xmlChar* getAttrNameFrom(xmlChar *);
+xmlChar* getAttrValueFrom(xmlChar *);
+xmlChar* getPureNodeNameFrom(xmlChar *);
+int node_have_attribude(xmlChar *);
+xmlNodePtr process_node(xmlNodePtr, xmlChar *, xmlNsPtr);
 
-#endif /* DATASAVER_H_ */
+#endif

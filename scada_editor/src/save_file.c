@@ -12,21 +12,20 @@
 #include "ablibs.h"
 #include "abimport.h"
 #include "proto.h"
+
 #include "datasaver.h"
+#include "global_vars.h"
 
-
-extern char *filepath;
+extern struct scada_editor_global_vars_s scada_editor_global_vars;
 
 int save_file( PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo )
 {
-	/* eliminate 'unreferenced' warnings */
-	widget = widget, apinfo = apinfo, cbinfo = cbinfo;
-
-	if (filepath == NULL) {
+	if (scada_editor_global_vars.filepath == NULL)
+  {
 		return save_file_as(widget, apinfo, cbinfo);
 	}
 
 	save_data();
 
-	return( Pt_CONTINUE );
+	return Pt_CONTINUE;
 }

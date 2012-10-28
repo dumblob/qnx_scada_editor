@@ -1,16 +1,35 @@
 #include "datasaver.h"
 #include "dataloader.h"
 #include "xml_func.h"
+#include "global_vars.h"
 
-extern char *filepath;
-extern char *viewpath;
-
-xmlDocPtr save_doc;
-xmlNsPtr ns;
+extern struct scada_editor_global_vars_s scada_editor_global_vars;
 
 void save_data()
 {
-	generateXMLfromTree();
+  xmlNodePtr root_node = NULL;
+  xmlDocPtr save_doc = xmlNewDoc(BAD_CAST "1.0");
+
+  /* FIXME some magic ;), do not touch! */
+  xmlNsPtr ns = xmlNewNs(NULL,
+      (const xmlChar *) "http://www.disam.cz/Xmlns/Scada/Configuration",
+      (const xmlChar *) "disam");
+  root_node = xmlNewNode(ns, BAD_CAST "configuration");
+  xmlNewNs(root_node,
+      (const xmlChar *) "http://www.disam.cz/Xmlns/Scada/Configuration",
+      (const xmlChar *) "disam");
+
+  xmlDocSetRootElement(save_doc, root_node);
+  xmlNewProp(root_node, BAD_CAST "id", BAD_CAST "kom_map");
+  xmlNewProp(root_node, BAD_CAST "version", BAD_CAST "1.0");
+
+  PtGenTreeItem_t *gen = (PtGenTreeItem_t *)PtTreeRootItem(ABW_tree_wgt);
+  walkOverTreeBranch(gen, save_doc, ns);
+
+  xmlSaveFormatFileEnc(scada_editor_global_vars.filepath, save_doc, "UTF-8", 2);
+
+  xmlFreeDoc(save_doc);
+  xmlCleanupParser();
 }
 
 
@@ -30,31 +49,7 @@ void exportToSrc(char *path)
 }
 
 
-void generateXMLfromTree()
-{
-	xmlNodePtr root_node = NULL;
-	save_doc = xmlNewDoc(BAD_CAST "1.0");
-
-	//FIXME some magic ;), do not touch!
-	ns = xmlNewNs(NULL, (const xmlChar *) "http://www.disam.cz/Xmlns/Scada/Configuration", (const xmlChar *) "disam");
-	root_node = xmlNewNode(ns, BAD_CAST "configuration");
-	xmlNewNs(root_node, (const xmlChar *) "http://www.disam.cz/Xmlns/Scada/Configuration", (const xmlChar *) "disam");
-
-	xmlDocSetRootElement(save_doc, root_node);
-	xmlNewProp(root_node, BAD_CAST "id", BAD_CAST "kom_map");
-	xmlNewProp(root_node, BAD_CAST "version", BAD_CAST "1.0");
-
-	PtGenTreeItem_t *gen = (PtGenTreeItem_t *)PtTreeRootItem(ABW_tree_wgt);
-	walkOverTreeBranch(gen);
-
-	xmlSaveFormatFileEnc(filepath, save_doc, "UTF-8", 2);
-
-	xmlFreeDoc(save_doc);
-	xmlCleanupParser();
-}
-
-
-void walkOverTreeBranch(PtGenTreeItem_t *gen)
+void walkOverTreeBranch(PtGenTreeItem_t *gen, xmlDocPtr save_doc, xmlNsPtr ns)
 {
 	while (gen != NULL)
 	{
@@ -62,15 +57,15 @@ void walkOverTreeBranch(PtGenTreeItem_t *gen)
 		assert(((PtTreeItem_t *)gen)->data != NULL);
 		assert(((t_table_data *)((PtTreeItem_t *)gen)->data)->xpath != NULL);
 
-		generateXML(((PtTreeItem_t *)gen)->data);
+		generateXML(((PtTreeItem_t *)gen)->data, save_doc, ns);
 
-		if (gen->son != NULL) walkOverTreeBranch(gen->son);
+		if (gen->son != NULL) walkOverTreeBranch(gen->son, save_doc, ns);
 
 		gen = gen->brother;
 	}
 }
 
-void generateXML(t_table_data *data)
+void generateXML(t_table_data *data, xmlDocPtr save_doc, xmlNsPtr ns)
 {
 	xmlXPathObjectPtr result = NULL;
 	xmlNodeSetPtr nodeset;
@@ -79,7 +74,7 @@ void generateXML(t_table_data *data)
 	xmlChar* source;
 	int f2 = 1;
 
-	xmlDocPtr view = xmlParseFile(viewpath);
+	xmlDocPtr view = xmlParseFile(scada_editor_global_vars.viewpath);
 
 	xmlChar *enhanced_xpath = data->enhanced_xpath;
 	xmlChar *xpath = data->xpath;
@@ -97,7 +92,8 @@ void generateXML(t_table_data *data)
 			last_exist_path = xmlStrcat(last_exist_path,nodename);
 
 			if (!new_prop) {
-				result = loadDataFromXpathNS(last_exist_path, save_doc, false);
+				result = loadDataFromXpathNS(last_exist_path, save_doc, false,
+            scada_editor_global_vars.first);
 			} else {
 				result = NULL;
 			}
@@ -109,7 +105,7 @@ void generateXML(t_table_data *data)
         assert(nodeset->nodeNr <= 1);
 			} else {
 				new_prop = 1;
-				lastnode = process_node(lastnode, nodename);
+				lastnode = process_node(lastnode, nodename, ns);
 			}
 
 			last_exist_path = xmlStrcat(last_exist_path,(xmlChar *)"/");
@@ -120,7 +116,7 @@ void generateXML(t_table_data *data)
 			}
 
 			nodename = xmlStrndup(enhanced_xpath + f2, xmlStrlen(enhanced_xpath + f2));
-			//lastnode = process_node(lastnode, nodename);//FIXME
+			//lastnode = process_node(lastnode, nodename, ns);//FIXME
 
 			xmlXPathContextPtr context = xmlXPathNewContext(view);
 
@@ -164,7 +160,7 @@ void generateXML(t_table_data *data)
 			{
 				column = nodeset->nodeTab[0]->xmlChildrenNode;
 				clmn = 0;
-				node = process_node(lastnode, nodename);
+				node = process_node(lastnode, nodename, ns);
 
 				while (column != NULL)
 				{
@@ -190,7 +186,8 @@ void generateXML(t_table_data *data)
 	}
 }
 
-xmlNodePtr process_node(xmlNodePtr lastnode, xmlChar * nodename){
+xmlNodePtr process_node(xmlNodePtr lastnode, xmlChar *nodename, xmlNsPtr ns)
+{
 	xmlNodePtr tmp;
 
 	if (node_have_attribude(nodename))
@@ -208,29 +205,28 @@ xmlNodePtr process_node(xmlNodePtr lastnode, xmlChar * nodename){
 }
 
 
-int node_have_attribude(xmlChar * nodename){
-	const xmlChar *tmp = xmlStrchr(nodename,'@');
-	return (tmp == NULL) ? 0 : 1 ;
+int node_have_attribude(xmlChar *nodename)
+{
+	return (xmlStrchr(nodename,'@') == NULL) ? 0 : 1;
 }
 
-xmlChar* getAttrNameFrom(xmlChar * nodename){
+xmlChar* getAttrNameFrom(xmlChar *nodename)
+{
 	const xmlChar *start = xmlStrchr(nodename,'@');
-	const xmlChar *stop = xmlStrchr(nodename,'=');
-	return xmlStrndup(start+1, stop-start-1);
 
+	return xmlStrndup(start +1, xmlStrchr(nodename,'=') - start -1);
 }
 
-xmlChar* getAttrValueFrom(xmlChar * nodename){
+xmlChar* getAttrValueFrom(xmlChar *nodename)
+{
 	const xmlChar *start = xmlStrchr(nodename,'=');
-	const xmlChar *stop = xmlStrchr(nodename,']');
-	return xmlStrndup(start+1, stop-start-1);
 
+	return xmlStrndup(start +1, xmlStrchr(nodename,']') - start -1);
 }
 
-xmlChar* getPureNodeNameFrom(xmlChar * nodename){
-	const xmlChar *stop = xmlStrchr(nodename,'[');
-	return xmlStrndup(nodename, stop-nodename);
-
+xmlChar* getPureNodeNameFrom(xmlChar *nodename)
+{
+	return xmlStrndup(nodename, xmlStrchr(nodename,'[') - nodename);
 }
 
 
@@ -426,7 +422,7 @@ void saveAttrToSrc(PtGenTreeItem_t *gen, FILE *f, unsigned short depth)
     fputs("# ", f);
     FPUTS_N(depth +1, "  ", f);
     fputs("...\n", f);
-    /* FIXME WTF? Why is it twice in kom_map.src? */
+    /* FIXME WTF? Why is it twice in the testing kom_map.src? */
     saveAttrToSrc((depth) ? gen->son : gen->son->son, f, depth +1);
 
     /* footer */

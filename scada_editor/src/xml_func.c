@@ -1,9 +1,6 @@
 #include "xml_func.h"
 #include "assert.h"
 
-t_variable_list *first = NULL;
-t_variable_list *last = NULL;
-
 #define SCADA_EDITOR_NS_URI BAD_CAST "http://www.disam.cz/Xmlns/Scada/Configuration"
 #define SCADA_EDITOR_NS_PREFIX BAD_CAST "disam"
 
@@ -22,10 +19,12 @@ t_variable_list *last = NULL;
 		++counter; \
 	} while (0)
 
-xmlXPathObjectPtr loadDataFromXpathNS(xmlChar* xpath, xmlDocPtr document, bool handle_new_file)
+
+xmlXPathObjectPtr loadDataFromXpathNS(xmlChar* xpath, xmlDocPtr document,
+		bool handle_new_file, t_variable_list *first)
 {
 	xmlXPathObjectPtr result = NULL;
-	xmlChar *enhanced_xpath = process_variable(xpath);
+	xmlChar *enhanced_xpath = process_variable(xpath, first);
 	xmlChar *full_xpath = enhance_xpath(enhanced_xpath, SCADA_EDITOR_NS_PREFIX);
 
 	/* handle new file: construct a simple, minimal XML tree from the given
@@ -115,32 +114,16 @@ xmlXPathObjectPtr loadDataFromXpathNS(xmlChar* xpath, xmlDocPtr document, bool h
 }
 
 
-xmlChar * get_variable_value(xmlChar * var_name) {
-	t_variable_list *act = first;
-
-	while (act != NULL)
-	{
-		if (act->name == NULL) continue;
-
-		if (xmlStrEqual(act->name, var_name)) return act->value;
-
-		act = act->next;
-	}
-
-	return NULL;
-}
-
-
-xmlChar *process_variable(xmlChar *xpath)
+xmlChar *process_variable(xmlChar *xpath, t_variable_list *first)
 {
 	const xmlChar *var_start = NULL;
 	const xmlChar *var_end = NULL;
 	xmlChar *enhanced_xpath = xpath;
-	xmlChar dolar = '$';
+	xmlChar dollar = '$';
 	xmlChar *var_name = NULL;
 	xmlChar *var_value = NULL;
 
-	var_start = xmlStrchr(xpath, dolar);
+	var_start = xmlStrchr(xpath, dollar);
 
 	if (var_start != NULL)
 		enhanced_xpath = xmlCharStrndup((const char*)xpath, var_start - xpath);
@@ -149,7 +132,7 @@ xmlChar *process_variable(xmlChar *xpath)
 
 	while (var_start != NULL)
 	{
-		var_end = xmlStrchr(var_start + 1, ']');
+		var_end = xmlStrchr(var_start +1, ']');
 
 		if (var_end == NULL)
 		{
@@ -158,9 +141,23 @@ xmlChar *process_variable(xmlChar *xpath)
 		}
 		else
 		{
-			var_name = xmlCharStrndup((const char *) var_start + 1,
-					var_end - var_start - 1);
-			var_value = get_variable_value(var_name);
+			var_name = xmlCharStrndup((const char *) var_start +1,
+					var_end - var_start -1);
+			var_value = NULL;
+			t_variable_list *act = first;
+
+			while (act != NULL)
+			{
+				if (act->name == NULL) continue;
+
+				if (xmlStrEqual(act->name, var_name))
+				{
+					var_value = act->value;
+					break;
+				}
+
+				act = act->next;
+			}
 
 			if (var_value != NULL)
 			{
@@ -174,7 +171,7 @@ xmlChar *process_variable(xmlChar *xpath)
 			}
 
 			xmlFree(var_name);
-			var_start = xmlStrchr(var_end + 1, dolar);
+			var_start = xmlStrchr(var_end +1, dollar);
 
 			if (var_start == NULL)
 				enhanced_xpath = xmlStrcat(enhanced_xpath, var_end);

@@ -12,15 +12,15 @@
 #include "ablibs.h"
 #include "abimport.h"
 #include "proto.h"
+
 #include "datasaver.h"
 #include "filepicker.h"
+#include "global_vars.h"
 
-extern char *filepath;
+extern struct scada_editor_global_vars_s scada_editor_global_vars;
 
 int save_file_as(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
-
 {
-
 	/* eliminate 'unreferenced' warnings */
 	widget = widget, apinfo = apinfo, cbinfo = cbinfo;
 
@@ -29,19 +29,19 @@ int save_file_as(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
 	memset(&info, 0x0, sizeof(PtFileSelectionInfo_t));
 	info.num_args = 0;
 
-	k = showFileSelector(&info,"Save As...", "Save");
+	k = showFileSelector(&info, "Save As...", "Save");
 
 	if (k) return Pt_CONTINUE;
 
-	if (info.ret == Pt_FSDIALOG_BTN1) {
-		if (filepath != NULL) free(filepath);
+	if (info.ret == Pt_FSDIALOG_BTN1)
+  {
+		if (scada_editor_global_vars.filepath != NULL)
+      free(scada_editor_global_vars.filepath);
 
-		filepath = (char*) malloc(sizeof(info.path));
-		strcpy(filepath, info.path);
+		scada_editor_global_vars.filepath = (char *)malloc(sizeof(info.path));
+		strcpy(scada_editor_global_vars.filepath, info.path);
 		save_data();
 	}
 
 	return Pt_CONTINUE;
-
 }
-
