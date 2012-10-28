@@ -4,6 +4,7 @@
  */
 
 #include "dataloader.h"
+#include "datasaver.h"
 #include "xml_func.h"
 #include "assert.h"
 #include "global_vars.h"
@@ -96,6 +97,8 @@ printf("filename \"%s\"\n", filename);//FIXME debug
 		if ((dirname_end = strrchr(filename, '/')) == NULL)
 		{
 			view = xmlParseFile(s);
+
+			if ((view = xmlParseFile(s)) == NULL) return -1;
 		}
 		else
 		{
@@ -133,15 +136,18 @@ char *getCfgviewNameFromData(xmlDocPtr data)
 	//FIXME
 	data = data;
 
+	//FIXME je to tady alokovane? => mam to potom uvolnit?
 	return "cfgview.xml";
 }
 
 
 void loadViewAndData(xmlDocPtr view, xmlDocPtr data)
 {
-	xmlNodePtr viewnode = xmlDocGetRootElement(view);
-
 	//FIXME kontrolovat major verzi (==) a minor verzi (minor_found <= hardcoded)
+	//      dale kontrolovat, aby matchovaly verze cfgview.xml a tohoto datoveho
+	//      + respektovat global_vars.viewpath pri exportu!!!
+
+	xmlNodePtr viewnode = xmlDocGetRootElement(view);
 
 	if (viewnode == NULL) {
 		fprintf(stderr, "Empty document given.\n");
@@ -163,12 +169,18 @@ void loadViewAndData(xmlDocPtr view, xmlDocPtr data)
 
 	xmlNodePtr tree_child = viewnode->xmlChildrenNode;
 	PtTreeItem_t *last_item = NULL;
+	//FIXME doplnit, urcite to tak bude spravne
+	/* (re)init list of variables (name + value) */
+	assert(scada_editor_global_vars.l_head == NULL);
+	scada_editor_global_vars.l_head = NULL;
+	t_variable_list *l_end = NULL;
 
 	while (tree_child != NULL)
 	{
 		/* there is an "text" element, which we don't need */
 		if (! xmlStrcmp(tree_child->name, (const xmlChar *)"tree-node"))
-			parseTreeNode(tree_child, viewnode, data, &last_item);
+			parseTreeNode(tree_child, viewnode, data, &last_item,
+					&scada_editor_global_vars.l_head, &l_end);
 
 		tree_child = tree_child->next;
 	}
@@ -176,28 +188,25 @@ void loadViewAndData(xmlDocPtr view, xmlDocPtr data)
 
 
 void parseTreeNode(xmlNodePtr tree_node, xmlNodePtr parent_node,
-		xmlDocPtr data, PtTreeItem_t **last_item)
+		xmlDocPtr data, PtTreeItem_t **last_item,
+		t_variable_list **l_head, t_variable_list **l_end)
 {
 	xmlChar* name = NULL;
 	xmlChar* source = NULL;
 	xmlNodePtr tree_node_child = NULL;
 
 	PtTreeItem_t *item = NULL;
-	PtTreeItem_t *tmpitem = NULL;
 
 	name   = xmlGetProp(tree_node, BAD_CAST "name");
 	source = xmlGetProp(tree_node, BAD_CAST "source");
 
-	//FIXME debug
-	if (scada_editor_global_vars.first != NULL)
-		fprintf(stderr, "GLOBAL LIST (first) IS __NULL__ !!!\n");
-	scada_editor_global_vars.first = NULL;
-	t_variable_list *last = NULL;
+	if (*l_head == NULL)
+		fprintf(stderr, "GLOBAL LIST IS EMPTY !!!\n");//FIXME debug
 
 	/* we are not nested (source attr does not exist) */
 	if (source == NULL)
 	{  /* {{{ */
-		item = PtTreeAllocItem(ABW_tree_wgt, (char *) name, -1, -1);
+		item = PtTreeAllocItem(ABW_tree_wgt, (char *)name, -1, -1);
 
 		if ((!xmlStrcmp(parent_node->name, (const xmlChar *) "tree-node")))
 		{
@@ -218,14 +227,14 @@ void parseTreeNode(xmlNodePtr tree_node, xmlNodePtr parent_node,
 		{
 			if (!xmlStrcmp(tree_node_child->name, BAD_CAST "table"))
 			{
-				item->data = createTable(tree_node_child,
-						scada_editor_global_vars.first, data);
+				item->data = createTable(tree_node_child, *l_head, data);
 			}
 			else if (!xmlStrcmp(tree_node_child->name, BAD_CAST "tree-node"))
 			{
-				parseTreeNode(tree_node_child, tree_node, data, last_item);
+				parseTreeNode(tree_node_child, tree_node, data, last_item,
+						l_head, l_end);
 				item->data = newTableData(NULL,
-						xmlGetProp(tree_node_child, BAD_CAST "source"), scada_editor_global_vars.first);
+						xmlGetProp(tree_node_child, BAD_CAST "source"), *l_head);
 			}
 
 			tree_node_child = tree_node_child->next;
@@ -235,8 +244,7 @@ void parseTreeNode(xmlNodePtr tree_node, xmlNodePtr parent_node,
 	else
 	{  /* {{{ */
 		xmlXPathObjectPtr result = loadDataFromXpathNS(source, data,
-				(scada_editor_global_vars.filepath == NULL) ? true : false,
-				scada_editor_global_vars.first);
+				(scada_editor_global_vars.filepath == NULL) ? true : false, *l_head);
 		xmlNodeSetPtr nodeset = NULL;
 
 		/* non-empty items */
@@ -251,7 +259,7 @@ void parseTreeNode(xmlNodePtr tree_node, xmlNodePtr parent_node,
 			for (i = 0; i < nodeset->nodeNr; i++) {
 				attr = xmlGetProp(nodeset->nodeTab[i], name +1);
 				assert(attr != NULL);
-				item = PtTreeAllocItem(ABW_tree_wgt, (char *) attr, -1, -1);
+				item = PtTreeAllocItem(ABW_tree_wgt, (char *)attr, -1, -1);
 
 				if (! xmlStrcmp(parent_node->name, (const xmlChar *)"tree-node"))
 				{
@@ -282,31 +290,33 @@ void parseTreeNode(xmlNodePtr tree_node, xmlNodePtr parent_node,
 				}
 
 				PtTreeExpand(ABW_tree_wgt, *last_item, NULL);
-				tmpitem = *last_item;
-				/* FIXME GLOBAL temporary reset variable for nested function calls */
-				//last_item = item;
+				PtTreeItem_t *tmpitem = *last_item;
+				/* temporary reset for subtree(s) building */
+				*last_item = item;
 				have_variable = 0;
 
-				t_variable_list *last_tmp = last;
+				t_variable_list *l_end_tmp = *l_end;
 				tree_node_child = tree_node->xmlChildrenNode;
 
 				while (tree_node_child != NULL)
 				{
-					if (!xmlStrcmp(tree_node_child->name, BAD_CAST "table"))
+					if (! xmlStrcmp(tree_node_child->name, BAD_CAST "table"))
 					{
-						item->data = createTable(tree_node_child,
-								scada_editor_global_vars.first, data);
+						item->data = createTable(tree_node_child, *l_head, data);
 					}
-					else if (!xmlStrcmp(tree_node_child->name, BAD_CAST "tree-node"))
+					else if (! xmlStrcmp(tree_node_child->name, BAD_CAST "tree-node"))
 					{
-						parseTreeNode(tree_node_child, tree_node, data, last_item);
-						item->data = newTableData(NULL,
-								xmlGetProp(tree_node_child, BAD_CAST "source"), scada_editor_global_vars.first);
+						parseTreeNode(tree_node_child, tree_node, data, last_item,
+								l_head, l_end);
+						item->data = newTableData(NULL, xmlGetProp(tree_node_child,
+									BAD_CAST "source"), *l_head);
 					}
-					else if (!xmlStrcmp(tree_node_child->name, BAD_CAST "variable"))
+					else if (! xmlStrcmp(tree_node_child->name, BAD_CAST "variable"))
 					{
 						have_variable = 1;
-						t_variable_list *this = (t_variable_list *)malloc(sizeof(t_variable_list));
+						/* {{{ list_add_to_end() */
+						t_variable_list *this = (t_variable_list *)malloc(
+								sizeof(t_variable_list));
 
 						if (this == NULL) PtExit(EXIT_FAILURE);
 
@@ -314,16 +324,17 @@ void parseTreeNode(xmlNodePtr tree_node, xmlNodePtr parent_node,
 						this->value = xmlStrdup(attr);
 						this->next = NULL;
 
-						if (scada_editor_global_vars.first == NULL)
+						if (*l_head == NULL)
 						{
-							scada_editor_global_vars.first = this;
-							last = scada_editor_global_vars.first;
+							*l_head = this;
+							*l_end = this;
 						}
 						else
 						{
-							last->next = this;
-							last = last->next;
+							(*l_end)->next = this;
+							*l_end = this;
 						}
+						/* }}} */
 					}
 
 					tree_node_child = tree_node_child->next;
@@ -333,14 +344,14 @@ void parseTreeNode(xmlNodePtr tree_node, xmlNodePtr parent_node,
 
 				if (have_variable) {
 					/* nothing new added */
-					if (scada_editor_global_vars.first == last) scada_editor_global_vars.first = NULL;
+					if (*l_head == *l_end) *l_head = NULL;
 
-					free(last->name);
-					free(last->value);
-					free(last);
-
-					last = last_tmp;
+					free((*l_end)->name);
+					free((*l_end)->value);
+					free(*l_end);
+					*l_end = l_end_tmp;
 				}
+
 				xmlFree(attr);
 			}
 		}
@@ -407,7 +418,8 @@ int setHeaderCell(PtWidget_t *tbl, int x, int y, PtWidgetClassRef_t *class,
 }
 
 
-t_table_data *createTable(xmlNodePtr node, t_variable_list *first, xmlDocPtr data)
+t_table_data *createTable(xmlNodePtr node, t_variable_list *l_head,
+		xmlDocPtr data)
 {
 	PtWidget_t *tbl = NULL;
 	PhPoint_t tblPos;
@@ -419,7 +431,7 @@ t_table_data *createTable(xmlNodePtr node, t_variable_list *first, xmlDocPtr dat
 	xmlNodeSetPtr nodeset = NULL;
 	xmlXPathObjectPtr result;
 
-	result = loadDataFromXpathNS(source, data, false, first);
+	result = loadDataFromXpathNS(source, data, false, l_head);
 
 	if (result == NULL) {
 		if (scada_editor_global_vars.filepath != NULL)
@@ -457,7 +469,8 @@ t_table_data *createTable(xmlNodePtr node, t_variable_list *first, xmlDocPtr dat
 	int cell = 0;
 
 	while (column != NULL) {
-		if ((!xmlStrcmp(column->name, BAD_CAST "column"))) {
+		if ((!xmlStrcmp(column->name, BAD_CAST "column")))
+		{
 			if ((info = (t_xml_info *)malloc(sizeof(t_xml_info))) == NULL)
 				PtExit(EXIT_FAILURE);
 
@@ -475,18 +488,21 @@ t_table_data *createTable(xmlNodePtr node, t_variable_list *first, xmlDocPtr dat
 			/* "string" */
 			else
 			{
-				if    (strcmp((const char *)tmp_s, "string") != 0)
-					fprintf(stderr, "ERROR: Unknown type=\"%s\" found in cfgview.xml!", tmp_s);
+				if (strcmp((const char *)tmp_s, "string") != 0)
+					fprintf(stderr, "ERROR: Unknown type \"%s\" found in cfgview.xml!",
+							tmp_s);
 
 				info->type = SCADA_EDITOR_XML_ATTR_TYPE_STRING;
 			}
 
 			setHeaderCell(tbl, cell, 0, PtButton, (char *)label, info);
+printf("HOWK 33\n");//FIXME debug
 
 			if (result != NULL)
 			{
 				int i;
 				for (i = 0; i < nodeset->nodeNr; i++) {
+printf("HOWK 77\n");//FIXME debug
 					if ((attr = xmlGetProp(nodeset->nodeTab[i], info->source +1)) == NULL)
 					{
 						fprintf(stderr, "ERROR: Missing attribute \"%s\" in %s.\n",
@@ -508,12 +524,12 @@ t_table_data *createTable(xmlNodePtr node, t_variable_list *first, xmlDocPtr dat
 
 	xmlXPathFreeObject(result);
 
-	return newTableData(tbl, source, first);
+	return newTableData(tbl, source, l_head);
 }
 
 
 t_table_data *newTableData(PtWidget_t *tbl, xmlChar *xpath,
-		t_variable_list *first)
+		t_variable_list *l_head)
 {
 	t_table_data *data = (t_table_data *)malloc(sizeof(t_table_data));
 
@@ -521,7 +537,7 @@ t_table_data *newTableData(PtWidget_t *tbl, xmlChar *xpath,
 
 	data->table = tbl;
 	data->xpath = xpath;
-	data->enhanced_xpath = process_variable(xpath, first);
+	data->enhanced_xpath = process_variable(xpath, l_head);
 
 	return data;
 }

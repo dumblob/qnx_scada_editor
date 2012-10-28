@@ -75,7 +75,7 @@ int newSkeleton(PtGenTreeItem_t *recent, PtGenTreeItem_t *pattern)
   }
 
   ((PtTreeItem_t *)recent)->data = newTableData(tbl,
-    xmlStrdup(pattern_data->xpath), scada_editor_global_vars.first);
+    xmlStrdup(pattern_data->xpath), scada_editor_global_vars.l_head);
 
   PtTreeExpand(ABW_tree_wgt, (PtTreeItem_t *)recent, NULL);
 

@@ -16,6 +16,13 @@
 #include "proto.h"
 #include "stdbool.h"
 
+//FIXME "http://www.disam.cz/Xmlns/Scada/Config/1.0/Layout"
+#define SCADA_EDITOR_NS_URI "http://www.disam.cz/Xmlns/Scada/Config/1.0/Data"
+#define SCADA_EDITOR_NS_PREFIX "disam"
+#define SCADA_EDITOR_COMPAT_MAJOR "1"  /* compatibility version */
+#define SCADA_EDITOR_COMPAT_MINOR "0"  /* compatibility version */
+
+
 typedef struct s_variable_list {
   xmlChar *name;
   xmlChar *value;

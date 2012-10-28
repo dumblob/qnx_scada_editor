@@ -12,7 +12,7 @@ struct scada_editor_global_vars_s {
   char *arg_conversion_script;
   char *filepath;
   char *viewpath;
-  t_variable_list *first;
+  t_variable_list *l_head;
 };
 
 #endif

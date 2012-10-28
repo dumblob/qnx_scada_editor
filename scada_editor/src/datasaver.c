@@ -1,3 +1,8 @@
+/*
+ * Casey & Jan Pacner
+ * 2012-10-28 18:22:18 CET
+ */
+
 #include "datasaver.h"
 #include "dataloader.h"
 #include "xml_func.h"
@@ -11,17 +16,18 @@ void save_data()
   xmlDocPtr save_doc = xmlNewDoc(BAD_CAST "1.0");
 
   /* FIXME some magic ;), do not touch! */
-  xmlNsPtr ns = xmlNewNs(NULL,
-      (const xmlChar *) "http://www.disam.cz/Xmlns/Scada/Configuration",
-      (const xmlChar *) "disam");
+  xmlNsPtr ns = xmlNewNs(NULL, (const xmlChar *)SCADA_EDITOR_NS_URI,
+      (const xmlChar *)SCADA_EDITOR_NS_PREFIX);
   root_node = xmlNewNode(ns, BAD_CAST "configuration");
-  xmlNewNs(root_node,
-      (const xmlChar *) "http://www.disam.cz/Xmlns/Scada/Configuration",
-      (const xmlChar *) "disam");
+  ns = xmlNewNs(root_node, (const xmlChar *)SCADA_EDITOR_NS_URI,
+      (const xmlChar *)SCADA_EDITOR_NS_PREFIX);
 
+  //FIXME ten namespace je OK?
   xmlDocSetRootElement(save_doc, root_node);
   xmlNewProp(root_node, BAD_CAST "id", BAD_CAST "kom_map");
-  xmlNewProp(root_node, BAD_CAST "version", BAD_CAST "1.0");
+  xmlNewProp(root_node, BAD_CAST "version", BAD_CAST
+      SCADA_EDITOR_COMPAT_MAJOR "." SCADA_EDITOR_COMPAT_MINOR);
+  xmlNewProp(root_node, BAD_CAST "config-view", BAD_CAST "cfgview.xml");
 
   PtGenTreeItem_t *gen = (PtGenTreeItem_t *)PtTreeRootItem(ABW_tree_wgt);
   walkOverTreeBranch(gen, save_doc, ns);
@@ -93,7 +99,7 @@ void generateXML(t_table_data *data, xmlDocPtr save_doc, xmlNsPtr ns)
 
 			if (!new_prop) {
 				result = loadDataFromXpathNS(last_exist_path, save_doc, false,
-            scada_editor_global_vars.first);
+            scada_editor_global_vars.l_head);
 			} else {
 				result = NULL;
 			}

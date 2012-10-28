@@ -28,19 +28,16 @@ typedef struct {
   t_xml_attr_type type;
 } t_xml_info;
 
-void loadViewAndData(xmlDocPtr, xmlDocPtr);
-int setHeaderCell(PtWidget_t *, int, int, PtWidgetClassRef_t *, const char *, void *);
-struct s_table_data *createTable(xmlNodePtr, t_variable_list *, xmlDocPtr);
-void parseTree(xmlNodePtr);
-void parseTreeNode(xmlNodePtr, xmlNodePtr, xmlDocPtr, PtTreeItem_t **);
-void generateXML(t_table_data *, xmlDocPtr, xmlNsPtr);
 int parseFile(char *, char *);
 char *getCfgviewNameFromData(xmlDocPtr);
-
+void loadViewAndData(xmlDocPtr, xmlDocPtr);
+void parseTreeNode(xmlNodePtr, xmlNodePtr, xmlDocPtr,
+    PtTreeItem_t **, t_variable_list **, t_variable_list **);
+int setTypeAndContentOfCell(PtWidget_t *, int, int,
+    const char *, t_xml_attr_type);
+int setHeaderCell(PtWidget_t *, int, int,
+    PtWidgetClassRef_t *, const char *, void *);
+struct s_table_data *createTable(xmlNodePtr, t_variable_list *, xmlDocPtr);
 t_table_data *newTableData(PtWidget_t *, xmlChar *, t_variable_list *);
-int setTypeAndContentOfCell(PtWidget_t *, int, int, const char *, t_xml_attr_type);
-
-void init();
-void destroy();
 
 #endif

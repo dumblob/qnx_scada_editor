@@ -16,9 +16,9 @@
 #include "dataloader.h"
 #include "filepicker.h"
 #include "free_memory.h"
+#include "global_vars.h"
 
-char *filepath = NULL;
-char *viewpath = NULL;
+extern struct scada_editor_global_vars_s scada_editor_global_vars;
 
 int open_file(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
 {
@@ -28,44 +28,24 @@ int open_file(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
   int dataf = -1;
   PtFileSelectionInfo_t datafile;
 
-  //FIXME
-  //int formatf = -1;
-  //PtFileSelectionInfo_t formatfile;
-
-  //FIXME tohle se provede az po rozparsovani dataf
-  //formatf = showFileSelector(&formatfile, "Select format file...", "Open");
-
-  //if (formatf == -1) return Pt_CONTINUE;
-
   dataf = showFileSelector(&datafile, "Select data file...", "Open");
 
   if (dataf != -1)
   {
     freeAllMemory();
 
-    if (filepath != NULL)
+    if (scada_editor_global_vars.filepath != NULL)
     {
-      free(filepath);
-      filepath = NULL;
+      free(scada_editor_global_vars.filepath);
+      scada_editor_global_vars.filepath = NULL;
     }
 
-    //FIXME
-    //if (viewpath != NULL)
-    //{
-    //  free(viewpath);
-    //  viewpath = NULL;
-    //}
+    scada_editor_global_vars.filepath = (char*)malloc(sizeof(datafile.path));
 
-    if ((filepath = (char*)malloc(sizeof(datafile.path))) == NULL)
+    if (scada_editor_global_vars.filepath == NULL)
       PtExit(EXIT_FAILURE);
 
-    //FIXME
-    //if ((viewpath = (char*)malloc(sizeof(formatfile.path))) == NULL)
-    //  PtExit(EXIT_FAILURE);
-
-    strcpy(filepath, datafile.path);
-    //FIXME
-    //strcpy(viewpath, formatfile.path);
+    strcpy(scada_editor_global_vars.filepath, datafile.path);
 
     parseFile(datafile.path, NULL);
   }

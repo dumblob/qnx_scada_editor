@@ -1,15 +1,19 @@
+/*
+ * xjerab13
+ * 2012-10-28 19:46:57 CET
+ */
+
 #include "xml_func.h"
 #include "assert.h"
-
-#define SCADA_EDITOR_NS_URI BAD_CAST "http://www.disam.cz/Xmlns/Scada/Configuration"
-#define SCADA_EDITOR_NS_PREFIX BAD_CAST "disam"
 
 #define myXMLNewChild(doc, node, s, ns, counter) \
 	do { \
 		if (counter == 0) { \
-			(ns) = xmlNewNs(NULL, SCADA_EDITOR_NS_URI, SCADA_EDITOR_NS_PREFIX); \
+			(ns) = xmlNewNs(NULL, BAD_CAST SCADA_EDITOR_NS_URI, \
+					BAD_CAST SCADA_EDITOR_NS_PREFIX); \
 			(node) = xmlNewNode((ns), BAD_CAST (s)); \
-			xmlNewNs((node), SCADA_EDITOR_NS_URI, SCADA_EDITOR_NS_PREFIX); \
+			xmlNewNs((node), BAD_CAST SCADA_EDITOR_NS_URI, \
+					BAD_CAST SCADA_EDITOR_NS_PREFIX); \
 			xmlDocSetRootElement((document), (node)); \
 		} \
 		else { \
@@ -21,16 +25,18 @@
 
 
 xmlXPathObjectPtr loadDataFromXpathNS(xmlChar* xpath, xmlDocPtr document,
-		bool handle_new_file, t_variable_list *first)
+		bool handle_new_file, t_variable_list *l_head)
 {
 	xmlXPathObjectPtr result = NULL;
-	xmlChar *enhanced_xpath = process_variable(xpath, first);
-	xmlChar *full_xpath = enhance_xpath(enhanced_xpath, SCADA_EDITOR_NS_PREFIX);
+	xmlChar *enhanced_xpath = process_variable(xpath, l_head);
+	xmlChar *full_xpath = enhance_xpath(enhanced_xpath,
+			BAD_CAST SCADA_EDITOR_NS_PREFIX);
 
 	/* handle new file: construct a simple, minimal XML tree from the given
 	   xpath, containing always only one children  */
 	if (handle_new_file)
 	{
+printf("handling NEW FILE\n");//FIXME debug
 		assert(xpath != NULL);
 		char *s  = (char *)xpath;  /* start */
 		char *ss = (char *)xpath;  /* end   */
@@ -90,18 +96,24 @@ xmlXPathObjectPtr loadDataFromXpathNS(xmlChar* xpath, xmlDocPtr document,
 		return NULL;
 	}
 
-	if (xmlXPathRegisterNs(context, SCADA_EDITOR_NS_PREFIX, SCADA_EDITOR_NS_URI))
+	if (xmlXPathRegisterNs(context, BAD_CAST SCADA_EDITOR_NS_PREFIX,
+				BAD_CAST SCADA_EDITOR_NS_URI))
 	{
 		fprintf(stderr, "Error when registering namespace.\n");
 		result = NULL;
 	}
 	else
 	{
+printf("full_xpath \"%s\"\n", full_xpath);//FIXME debug
 		result = xmlXPathEvalExpression(full_xpath, context);
 
 		/* no result detected */
 		if (result != NULL && xmlXPathNodeSetIsEmpty(result->nodesetval))
 		{
+printf("! ! ! empty document: ! ! !\n");//FIXME debug
+xmlDocFormatDump(stderr, document, 1);//FIXME debug
+//htmlDocDump(stderr, document);//FIXME debug
+//xmlDebugDumpDocument(stderr, document);//FIXME debug
 			xmlXPathFreeObject(result);
 			result = NULL;
 		}
@@ -114,7 +126,7 @@ xmlXPathObjectPtr loadDataFromXpathNS(xmlChar* xpath, xmlDocPtr document,
 }
 
 
-xmlChar *process_variable(xmlChar *xpath, t_variable_list *first)
+xmlChar *process_variable(xmlChar *xpath, t_variable_list *l_head)
 {
 	const xmlChar *var_start = NULL;
 	const xmlChar *var_end = NULL;
@@ -144,7 +156,7 @@ xmlChar *process_variable(xmlChar *xpath, t_variable_list *first)
 			var_name = xmlCharStrndup((const char *) var_start +1,
 					var_end - var_start -1);
 			var_value = NULL;
-			t_variable_list *act = first;
+			t_variable_list *act = l_head;
 
 			while (act != NULL)
 			{
@@ -186,12 +198,13 @@ xmlChar *process_variable(xmlChar *xpath, t_variable_list *first)
 
 
 /* /abc/xyz -> /disam:abc/disam:xyz */
-xmlChar *enhance_xpath(const xmlChar *xpath, const xmlChar * namespace)
+xmlChar *enhance_xpath(const xmlChar *xpath, const xmlChar *namespace)
 {
-	xmlChar *ens;
-	xmlChar *sep;
+	xmlChar *ens;  /* enhanced namespace */
+	xmlChar *sep;  /* separator          */
 	xmlChar *fullpath;
 
+	/* byte count from start of xpath to the current slash inclusive */
 	int f2 = 1;
 
 	ens = xmlCharStrdup("/");
@@ -203,9 +216,8 @@ xmlChar *enhance_xpath(const xmlChar *xpath, const xmlChar * namespace)
 	sep = (xmlChar *)xmlStrchr(xpath, (xmlChar)'/');
 
 	while (sep != NULL) {
-		f2 = sep - xpath + 1;
-		sep = (xmlChar *)xmlStrchr(sep + 1, (xmlChar)'/');
-
+		f2 = sep - xpath +1;
+		sep = (xmlChar *)xmlStrchr(sep +1, (xmlChar)'/');
 		if (sep != NULL) {
 			fullpath = xmlStrncat(fullpath, xpath + f2, sep - xpath - f2);
 			fullpath = xmlStrncat(fullpath, ens, xmlStrlen(ens));
