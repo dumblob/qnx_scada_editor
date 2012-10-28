@@ -10,17 +10,15 @@
 
 extern struct scada_editor_global_vars_s scada_editor_global_vars;
 
-xmlDocPtr data;  //FIXME pouziva se pouze zde
-xmlDocPtr view;  //FIXME - || -
-
-/* data, format */
-int parseFile(char *filename, char *viewname) {
-	data = NULL;
-	view = NULL;
+/* one of these 2 args must be NULL (but not both) */
+int parseFile(char *filename, char *viewname)
+{
+	xmlDocPtr data = NULL;
+	xmlDocPtr view = NULL;
 
 	xmlInitParser();
 	LIBXML_TEST_VERSION
-
+printf("filename \"%s\"\n", filename);//FIXME debug
 	if (filename == NULL)
 	{
 		assert(viewname != NULL);
@@ -43,14 +41,12 @@ int parseFile(char *filename, char *viewname) {
 		size_t dst_len = filename_len + strlen(dst_postfix);
 
 		char *dst = (char *)malloc(sizeof(char) * (dst_len +1));
-
 		if (dst == NULL) PtExit(EXIT_FAILURE);
 
 		char *command = (char *)malloc(sizeof(char) * (
 					/* "arg_conversion_script" "filename" "dst"\0 */
 					1 + script_len + 3 + filename_len + 3 + dst_len + 2
 					));
-
 		if (command == NULL) PtExit(EXIT_FAILURE);
 
 		/* dst construction */
@@ -90,24 +86,63 @@ int parseFile(char *filename, char *viewname) {
 
 		free(command);
 		free(dst);
+
+		//FIXME parse view found in parsed data file (if (! found) return -1;)
+		char *dirname_end;
+		char *s = getCfgviewNameFromData(data);
+
+		if (s == NULL) return -1;
+
+		if ((dirname_end = strrchr(filename, '/')) == NULL)
+		{
+			view = xmlParseFile(s);
+		}
+		else
+		{
+			viewname = (char *)malloc(sizeof(char) *
+					/* /some/path + / + s + \0 */
+					(dirname_end - filename +1 + strlen(s) +1));
+			if (viewname == NULL) PtExit(EXIT_FAILURE);
+
+			/* dirname with end-slash from filename */
+			*(dirname_end +1) = '\0';
+			sprintf(viewname, "%s%s", filename, s);
+
+			if ((view = xmlParseFile(viewname)) == NULL)
+			{
+				free(viewname);
+				return -1;
+			};
+
+			free(viewname);
+		}
 	}
 
-	//FIXME predavat parametry
-	loadViewAndData();
+	loadViewAndData(view, data);
 
-	if (data != NULL) { xmlFreeDoc(data); }
-	if (view != NULL) { xmlFreeDoc(view); }
+	if (data != NULL) xmlFreeDoc(data);
+	if (view != NULL) xmlFreeDoc(view);
 
 	xmlCleanupParser();
 	return 0;
 }
 
 
-void loadViewAndData()
+char *getCfgviewNameFromData(xmlDocPtr data)
 {
-	xmlNodePtr viewnode;
+	//FIXME
+	data = data;
 
-	viewnode = xmlDocGetRootElement(view);
+	return "cfgview.xml";
+}
+
+
+void loadViewAndData(xmlDocPtr view, xmlDocPtr data)
+{
+	xmlNodePtr viewnode = xmlDocGetRootElement(view);
+
+	//FIXME kontrolovat major verzi (==) a minor verzi (minor_found <= hardcoded)
+
 	if (viewnode == NULL) {
 		fprintf(stderr, "Empty document given.\n");
 		return;
@@ -119,40 +154,35 @@ void loadViewAndData()
 	}
 
 	viewnode = viewnode->xmlChildrenNode;
-	viewnode = viewnode->next; /* skip text node */
+	viewnode = viewnode->next;  /* skip text node */
 
 	if (xmlStrcmp(viewnode->name, BAD_CAST "tree")) {
 		fprintf(stderr, "Document of wrong type (tree node not found).\n");
 		return;
 	}
 
-	parseTree(viewnode);
-}
-
-
-void parseTree(xmlNodePtr tree)
-{
-	xmlNodePtr tree_child = tree->xmlChildrenNode;
+	xmlNodePtr tree_child = viewnode->xmlChildrenNode;
+	PtTreeItem_t *last_item = NULL;
 
 	while (tree_child != NULL)
 	{
 		/* there is an "text" element, which we don't need */
-		if (!xmlStrcmp(tree_child->name, (const xmlChar *) "tree-node"))
-			parseTreeNode(tree_child, tree);
+		if (! xmlStrcmp(tree_child->name, (const xmlChar *)"tree-node"))
+			parseTreeNode(tree_child, viewnode, data, &last_item);
 
 		tree_child = tree_child->next;
 	}
 }
 
 
-void parseTreeNode(xmlNodePtr tree_node, xmlNodePtr parent_node)
+void parseTreeNode(xmlNodePtr tree_node, xmlNodePtr parent_node,
+		xmlDocPtr data, PtTreeItem_t **last_item)
 {
 	xmlChar* name = NULL;
 	xmlChar* source = NULL;
 	xmlNodePtr tree_node_child = NULL;
 
 	PtTreeItem_t *item = NULL;
-	PtTreeItem_t *last_item = NULL;
 	PtTreeItem_t *tmpitem = NULL;
 
 	name   = xmlGetProp(tree_node, BAD_CAST "name");
@@ -171,28 +201,29 @@ void parseTreeNode(xmlNodePtr tree_node, xmlNodePtr parent_node)
 
 		if ((!xmlStrcmp(parent_node->name, (const xmlChar *) "tree-node")))
 		{
-			PtTreeAddFirst(ABW_tree_wgt, item, last_item);
+			PtTreeAddFirst(ABW_tree_wgt, item, *last_item);
 		}
 		else
 		{
-			if (last_item == NULL)
+			if (*last_item == NULL)
 				PtTreeAddFirst(ABW_tree_wgt, item, NULL);
 			else
-				PtTreeAddAfter(ABW_tree_wgt, item, last_item);
+				PtTreeAddAfter(ABW_tree_wgt, item, *last_item);
 		}
 
-		last_item = item;
+		*last_item = item;
 		tree_node_child = tree_node->xmlChildrenNode;
 
 		while (tree_node_child != NULL)
 		{
 			if (!xmlStrcmp(tree_node_child->name, BAD_CAST "table"))
 			{
-				item->data = createTable(tree_node_child, scada_editor_global_vars.first);
+				item->data = createTable(tree_node_child,
+						scada_editor_global_vars.first, data);
 			}
 			else if (!xmlStrcmp(tree_node_child->name, BAD_CAST "tree-node"))
 			{
-				parseTreeNode(tree_node_child, tree_node);
+				parseTreeNode(tree_node_child, tree_node, data, last_item);
 				item->data = newTableData(NULL,
 						xmlGetProp(tree_node_child, BAD_CAST "source"), scada_editor_global_vars.first);
 			}
@@ -222,14 +253,14 @@ void parseTreeNode(xmlNodePtr tree_node, xmlNodePtr parent_node)
 				assert(attr != NULL);
 				item = PtTreeAllocItem(ABW_tree_wgt, (char *) attr, -1, -1);
 
-				if (!xmlStrcmp(parent_node->name, (const xmlChar *)"tree-node"))
+				if (! xmlStrcmp(parent_node->name, (const xmlChar *)"tree-node"))
 				{
-					PtGenTreeItem_t *gen = ((PtGenTreeItem_t *)last_item)->son;
+					PtGenTreeItem_t *gen = ((PtGenTreeItem_t *)(*last_item))->son;
 
 					/* add as son (before any existing son, if any) */
 					if (gen == NULL)
 					{
-						PtTreeAddFirst(ABW_tree_wgt, item, last_item);
+						PtTreeAddFirst(ABW_tree_wgt, item, *last_item);
 					}
 					/* find last brother item of sublist */
 					else
@@ -242,18 +273,18 @@ void parseTreeNode(xmlNodePtr tree_node, xmlNodePtr parent_node)
 				else
 				{
 					/* tree widget is empty, we found first item */
-					if (last_item == NULL)
+					if (*last_item == NULL)
 						/* add to the root of the given tree widget */
 						PtTreeAddFirst(ABW_tree_wgt, item, NULL);
 					else
 						/* add as brother to last_item */
-						PtTreeAddAfter(ABW_tree_wgt, item, last_item);
+						PtTreeAddAfter(ABW_tree_wgt, item, *last_item);
 				}
 
-				PtTreeExpand(ABW_tree_wgt, last_item, NULL);
-				tmpitem = last_item;
-				/* temporary reset global variable for nested function calls */
-				last_item = item;
+				PtTreeExpand(ABW_tree_wgt, *last_item, NULL);
+				tmpitem = *last_item;
+				/* FIXME GLOBAL temporary reset variable for nested function calls */
+				//last_item = item;
 				have_variable = 0;
 
 				t_variable_list *last_tmp = last;
@@ -263,11 +294,12 @@ void parseTreeNode(xmlNodePtr tree_node, xmlNodePtr parent_node)
 				{
 					if (!xmlStrcmp(tree_node_child->name, BAD_CAST "table"))
 					{
-						item->data = createTable(tree_node_child, scada_editor_global_vars.first);
+						item->data = createTable(tree_node_child,
+								scada_editor_global_vars.first, data);
 					}
 					else if (!xmlStrcmp(tree_node_child->name, BAD_CAST "tree-node"))
 					{
-						parseTreeNode(tree_node_child, tree_node);
+						parseTreeNode(tree_node_child, tree_node, data, last_item);
 						item->data = newTableData(NULL,
 								xmlGetProp(tree_node_child, BAD_CAST "source"), scada_editor_global_vars.first);
 					}
@@ -297,7 +329,7 @@ void parseTreeNode(xmlNodePtr tree_node, xmlNodePtr parent_node)
 					tree_node_child = tree_node_child->next;
 				}
 
-				last_item = tmpitem;
+				*last_item = tmpitem;
 
 				if (have_variable) {
 					/* nothing new added */
@@ -375,7 +407,7 @@ int setHeaderCell(PtWidget_t *tbl, int x, int y, PtWidgetClassRef_t *class,
 }
 
 
-t_table_data *createTable(xmlNodePtr node, t_variable_list *first)
+t_table_data *createTable(xmlNodePtr node, t_variable_list *first, xmlDocPtr data)
 {
 	PtWidget_t *tbl = NULL;
 	PhPoint_t tblPos;

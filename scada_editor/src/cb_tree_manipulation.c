@@ -17,9 +17,12 @@
 #include "dataloader.h"
 #include "assert.h"
 #include "free_memory.h"
+#include "global_vars.h"
 
 #define SCADA_EDITOR_MSG_NEW_ID "Write down a new, unique id:"
 #define BUF_MAX 128
+
+extern struct scada_editor_global_vars_s scada_editor_global_vars;
 
 enum en_manipulate_tree_action
 {
@@ -72,7 +75,7 @@ int newSkeleton(PtGenTreeItem_t *recent, PtGenTreeItem_t *pattern)
   }
 
   ((PtTreeItem_t *)recent)->data = newTableData(tbl,
-    xmlStrdup(pattern_data->xpath), NULL);
+    xmlStrdup(pattern_data->xpath), scada_editor_global_vars.first);
 
   PtTreeExpand(ABW_tree_wgt, (PtTreeItem_t *)recent, NULL);
 

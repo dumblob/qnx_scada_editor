@@ -11,7 +11,7 @@
 void freeAllMemory()
 {
   //FIXME debug
-  fcntl(fileno(stdout), F_SETFL, fcntl(stdout, F_GETFL) | O_SYNC);
+  fcntl(fileno(stdout), F_SETFL, fcntl(fileno(stdout), F_GETFL) | O_SYNC);
   /* free tables, xpaths, etc. */
   freeInnerStructures((PtGenTreeItem_t *)PtTreeRootItem(ABW_tree_wgt), false);
 

@@ -12,6 +12,22 @@ Spuštění
 
 Ke\ správné funkčnosti je zapotřebí skript `src2xml.sh`, jež zpracovává vstupní (otevírané soubory) jak ve formátu XML, tak v\ „src“. Tento se buď musí nacházet v\ `$PATH`, v\ aktuálním adresáři (`man 1 pwd`), nebo lze předat editoru parametr `-p /cesta/k/src2xml.sh`.
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+WARN [2]: unsupported comment (the "description" item field is not enough?)
+WARN [12]: unsupported comment (the "description" item field is not enough?)
+WARN [13]: unsupported comment (the "description" item field is not enough?)
+WARN [20]: constraint ` (0/1)' found in comment starting at line 15
+        constraints are suitable for cfgview.xml
+WARN [20]: constraint ` (0/1/2)' found in comment starting at line 15
+        constraints are suitable for cfgview.xml
+WARN [28]: constraint ` (code)' found in comment starting at line 25
+        constraints are suitable for cfgview.xml
+WARN [57]: unsupported comment (the "description" item field is not enough?)
+WARN [59]: unsupported comment (the "description" item field is not enough?)
+WARN [140]: unsupported comment (the "description" item field is not enough?)
+ERR [142]: no comment line(s) with items description found
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 Editor uživatele neobtěžuje výstražnými dialogy ani méně významnými chybovými zprávami. Tyto jsou vypisovány na `stdout` a `stderr`. Je tedy možné tyto výpisy inkrementálně zálohovat např. takto:
 
     scada_editor >> "$HOME/muj_log" 2>&1

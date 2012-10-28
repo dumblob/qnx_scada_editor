@@ -28,14 +28,14 @@ typedef struct {
   t_xml_attr_type type;
 } t_xml_info;
 
-void loadViewAndData();
+void loadViewAndData(xmlDocPtr, xmlDocPtr);
 int setHeaderCell(PtWidget_t *, int, int, PtWidgetClassRef_t *, const char *, void *);
-struct s_table_data *createTable(xmlNodePtr, t_variable_list *);
+struct s_table_data *createTable(xmlNodePtr, t_variable_list *, xmlDocPtr);
 void parseTree(xmlNodePtr);
-//void parseVarNode(xmlNodePtr, xmlChar *);  //FIXME
-void parseTreeNode(xmlNodePtr, xmlNodePtr);
+void parseTreeNode(xmlNodePtr, xmlNodePtr, xmlDocPtr, PtTreeItem_t **);
 void generateXML(t_table_data *, xmlDocPtr, xmlNsPtr);
 int parseFile(char *, char *);
+char *getCfgviewNameFromData(xmlDocPtr);
 
 t_table_data *newTableData(PtWidget_t *, xmlChar *, t_variable_list *);
 int setTypeAndContentOfCell(PtWidget_t *, int, int, const char *, t_xml_attr_type);

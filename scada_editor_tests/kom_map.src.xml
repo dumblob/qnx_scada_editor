@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<disam:configuration id="kom_map" config-view="cfgview.xml" xmlns:disam="http://www.disam.cz/Xmlns/Scada/Config/1.0/Data">
+<disam:configuration id="kom_map" version="1.0" config-view="cfgview.xml" xmlns:disam="http://www.disam.cz/Xmlns/Scada/Config/1.0/Data">
 
 <disam:admin-limits>
 <disam:admin-item max-pnt="30000" max-ttype="400" max-aoi="256" max-nodes="20" kom-devices="1000" max-roc-ctrl="100" max-ss-ctrl="0" max-fb-ctrl="0" max-counter-ctrl="0"/>
