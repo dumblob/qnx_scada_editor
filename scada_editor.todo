@@ -1,4 +1,5 @@
 highest priority functionality
+  odchytit error pri nespravnem namespace (misto divneho polo-nacteni!)
   dokumentace
     datovy(configuration) X konfiguracni/layout/view(config-view)
     pridat vsude obrazky
