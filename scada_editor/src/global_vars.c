@@ -5,7 +5,7 @@
 
 #include "global_vars.h"  /* t_variable_list */
 
-struct scada_editor_global_vars_s scada_editor_global_vars = {
+struct scada_ed_global_vars_s scada_ed_global_vars = {
   .arg_conversion_script = NULL,
   .filepath = NULL,
   .viewpath = NULL,

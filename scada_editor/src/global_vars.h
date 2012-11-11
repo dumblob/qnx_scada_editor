@@ -8,7 +8,7 @@
 
 #include "xml_func.h"  /* t_variable_list */
 
-struct scada_editor_global_vars_s {
+struct scada_ed_global_vars_s {
   char *arg_conversion_script;
   char *filepath;
   char *viewpath;

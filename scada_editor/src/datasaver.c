@@ -8,31 +8,32 @@
 #include "xml_func.h"
 #include "global_vars.h"
 
-extern struct scada_editor_global_vars_s scada_editor_global_vars;
+extern struct scada_ed_global_vars_s scada_ed_global_vars;
 
+/** uses scada_ed_global_vars */
 void save_data()
 {
   xmlNodePtr root_node = NULL;
   xmlDocPtr save_doc = xmlNewDoc(BAD_CAST "1.0");
 
   /* FIXME some magic ;), do not touch! */
-  xmlNsPtr ns = xmlNewNs(NULL, (const xmlChar *)SCADA_EDITOR_NS_URI,
-      (const xmlChar *)SCADA_EDITOR_NS_PREFIX);
+  xmlNsPtr ns = xmlNewNs(NULL, (const xmlChar *)SCADA_ED_NS_URI,
+      (const xmlChar *)SCADA_ED_NS_PREFIX);
   root_node = xmlNewNode(ns, BAD_CAST "configuration");
-  ns = xmlNewNs(root_node, (const xmlChar *)SCADA_EDITOR_NS_URI,
-      (const xmlChar *)SCADA_EDITOR_NS_PREFIX);
+  ns = xmlNewNs(root_node, (const xmlChar *)SCADA_ED_NS_URI,
+      (const xmlChar *)SCADA_ED_NS_PREFIX);
 
   //FIXME ten namespace je OK?
   xmlDocSetRootElement(save_doc, root_node);
   xmlNewProp(root_node, BAD_CAST "id", BAD_CAST "kom_map");
   xmlNewProp(root_node, BAD_CAST "version", BAD_CAST
-      SCADA_EDITOR_COMPAT_MAJOR "." SCADA_EDITOR_COMPAT_MINOR);
+      SCADA_ED_COMPAT_MAJOR "." SCADA_ED_COMPAT_MINOR);
   xmlNewProp(root_node, BAD_CAST "config-view", BAD_CAST "cfgview.xml");
 
   PtGenTreeItem_t *gen = (PtGenTreeItem_t *)PtTreeRootItem(ABW_tree_wgt);
   walkOverTreeBranch(gen, save_doc, ns);
 
-  xmlSaveFormatFileEnc(scada_editor_global_vars.filepath, save_doc, "UTF-8", 2);
+  xmlSaveFormatFileEnc(scada_ed_global_vars.filepath, save_doc, "UTF-8", 2);
 
   xmlFreeDoc(save_doc);
   xmlCleanupParser();
@@ -71,6 +72,7 @@ void walkOverTreeBranch(PtGenTreeItem_t *gen, xmlDocPtr save_doc, xmlNsPtr ns)
 	}
 }
 
+/** uses scada_ed_global_vars */
 void generateXML(t_table_data *data, xmlDocPtr save_doc, xmlNsPtr ns)
 {
 	xmlXPathObjectPtr result = NULL;
@@ -80,7 +82,7 @@ void generateXML(t_table_data *data, xmlDocPtr save_doc, xmlNsPtr ns)
 	xmlChar* source;
 	int f2 = 1;
 
-	xmlDocPtr view = xmlParseFile(scada_editor_global_vars.viewpath);
+	xmlDocPtr view = xmlParseFile(scada_ed_global_vars.viewpath);
 
 	xmlChar *enhanced_xpath = data->enhanced_xpath;
 	xmlChar *xpath = data->xpath;
@@ -99,7 +101,7 @@ void generateXML(t_table_data *data, xmlDocPtr save_doc, xmlNsPtr ns)
 
 			if (!new_prop) {
 				result = loadDataFromXpathNS(last_exist_path, save_doc, false,
-            scada_editor_global_vars.l_head);
+            scada_ed_global_vars.l_head);
 			} else {
 				result = NULL;
 			}
@@ -320,19 +322,19 @@ void printTableLines(PtWidget_t *tbl, int col, int colm, int row, int rowm,
 
       switch (info->type)
       {
-        case SCADA_EDITOR_XML_ATTR_TYPE_BOOL:
+        case SCADA_ED_XML_ATTR_TYPE_BOOL:
           tblGetCellResource(tbl, col, row, Pt_ARG_FLAGS, &flags, 0);
           fprintf(f, "%d", (*flags & Pt_SET) ? 1 : 0);
           break;
 
-        case SCADA_EDITOR_XML_ATTR_TYPE_STRING:
+        case SCADA_ED_XML_ATTR_TYPE_STRING:
           s = NULL;
           tblGetCellResource(tbl, col, row, Pt_ARG_TEXT_STRING, &s, 0);
           fprintf(f, "\"%s\"", (s == NULL) ? "" : s);
           break;
 
-        /* SCADA_EDITOR_XML_ATTR_TYPE_NUMBER */
-        /* SCADA_EDITOR_XML_ATTR_TYPE_CHAR */
+        /* SCADA_ED_XML_ATTR_TYPE_NUMBER */
+        /* SCADA_ED_XML_ATTR_TYPE_CHAR */
         default:
           s = NULL;
           tblGetCellResource(tbl, col, row, Pt_ARG_TEXT_STRING, &s, 0);
@@ -388,7 +390,7 @@ void saveAttrToSrc(PtGenTreeItem_t *gen, FILE *f, unsigned short depth)
       fputs((const char *)info->source +1, f);
 
       /* bool */
-      if (info->type == SCADA_EDITOR_XML_ATTR_TYPE_BOOL)
+      if (info->type == SCADA_ED_XML_ATTR_TYPE_BOOL)
         fputs(" (0/1)", f);
     }
 

@@ -9,11 +9,11 @@
 #define myXMLNewChild(doc, node, s, ns, counter) \
 	do { \
 		if (counter == 0) { \
-			(ns) = xmlNewNs(NULL, BAD_CAST SCADA_EDITOR_NS_URI, \
-					BAD_CAST SCADA_EDITOR_NS_PREFIX); \
+			(ns) = xmlNewNs(NULL, BAD_CAST SCADA_ED_NS_URI, \
+					BAD_CAST SCADA_ED_NS_PREFIX); \
 			(node) = xmlNewNode((ns), BAD_CAST (s)); \
-			xmlNewNs((node), BAD_CAST SCADA_EDITOR_NS_URI, \
-					BAD_CAST SCADA_EDITOR_NS_PREFIX); \
+			xmlNewNs((node), BAD_CAST SCADA_ED_NS_URI, \
+					BAD_CAST SCADA_ED_NS_PREFIX); \
 			xmlDocSetRootElement((document), (node)); \
 		} \
 		else { \
@@ -30,7 +30,7 @@ xmlXPathObjectPtr loadDataFromXpathNS(xmlChar* xpath, xmlDocPtr document,
 	xmlXPathObjectPtr result = NULL;
 	xmlChar *enhanced_xpath = process_variable(xpath, l_head);
 	xmlChar *full_xpath = enhance_xpath(enhanced_xpath,
-			BAD_CAST SCADA_EDITOR_NS_PREFIX);
+			BAD_CAST SCADA_ED_NS_PREFIX);
 
 	/* handle new file: construct a simple, minimal XML tree from the given
 	   xpath, containing always only one children  */
@@ -96,8 +96,8 @@ printf("handling NEW FILE\n");//FIXME debug
 		return NULL;
 	}
 
-	if (xmlXPathRegisterNs(context, BAD_CAST SCADA_EDITOR_NS_PREFIX,
-				BAD_CAST SCADA_EDITOR_NS_URI))
+	if (xmlXPathRegisterNs(context, BAD_CAST SCADA_ED_NS_PREFIX,
+				BAD_CAST SCADA_ED_NS_URI))
 	{
 		fprintf(stderr, "Error when registering namespace.\n");
 		result = NULL;

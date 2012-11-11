@@ -17,8 +17,9 @@
 #include "filepicker.h"
 #include "global_vars.h"
 
-extern struct scada_editor_global_vars_s scada_editor_global_vars;
+extern struct scada_ed_global_vars_s scada_ed_global_vars;
 
+/** uses scada_ed_global_vars */
 int save_file_as(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
 {
 	/* eliminate 'unreferenced' warnings */
@@ -35,11 +36,11 @@ int save_file_as(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
 
 	if (info.ret == Pt_FSDIALOG_BTN1)
   {
-		if (scada_editor_global_vars.filepath != NULL)
-      free(scada_editor_global_vars.filepath);
+		if (scada_ed_global_vars.filepath != NULL)
+      free(scada_ed_global_vars.filepath);
 
-		scada_editor_global_vars.filepath = (char *)malloc(sizeof(info.path));
-		strcpy(scada_editor_global_vars.filepath, info.path);
+		scada_ed_global_vars.filepath = (char *)malloc(sizeof(info.path));
+		strcpy(scada_ed_global_vars.filepath, info.path);
 		save_data();
 	}
 

@@ -9,9 +9,10 @@
 #include "assert.h"
 #include "global_vars.h"
 
-extern struct scada_editor_global_vars_s scada_editor_global_vars;
+extern struct scada_ed_global_vars_s scada_ed_global_vars;
 
-/* one of these 2 args must be NULL (but not both) */
+/** one of these 2 args must be NULL (but not both)
+ * uses scada_ed_global_vars */
 int parseFile(char *filename, char *viewname)
 {
 	xmlDocPtr data = NULL;
@@ -37,7 +38,7 @@ printf("filename \"%s\"\n", filename);//FIXME debug
 
 		/* construct the whole shell command */
 		char *dst_postfix = ".xml";
-		size_t script_len = strlen(scada_editor_global_vars.arg_conversion_script);
+		size_t script_len = strlen(scada_ed_global_vars.arg_conversion_script);
 		size_t filename_len = strlen(filename);
 		size_t dst_len = filename_len + strlen(dst_postfix);
 
@@ -55,7 +56,7 @@ printf("filename \"%s\"\n", filename);//FIXME debug
 
 		/* final command construction */
 		snprintf(command, 1 + script_len + 3 + filename_len + 3 + dst_len + 2,
-				"\"%s\" \"%s\" \"%s\"", scada_editor_global_vars.arg_conversion_script,
+				"\"%s\" \"%s\" \"%s\"", scada_ed_global_vars.arg_conversion_script,
 				filename, dst);
 
 		switch (WEXITSTATUS(system(command)))
@@ -154,6 +155,9 @@ void loadViewAndData(xmlDocPtr view, xmlDocPtr data)
 		return;
 	}
 
+	//FIXME kontrola namespace (zatim pouze pro view)
+	//if (xmlStrcmp(getNamespace(viewnode), SCADA_ED_NS_URI);
+
 	if (xmlStrcmp(viewnode->name, BAD_CAST "config-view")) {
 		fprintf(stderr, "Document of wrong type (root node != config-view).\n");
 		return;
@@ -171,8 +175,8 @@ void loadViewAndData(xmlDocPtr view, xmlDocPtr data)
 	PtTreeItem_t *last_item = NULL;
 	//FIXME doplnit, urcite to tak bude spravne
 	/* (re)init list of variables (name + value) */
-	assert(scada_editor_global_vars.l_head == NULL);
-	scada_editor_global_vars.l_head = NULL;
+	assert(scada_ed_global_vars.l_head == NULL);
+	scada_ed_global_vars.l_head = NULL;
 	t_variable_list *l_end = NULL;
 
 	while (tree_child != NULL)
@@ -180,7 +184,7 @@ void loadViewAndData(xmlDocPtr view, xmlDocPtr data)
 		/* there is an "text" element, which we don't need */
 		if (! xmlStrcmp(tree_child->name, (const xmlChar *)"tree-node"))
 			parseTreeNode(tree_child, viewnode, data, &last_item,
-					&scada_editor_global_vars.l_head, &l_end);
+					&scada_ed_global_vars.l_head, &l_end);
 
 		tree_child = tree_child->next;
 	}
@@ -244,7 +248,7 @@ void parseTreeNode(xmlNodePtr tree_node, xmlNodePtr parent_node,
 	else
 	{  /* {{{ */
 		xmlXPathObjectPtr result = loadDataFromXpathNS(source, data,
-				(scada_editor_global_vars.filepath == NULL) ? true : false, *l_head);
+				(scada_ed_global_vars.filepath == NULL) ? true : false, *l_head);
 		xmlNodeSetPtr nodeset = NULL;
 
 		/* non-empty items */
@@ -371,13 +375,13 @@ int setTypeAndContentOfCell(PtWidget_t *tbl, int col, int row,
 
 	switch (info_type)
 	{
-		case SCADA_EDITOR_XML_ATTR_TYPE_NUMBER:
+		case SCADA_ED_XML_ATTR_TYPE_NUMBER:
 			PtSetArg(&args[c++], Pt_ARG_NUMERIC_VALUE,
 					strtol((attr == NULL) ? "0" : (const char *)attr, NULL, 10), 0);
 			class = PtNumericInteger;
 			break;
 
-		case SCADA_EDITOR_XML_ATTR_TYPE_CHAR:
+		case SCADA_ED_XML_ATTR_TYPE_CHAR:
 			PtSetArg(&args[c++], Pt_ARG_NUMERIC_VALUE,
 					strtol((attr == NULL) ? "0" : (const char *)attr, NULL, 16), 0);
 			PtSetArg(&args[c++], Pt_ARG_NUMERIC_PREFIX, "0x", 0);
@@ -385,13 +389,13 @@ int setTypeAndContentOfCell(PtWidget_t *tbl, int col, int row,
 			class = PtNumericInteger;
 			break;
 
-		case SCADA_EDITOR_XML_ATTR_TYPE_BOOL:
+		case SCADA_ED_XML_ATTR_TYPE_BOOL:
 			PtSetArg(&args[c++], Pt_ARG_FLAGS,
 					(attr == NULL || *attr == '\0' || *attr == '0') ? Pt_FALSE : Pt_TRUE, Pt_SET);
 			class = PtToggleButton;
 			break;
 
-		/* SCADA_EDITOR_XML_ATTR_TYPE_STRING */
+		/* SCADA_ED_XML_ATTR_TYPE_STRING */
 		default:
 			PtSetArg(&args[c++], Pt_ARG_TEXT_STRING, attr, 0);
 			class = PtText;
@@ -434,7 +438,7 @@ t_table_data *createTable(xmlNodePtr node, t_variable_list *l_head,
 	result = loadDataFromXpathNS(source, data, false, l_head);
 
 	if (result == NULL) {
-		if (scada_editor_global_vars.filepath != NULL)
+		if (scada_ed_global_vars.filepath != NULL)
 			fprintf(stderr, "WARNING: Empty tree item found in XML node \"%s\".\n"
 					"source|%s\n", node->name, (char *)source); //FIXME debug
 	}
@@ -480,11 +484,11 @@ t_table_data *createTable(xmlNodePtr node, t_variable_list *l_head,
 
 			/* cfgview.xml <... type="bool/number/char/..." ...> */
 			if      (strcmp((const char *)tmp_s, "number") == 0)
-				info->type = SCADA_EDITOR_XML_ATTR_TYPE_NUMBER;
+				info->type = SCADA_ED_XML_ATTR_TYPE_NUMBER;
 			else if (strcmp((const char *)tmp_s, "char"  ) == 0)
-				info->type = SCADA_EDITOR_XML_ATTR_TYPE_CHAR;
+				info->type = SCADA_ED_XML_ATTR_TYPE_CHAR;
 			else if (strcmp((const char *)tmp_s, "bool"  ) == 0)
-				info->type = SCADA_EDITOR_XML_ATTR_TYPE_BOOL;
+				info->type = SCADA_ED_XML_ATTR_TYPE_BOOL;
 			/* "string" */
 			else
 			{
@@ -492,7 +496,7 @@ t_table_data *createTable(xmlNodePtr node, t_variable_list *l_head,
 					fprintf(stderr, "ERROR: Unknown type \"%s\" found in cfgview.xml!",
 							tmp_s);
 
-				info->type = SCADA_EDITOR_XML_ATTR_TYPE_STRING;
+				info->type = SCADA_ED_XML_ATTR_TYPE_STRING;
 			}
 
 			setHeaderCell(tbl, cell, 0, PtButton, (char *)label, info);

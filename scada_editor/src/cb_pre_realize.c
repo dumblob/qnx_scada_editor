@@ -19,15 +19,16 @@
 extern char **_argv;
 extern int _argc;
 
-extern struct scada_editor_global_vars_s scada_editor_global_vars;
+extern struct scada_ed_global_vars_s scada_ed_global_vars;
 
+/** uses scada_ed_global_vars */
 int cb_pre_realize(PtWidget_t *link_instance, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
 {
   /* eliminate 'unreferenced' warnings */
   link_instance = link_instance, apinfo = apinfo, cbinfo = cbinfo;
 
   /* conversion script path */
-  scada_editor_global_vars.arg_conversion_script = "src2xml.sh";
+  scada_ed_global_vars.arg_conversion_script = "src2xml.sh";
 
   int i;
   for (i = 1; i < _argc; ++i)
@@ -40,13 +41,13 @@ int cb_pre_realize(PtWidget_t *link_instance, ApInfo_t *apinfo, PtCallbackInfo_t
         return Pt_END;
       }
 
-      scada_editor_global_vars.arg_conversion_script = _argv[i +1];
+      scada_ed_global_vars.arg_conversion_script = _argv[i +1];
       break;
     }
   }
 
   printf("Executable \"%s\" chosen for eventual src to XML conversion.\n",
-      scada_editor_global_vars.arg_conversion_script);
+      scada_ed_global_vars.arg_conversion_script);
 
   return Pt_CONTINUE;
 }

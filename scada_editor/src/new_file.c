@@ -18,8 +18,9 @@
 #include "free_memory.h"
 #include "global_vars.h"
 
-extern struct scada_editor_global_vars_s scada_editor_global_vars;
+extern struct scada_ed_global_vars_s scada_ed_global_vars;
 
+/** uses scada_ed_global_vars */
 int new_file(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
 {
   /* eliminate 'unreferenced' warnings */
@@ -38,16 +39,16 @@ int new_file(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
   {
     freeAllMemory();
 
-    if (scada_editor_global_vars.viewpath != NULL)
+    if (scada_ed_global_vars.viewpath != NULL)
     {
-      free(scada_editor_global_vars.viewpath);
-      scada_editor_global_vars.viewpath = NULL;
+      free(scada_ed_global_vars.viewpath);
+      scada_ed_global_vars.viewpath = NULL;
     }
 
-    if ((scada_editor_global_vars.viewpath = (char*)malloc(sizeof(formatfile.path))) == NULL)
+    if ((scada_ed_global_vars.viewpath = (char*)malloc(sizeof(formatfile.path))) == NULL)
       PtExit(EXIT_FAILURE);
 
-    strcpy(scada_editor_global_vars.viewpath, formatfile.path);
+    strcpy(scada_ed_global_vars.viewpath, formatfile.path);
 
     parseFile(NULL, formatfile.path);
   }

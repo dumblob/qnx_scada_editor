@@ -16,11 +16,12 @@
 #include "datasaver.h"
 #include "global_vars.h"
 
-extern struct scada_editor_global_vars_s scada_editor_global_vars;
+extern struct scada_ed_global_vars_s scada_ed_global_vars;
 
+/** uses scada_ed_global_vars */
 int save_file( PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo )
 {
-	if (scada_editor_global_vars.filepath == NULL)
+	if (scada_ed_global_vars.filepath == NULL)
   {
 		return save_file_as(widget, apinfo, cbinfo);
 	}

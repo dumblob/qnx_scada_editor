@@ -15,8 +15,9 @@
 
 #include "global_vars.h"
 
-extern struct scada_editor_global_vars_s scada_editor_global_vars;
+extern struct scada_ed_global_vars_s scada_ed_global_vars;
 
+/** uses scada_ed_global_vars */
 int app_exit( PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo )
 {
   /* eliminate 'unreferenced' warnings */
@@ -24,8 +25,8 @@ int app_exit( PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo )
 
   //FIXME freeMemory() ??????????????????
 
-  if(scada_editor_global_vars.filepath != NULL)
-    free(scada_editor_global_vars.filepath);
+  if(scada_ed_global_vars.filepath != NULL)
+    free(scada_ed_global_vars.filepath);
 
   PtExit(EXIT_SUCCESS);
 
