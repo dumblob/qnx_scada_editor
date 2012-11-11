@@ -96,8 +96,10 @@ printf("handling NEW FILE\n");//FIXME debug
 		return NULL;
 	}
 
-	if (xmlXPathRegisterNs(context, BAD_CAST SCADA_ED_NS_PREFIX,
-				BAD_CAST SCADA_ED_NS_URI))
+	xmlNodePtr x = xmlDocGetRootElement(document);
+	assert(x->ns != NULL);
+
+	if (xmlXPathRegisterNs(context, x->ns->prefix, x->ns->href))
 	{
 		fprintf(stderr, "Error when registering namespace.\n");
 		result = NULL;

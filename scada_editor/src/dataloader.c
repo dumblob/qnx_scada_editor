@@ -142,7 +142,7 @@ char *getCfgviewNameFromData(xmlDocPtr data)
 }
 
 
-void loadViewAndData(xmlDocPtr view, xmlDocPtr data)
+void loadViewAndData(xmlDocPtr view, const xmlDocPtr data)
 {
 	//FIXME kontrolovat major verzi (==) a minor verzi (minor_found <= hardcoded)
 	//      dale kontrolovat, aby matchovaly verze cfgview.xml a tohoto datoveho
@@ -154,9 +154,6 @@ void loadViewAndData(xmlDocPtr view, xmlDocPtr data)
 		fprintf(stderr, "Empty document given.\n");
 		return;
 	}
-
-	//FIXME kontrola namespace (zatim pouze pro view)
-	//if (xmlStrcmp(getNamespace(viewnode), SCADA_ED_NS_URI);
 
 	if (xmlStrcmp(viewnode->name, BAD_CAST "config-view")) {
 		fprintf(stderr, "Document of wrong type (root node != config-view).\n");
@@ -192,7 +189,7 @@ void loadViewAndData(xmlDocPtr view, xmlDocPtr data)
 
 
 void parseTreeNode(xmlNodePtr tree_node, xmlNodePtr parent_node,
-		xmlDocPtr data, PtTreeItem_t **last_item,
+		const xmlDocPtr data, PtTreeItem_t **last_item,
 		t_variable_list **l_head, t_variable_list **l_end)
 {
 	xmlChar* name = NULL;
@@ -423,7 +420,7 @@ int setHeaderCell(PtWidget_t *tbl, int x, int y, PtWidgetClassRef_t *class,
 
 
 t_table_data *createTable(xmlNodePtr node, t_variable_list *l_head,
-		xmlDocPtr data)
+		const xmlDocPtr data)
 {
 	PtWidget_t *tbl = NULL;
 	PhPoint_t tblPos;
