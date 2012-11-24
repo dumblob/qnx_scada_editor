@@ -25,7 +25,8 @@ printf("filename \"%s\"\n", filename);//FIXME debug
 	{
 		assert(viewname != NULL);
 
-		if ((view = xmlParseFile(viewname)) == NULL) {
+		if ((view = xmlParseFile(viewname)) == NULL)
+		{
 			fprintf(stderr, "CFG View not parsed successfully.\n");
 			return -1;
 		}
@@ -98,8 +99,6 @@ printf("filename \"%s\"\n", filename);//FIXME debug
 		if ((dirname_end = strrchr(filename, '/')) == NULL)
 		{
 			view = xmlParseFile(s);
-
-			if ((view = xmlParseFile(s)) == NULL) return -1;
 		}
 		else
 		{
@@ -112,14 +111,13 @@ printf("filename \"%s\"\n", filename);//FIXME debug
 			*(dirname_end +1) = '\0';
 			sprintf(viewname, "%s%s", filename, s);
 
-			if ((view = xmlParseFile(viewname)) == NULL)
-			{
-				free(viewname);
-				return -1;
-			};
-
+			view = xmlParseFile(viewname);
 			free(viewname);
 		}
+
+		xmlFree((xmlChar *)s);
+
+		if (view == NULL) return -1;
 	}
 
 	loadViewAndData(view, data);
@@ -134,11 +132,17 @@ printf("filename \"%s\"\n", filename);//FIXME debug
 
 char *getCfgviewNameFromData(xmlDocPtr data)
 {
-	//FIXME
-	data = data;
+	xmlNodePtr x;
 
-	//FIXME je to tady alokovane? => mam to potom uvolnit?
-	return "cfgview.xml";
+	if ((x = xmlDocGetRootElement(data)) != NULL)
+		if (! xmlStrcmp(x->name, BAD_CAST "configuration"))
+			return (char *)xmlGetProp(x, BAD_CAST "config-view");
+		else
+			fprintf(stderr, "Document of wrong type (root node != configuration).\n");
+	else
+		fprintf(stderr, "ERROR: Empty data XML document.\n");
+
+	return NULL;
 }
 
 
@@ -170,10 +174,8 @@ void loadViewAndData(xmlDocPtr view, const xmlDocPtr data)
 
 	xmlNodePtr tree_child = viewnode->xmlChildrenNode;
 	PtTreeItem_t *last_item = NULL;
-	//FIXME doplnit, urcite to tak bude spravne
 	/* (re)init list of variables (name + value) */
 	assert(scada_ed_global_vars.l_head == NULL);
-	scada_ed_global_vars.l_head = NULL;
 	t_variable_list *l_end = NULL;
 
 	while (tree_child != NULL)
@@ -201,8 +203,10 @@ void parseTreeNode(xmlNodePtr tree_node, xmlNodePtr parent_node,
 	name   = xmlGetProp(tree_node, BAD_CAST "name");
 	source = xmlGetProp(tree_node, BAD_CAST "source");
 
+#ifndef NDEBUG
 	if (*l_head == NULL)
-		fprintf(stderr, "GLOBAL LIST IS EMPTY !!!\n");//FIXME debug
+		fprintf(stderr, "GLOBAL LIST IS EMPTY !!!\n");
+#endif
 
 	/* we are not nested (source attr does not exist) */
 	if (source == NULL)
@@ -497,13 +501,11 @@ t_table_data *createTable(xmlNodePtr node, t_variable_list *l_head,
 			}
 
 			setHeaderCell(tbl, cell, 0, PtButton, (char *)label, info);
-printf("HOWK 33\n");//FIXME debug
 
 			if (result != NULL)
 			{
 				int i;
 				for (i = 0; i < nodeset->nodeNr; i++) {
-printf("HOWK 77\n");//FIXME debug
 					if ((attr = xmlGetProp(nodeset->nodeTab[i], info->source +1)) == NULL)
 					{
 						fprintf(stderr, "ERROR: Missing attribute \"%s\" in %s.\n",

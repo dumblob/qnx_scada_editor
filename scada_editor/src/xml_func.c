@@ -36,7 +36,6 @@ xmlXPathObjectPtr loadDataFromXpathNS(xmlChar* xpath, xmlDocPtr document,
 	   xpath, containing always only one children  */
 	if (handle_new_file)
 	{
-printf("handling NEW FILE\n");//FIXME debug
 		assert(xpath != NULL);
 		char *s  = (char *)xpath;  /* start */
 		char *ss = (char *)xpath;  /* end   */
@@ -103,21 +102,22 @@ printf("handling NEW FILE\n");//FIXME debug
 
 	if (xmlXPathRegisterNs(context, x->ns->prefix, x->ns->href))
 	{
-		fprintf(stderr, "Error when registering namespace.\n");
+		fprintf(stderr, "Error while registering namespace.\n");
 		result = NULL;
 	}
 	else
 	{
-printf("full_xpath \"%s\"\n", full_xpath);//FIXME debug
 		result = xmlXPathEvalExpression(full_xpath, context);
 
 		/* no result detected */
 		if (result != NULL && xmlXPathNodeSetIsEmpty(result->nodesetval))
 		{
-printf("! ! ! empty document: ! ! !\n");//FIXME debug
-xmlDocFormatDump(stderr, document, 1);//FIXME debug
-//htmlDocDump(stderr, document);//FIXME debug
-//xmlDebugDumpDocument(stderr, document);//FIXME debug
+			fprintf(stderr, "WARN: No results for XPath %s\n", full_xpath);
+#ifndef NDEBUG
+			//xmlDocFormatDump(stderr, document, 1);
+			//htmlDocDump(stderr, document);
+			//xmlDebugDumpDocument(stderr, document);
+#endif
 			xmlXPathFreeObject(result);
 			result = NULL;
 		}
