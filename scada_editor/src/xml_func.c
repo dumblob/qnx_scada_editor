@@ -96,6 +96,8 @@ printf("handling NEW FILE\n");//FIXME debug
 		return NULL;
 	}
 
+	/* avoid usage of SCADA_ED_NS_PREFIX and SCADA_ED_NS_URI because
+	   of problems with non-existing items in half-filled PtTree in GUI */
 	xmlNodePtr x = xmlDocGetRootElement(document);
 	assert(x->ns != NULL);
 
