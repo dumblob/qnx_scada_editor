@@ -10,6 +10,22 @@
 
 extern struct scada_ed_global_vars_s scada_ed_global_vars;
 
+
+
+
+
+
+
+// FIXME respektovat global_vars.viewpath pri exportu!!!
+
+
+
+
+
+
+
+
+
 /** uses scada_ed_global_vars */
 void save_data()
 {

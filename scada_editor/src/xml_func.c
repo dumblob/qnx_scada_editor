@@ -112,7 +112,7 @@ xmlXPathObjectPtr loadDataFromXpathNS(xmlChar* xpath, xmlDocPtr document,
 		/* no result detected */
 		if (result != NULL && xmlXPathNodeSetIsEmpty(result->nodesetval))
 		{
-			fprintf(stderr, "WARN: No results for XPath %s\n", full_xpath);
+			fprintf(stderr, "WARNING: No results for XPath %s\n", full_xpath);
 #ifndef NDEBUG
 			//xmlDocFormatDump(stderr, document, 1);
 			//htmlDocDump(stderr, document);

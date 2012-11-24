@@ -8,10 +8,6 @@
 #include <assert.h>
 #include "free_memory.h"
 #include "dataloader.h"
-#include "global_vars.h"
-#include "libxml/globals.h"
-
-extern struct scada_ed_global_vars_s scada_ed_global_vars;
 
 void freeAllMemory()
 {
@@ -24,16 +20,16 @@ void freeAllMemory()
 
   /* no need to free the global list with attr names and values */
 
-//FIXME debug {{{
-static short first_call = 1;
-if (first_call)
-  first_call = 0;
-else
-  printf("END in freeAllMemory()\n");
-//FIXME }}}
-
   /* can't use following, because of _keey_first */
   //PtGenTreeFreeAllItems(ABW_tree_wgt);
+
+#ifndef NDEBUG
+  static short first_call = 1;
+  if (first_call)
+    first_call = 0;
+  else
+    printf("END in freeAllMemory()\n");
+#endif
 }
 
 
