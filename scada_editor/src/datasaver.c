@@ -18,6 +18,9 @@ extern struct scada_ed_global_vars_s scada_ed_global_vars;
 
 // FIXME respektovat global_vars.viewpath pri exportu!!!
 
+// FIXME + popsat vybranou variantu pri "save as" do dokumentace
+//   v pripade prvniho ukladani noveho souboru se spousti take "save_file_as"
+//   namisto save_data()
 
 
 
@@ -30,21 +33,22 @@ extern struct scada_ed_global_vars_s scada_ed_global_vars;
 void save_data()
 {
   xmlNodePtr root_node = NULL;
-  xmlDocPtr save_doc = xmlNewDoc(BAD_CAST "1.0");
+  xmlDocPtr save_doc = xmlNewDoc(BAD_CAST "1.0");  /* XML version="1.0" */
 
   /* FIXME some magic ;), do not touch! */
   xmlNsPtr ns = xmlNewNs(NULL, (const xmlChar *)SCADA_ED_NS_URI,
       (const xmlChar *)SCADA_ED_NS_PREFIX);
-  root_node = xmlNewNode(ns, BAD_CAST "configuration");
+  root_node = xmlNewNode(ns, BAD_CAST SCADA_ED_ROOT_NODE_CONFIGURATION);
   ns = xmlNewNs(root_node, (const xmlChar *)SCADA_ED_NS_URI,
       (const xmlChar *)SCADA_ED_NS_PREFIX);
 
   //FIXME ten namespace je OK?
   xmlDocSetRootElement(save_doc, root_node);
   xmlNewProp(root_node, BAD_CAST "id", BAD_CAST "kom_map");
-  xmlNewProp(root_node, BAD_CAST "version", BAD_CAST
-      SCADA_ED_COMPAT_MAJOR "." SCADA_ED_COMPAT_MINOR);
-  xmlNewProp(root_node, BAD_CAST "config-view", BAD_CAST "cfgview.xml");
+  xmlNewProp(root_node, BAD_CAST SCADA_ED_ATTR_VERSION,
+      BAD_CAST SCADA_ED_COMPAT_MAJOR "." SCADA_ED_COMPAT_MINOR);
+  xmlNewProp(root_node, BAD_CAST SCADA_ED_ATTR_CONFIG_VIEW,
+      BAD_CAST "cfgview.xml");
 
   PtGenTreeItem_t *gen = (PtGenTreeItem_t *)PtTreeRootItem(ABW_tree_wgt);
   walkOverTreeBranch(gen, save_doc, ns);

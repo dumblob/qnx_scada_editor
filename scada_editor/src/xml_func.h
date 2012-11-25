@@ -18,7 +18,7 @@
 #define SCADA_ED_NS_URI "http://www.disam.cz/Xmlns/Scada/Config/1.0/Data"
 #define SCADA_ED_NS_PREFIX "disam"
 #define SCADA_ED_COMPAT_MAJOR "1"  /* compatibility version */
-#define SCADA_ED_COMPAT_MINOR "0"  /* compatibility version (only for export) */
+#define SCADA_ED_COMPAT_MINOR "0"  /* needed only for export */
 
 #define SCADA_ED_ROOT_NODE_CONFIG_VIEW "config-view"
 #define SCADA_ED_ROOT_NODE_CONFIGURATION "configuration"

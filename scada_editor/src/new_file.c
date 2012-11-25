@@ -29,7 +29,7 @@ int new_file(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
   int formatf = -1;
 
   PtFileSelectionInfo_t formatfile;
-  formatf = showFileSelector(&formatfile, "Select format file...","Select");
+  formatf = showFileSelector(&formatfile, "Select format file...", "Select");
 
   if (formatf == -1)
   {
@@ -40,19 +40,15 @@ int new_file(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
     freeAllMemory();
 
     if (scada_ed_global_vars.viewpath != NULL)
-    {
       free(scada_ed_global_vars.viewpath);
-      scada_ed_global_vars.viewpath = NULL;
-    }
 
-    if ((scada_ed_global_vars.viewpath = (char*)malloc(sizeof(formatfile.path))) == NULL)
+    if ((scada_ed_global_vars.viewpath =
+          (char*)malloc(sizeof(formatfile.path))) == NULL)
       PtExit(EXIT_FAILURE);
 
     strcpy(scada_ed_global_vars.viewpath, formatfile.path);
-
     parseFile(NULL, formatfile.path);
   }
 
   return Pt_CONTINUE;
 }
-

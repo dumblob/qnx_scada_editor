@@ -35,7 +35,7 @@ int parseFile(char *filename, char *viewname)
       return -1;
     }
 
-    data = xmlNewDoc(BAD_CAST "1.0");
+    data = xmlNewDoc(BAD_CAST "1.0");  /* XML version="1.0" */
   }
   else
   {

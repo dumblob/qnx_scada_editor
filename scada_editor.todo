@@ -1,5 +1,9 @@
 highest priority functionality
   dokumentace
+    pridat nejake bezne use cases
+    popsat "save as" variantu (ze se kopiruje cfgview.xml v pripade,
+      ze se uklada do jineho adresare nez ze ktereho se aktualne
+      nacitalo; v pripade, ze se jedna o prvni ulozeni, tak co????????)
     datovy(configuration) X konfiguracni/layout/view(config-view)
     pridat vsude obrazky
     pridat popisky chybovych vystupu ze src2xml.sh
@@ -12,6 +16,9 @@ highest priority functionality
       src: if (sekce == ADMIN_LIMITS) then vypisuj sloupce na radek
   rozsirit funkcionalitu tabulkoveho widgetu
     nove typy (parita...) => nove widgety (combo-box atd.)
+      pridat je do cfgview.xml
+      pridat je do dataloader.c
+      pridat je do export XML (tady budou potreba asi nejake konverze) a src
     sirka sloupce jako atribut cfgview.xml
   limity (min, max) u cisel; zacervenit a pri ukladani modalni dialog...
   bug: resize/zvetseni okna => presunuti tabulky na jine souradnice
