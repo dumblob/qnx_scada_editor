@@ -30,7 +30,7 @@ extern struct scada_ed_global_vars_s scada_ed_global_vars;
 
 
 /** uses scada_ed_global_vars */
-void save_data()
+void save_data(void)
 {
   xmlNodePtr root_node = NULL;
   xmlDocPtr save_doc = xmlNewDoc(BAD_CAST "1.0");  /* XML version="1.0" */
@@ -42,16 +42,50 @@ void save_data()
   ns = xmlNewNs(root_node, (const xmlChar *)SCADA_ED_NS_URI,
       (const xmlChar *)SCADA_ED_NS_PREFIX);
 
-  //FIXME ten namespace je OK?
+  //FIXME pridat tuhle logiku take do "export to src"
+
+  //FIXME musim oba retezce zkopirovat! (protoze save a save_as mohu
+  //  dat vicekrat!)
+
+  /* pointers will never be NULL, becase viewpath and filepath always
+     contain a normalized absolute path */
+  char *view_p = strrchr(scada_ed_global_vars.viewpath, '/');
+  char *file_p = strrchr(scada_ed_global_vars.filepath, '/');
+  *view_p = '\0';
+  *file_p = '\0';
+
+  /* dirname viewpath == dirname filepath */
+  if (strcmp(scada_ed_global_vars.viewpath, scada_ed_global_vars.filepath))
+  {
+    /* will use absolute path to cfgview.xml */
+    *view_p = '/';
+    view_p = scada_ed_global_vars.viewpath;
+  }
+  else
+  {
+    /* will use relative path to cfgview.xml */
+    view_p++;
+  }
+
+  *file_p = '/';
+
   xmlDocSetRootElement(save_doc, root_node);
   xmlNewProp(root_node, BAD_CAST "id", BAD_CAST "kom_map");
   xmlNewProp(root_node, BAD_CAST SCADA_ED_ATTR_VERSION,
       BAD_CAST SCADA_ED_COMPAT_MAJOR "." SCADA_ED_COMPAT_MINOR);
-  xmlNewProp(root_node, BAD_CAST SCADA_ED_ATTR_CONFIG_VIEW,
-      BAD_CAST "cfgview.xml");
+  xmlNewProp(root_node, BAD_CAST SCADA_ED_ATTR_CONFIG_VIEW, BAD_CAST view_p);
+
+  xmlDocPtr view;
+
+  if ((view = xmlParseFile(scada_ed_global_vars.viewpath)) == NULL)
+  {
+    fprintf(stderr, "ERROR: Could'n parse %s\n",
+        scada_ed_global_vars.viewpath);
+    return;
+  }
 
   PtGenTreeItem_t *gen = (PtGenTreeItem_t *)PtTreeRootItem(ABW_tree_wgt);
-  walkOverTreeBranch(gen, save_doc, ns);
+  walkOverTreeBranch(gen, save_doc, ns, view);
 
   xmlSaveFormatFileEnc(scada_ed_global_vars.filepath, save_doc, "UTF-8", 2);
 
@@ -60,23 +94,8 @@ void save_data()
 }
 
 
-void exportToSrc(char *path)
-{
-  FILE *fp = fopen(path, "w");
-
-  if (fp != NULL)
-  {
-    generateSrcFromTree(fp);
-    fclose(fp);
-  }
-  else
-  {
-    fprintf(stderr, "\nFile open error.\n");
-  }
-}
-
-
-void walkOverTreeBranch(PtGenTreeItem_t *gen, xmlDocPtr save_doc, xmlNsPtr ns)
+void walkOverTreeBranch(PtGenTreeItem_t *gen, xmlDocPtr save_doc, xmlNsPtr ns,
+    xmlDocPtr view)
 {
   while (gen != NULL)
   {
@@ -84,16 +103,17 @@ void walkOverTreeBranch(PtGenTreeItem_t *gen, xmlDocPtr save_doc, xmlNsPtr ns)
     assert(((PtTreeItem_t *)gen)->data != NULL);
     assert(((t_table_data *)((PtTreeItem_t *)gen)->data)->xpath != NULL);
 
-    generateXML(((PtTreeItem_t *)gen)->data, save_doc, ns);
+    generateXML(((PtTreeItem_t *)gen)->data, save_doc, ns, view);
 
-    if (gen->son != NULL) walkOverTreeBranch(gen->son, save_doc, ns);
+    if (gen->son != NULL) walkOverTreeBranch(gen->son, save_doc, ns, view);
 
     gen = gen->brother;
   }
 }
 
 /** uses scada_ed_global_vars */
-void generateXML(t_table_data *data, xmlDocPtr save_doc, xmlNsPtr ns)
+void generateXML(t_table_data *data, xmlDocPtr save_doc, xmlNsPtr ns,
+    xmlDocPtr view)
 {
   xmlXPathObjectPtr result = NULL;
   xmlNodeSetPtr nodeset;
@@ -101,16 +121,8 @@ void generateXML(t_table_data *data, xmlDocPtr save_doc, xmlNsPtr ns)
   xmlChar *nodename = NULL;
   xmlChar* source;
   int f2 = 1;
-  xmlDocPtr view;
 
-  //FIXME bool values!!!
-  if ((view = xmlParseFile(scada_ed_global_vars.viewpath))== NULL)
-  {
-    fprintf(stderr, "ERROR: Could'n parse %s\n",
-        scada_ed_global_vars.viewpath);
-    return;
-  }
-
+  //FIXME add support (not only) for bool values in xml!!!
   xmlChar *enhanced_xpath = data->enhanced_xpath;
   xmlChar *xpath = data->xpath;
 
@@ -241,7 +253,9 @@ xmlNodePtr process_node(xmlNodePtr lastnode, xmlChar *nodename, xmlNsPtr ns)
     xmlChar *nodename_pure = getPureNodeNameFrom(nodename);
     tmp = xmlNewChild(lastnode, ns, BAD_CAST nodename_pure, NULL);
     xmlNewProp(tmp, BAD_CAST attrname, BAD_CAST attrvalue);
-  }else{
+  }
+  else
+  {
     tmp = xmlNewChild(lastnode, ns, BAD_CAST nodename, NULL);
   }
 
@@ -271,6 +285,22 @@ xmlChar* getAttrValueFrom(xmlChar *nodename)
 xmlChar* getPureNodeNameFrom(xmlChar *nodename)
 {
   return xmlStrndup(nodename, xmlStrchr(nodename,'[') - nodename);
+}
+
+
+void exportToSrc(char *path)
+{
+  FILE *fp = fopen(path, "w");
+
+  if (fp != NULL)
+  {
+    generateSrcFromTree(fp);
+    fclose(fp);
+  }
+  else
+  {
+    fprintf(stderr, "\nFile open error.\n");
+  }
 }
 
 

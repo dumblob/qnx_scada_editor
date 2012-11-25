@@ -19,8 +19,9 @@ int parseFile(const char *filename, char *viewname)
   xmlDocPtr view = NULL;
 
   xmlInitParser();
-  LIBXML_TEST_VERSION
+  LIBXML_TEST_VERSION;
 
+  /* new file */
   if (filename == NULL)
   {
     assert(viewname != NULL);
@@ -33,6 +34,7 @@ int parseFile(const char *filename, char *viewname)
 
     data = xmlNewDoc(BAD_CAST "1.0");  /* XML version="1.0" */
   }
+  /* existing file */
   else
   {
     assert(viewname == NULL);

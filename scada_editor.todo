@@ -2,9 +2,13 @@ highest priority functionality
   dokumentace
     updatovat napisy a napovedy tlacitek (aby presne sedely s aplikaci)
     pridat nejake bezne use cases
-    popsat "save as" variantu (ze se kopiruje cfgview.xml v pripade,
-      ze se uklada do jineho adresare nez ze ktereho se aktualne
-      nacitalo; v pripade, ze se jedna o prvni ulozeni, tak co????????)
+      new_file + save
+      new_file + save_as
+      new_file + export2src
+      ...
+    popsat save/save_as - ze se vzdy pouzije relativni cesta, pokud
+      jsou oba soubory ve stejnem adresari; v ostatnich pripade se
+      pouzije absolutni cesta
     datovy(configuration) X konfiguracni/layout/view(config-view)
     pridat vsude obrazky
     pridat popisky chybovych vystupu ze src2xml.sh
@@ -29,13 +33,21 @@ highest priority functionality
   bug: cut/copy/paste nejak nefunguje???
 
 testy
-  + ulozeni souboru (tzn. bez cehokoliv nacteneho/otevreneho) => pouze header je vystupem
-  + zavreni bez ulozeni kom_map.xml => OK
-  + ulozeni do xml (kontrola oproti xml ze skriptu) => OK
-  + ulozeni do src (kontrola oproti src originalu) => OK
-  + otevreni cfgview.xml namisto kom_map.xml a vice versa => vypise chybu
-  - otevreni jineho kom_map.xml => prida se proste za existujici strom
+  ? ulozeni souboru (tzn. bez cehokoliv nacteneho/otevreneho) => pouze header je vystupem
+  ? zavreni bez ulozeni kom_map.xml
+  - open_src + save (kontrola oproti xml ze skriptu) => chybi booleany
+  ? open_xml + save (kontrola oproti xml ze skriptu) => chybi booleany
+  - open_src + export_src (kontrola oproti src originalu) => uplne blbe
+  - open_xml + export_src (kontrola oproti src originalu) => uplne blbe
+  ? open_src + open_src_jiny
+  ? open_xml + open_xml_jiny
   ? otevreni znovu stejneho (jiz otevreneho) cfgview.xml
+  - new_file + save (tim testuji zaroven i new_file + save_as) => attribute
+      version not found!
+  ? open_src + new_file + save
+  ? open_xml + new_file + save
+  ? open_src + new_file + save_as
+  ? open_xml + new_file + save_as
 
 funcionalita
   zavirani fd?
