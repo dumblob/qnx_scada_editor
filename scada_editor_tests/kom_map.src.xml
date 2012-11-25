@@ -1,104 +1,97 @@
-<?xml version="1.0" encoding="utf-8" ?>
-<disam:configuration id="kom_map" version="1.0" config-view="cfgview.xml" xmlns:disam="http://www.disam.cz/Xmlns/Scada/Config/1.0/Data">
-
-<disam:admin-limits>
-<disam:admin-item max-pnt="30000" max-ttype="400" max-aoi="256" max-nodes="20" kom-devices="1000" max-roc-ctrl="100" max-ss-ctrl="0" max-fb-ctrl="0" max-counter-ctrl="0"/>
-</disam:admin-limits>
-
-<disam:protocol-setup>
-<disam:protocol-item id="01" kom-task-mbx="1" kom-in-mbx="1" leading-char-value="0x0" end-char-value="0x0" stuff-char-usage="0" stuff-char-value="0x0" checksum-usage="1" checksum-id="1" checksum-len="2" max-mesage-len="2000" description="SIMATIC-300"/>
-<disam:protocol-item id="02" kom-task-mbx="1" kom-in-mbx="1" leading-char-value="0x0" end-char-value="0x0" stuff-char-usage="0" stuff-char-value="0x0" checksum-usage="1" checksum-id="0" checksum-len="2" max-mesage-len="262" description="MODBUS"/>
-</disam:protocol-setup>
-
-<disam:com-setup>
-<disam:com-item id="01" max-channel="1" max-os-per-channel="1" kom-in-port-task="kom_simatic_nio" kom-out-port-task="" kom-out-mbx="1" baud-rate="0" parity="0" stop-bits="0" data-bits="0" kom-type="6" protokol-id="1" description="Kotle"/>
-<disam:com-item id="02" max-channel="1" max-os-per-channel="1" kom-in-port-task="kom_simatic_nio" kom-out-port-task="" kom-out-mbx="1" baud-rate="0" parity="0" stop-bits="0" data-bits="0" kom-type="6" protokol-id="1" description="Vymenikova stanice"/>
-<disam:com-item id="03" max-channel="1" max-os-per-channel="1" kom-in-port-task="kom_modbus_uio" kom-out-port-task="" kom-out-mbx="1" baud-rate="0" parity="0" stop-bits="0" data-bits="0" kom-type="6" protokol-id="2" description="SAH"/>
-</disam:com-setup>
-
-<disam:os-setup>
-<disam:os-item id="01" os-type-id="301" os-type-name="SIMATIC S7 317" AI="192" DI="768" DO="256" AO="256" CT="0" anal-data-len="0" properties="0x0" fix-properties="0x0"/>
-<disam:os-item id="02" os-type-id="302" os-type-name="SIMATIC S7 400" AI="360" DI="1792" DO="640" AO="304" CT="0" anal-data-len="0" properties="0x0" fix-properties="0x0"/>
-<disam:os-item id="03" os-type-id="1019" os-type-name="SAH-MODBUS" AI="80" DI="80" DO="32" AO="32" CT="0" anal-data-len="0" properties="0xf0000" fix-properties="0xf0000"/>
-</disam:os-setup>
-
-<disam:simatic-apl-data>
-<disam:simatic-type id="01">
-<disam:simatic-subtype id="1">
-<disam:simatic-item i-db-no="110" i-offset="0" i-num="120" note="pro skutecne AI na PLC"/>
-<disam:simatic-item i-db-no="-1" i-offset="0" i-num="0" note="= no more"/>
-</disam:simatic-subtype>
-<disam:simatic-subtype id="2">
-<disam:simatic-item i-db-no="-1" i-offset="0" i-num="0" note="= no more"/>
-</disam:simatic-subtype>
-<disam:simatic-subtype id="3">
-<disam:simatic-item i-db-no="-1" i-offset="0" i-num="0" note="= no more"/>
-</disam:simatic-subtype>
-<disam:simatic-subtype id="4">
-<disam:simatic-item i-db-no="106" i-offset="0" i-num="120" note="skutecne AI na PLC"/>
-<disam:simatic-item i-db-no="107" i-offset="128" i-num="24" note="skutecne AO na PLC"/>
-<disam:simatic-item i-db-no="108" i-offset="152" i-num="48" note="interni na PLC"/>
-<disam:simatic-item i-db-no="-1" i-offset="0" i-num="0" note="= no more"/>
-</disam:simatic-subtype>
-<disam:simatic-subtype id="5">
-<disam:simatic-item i-db-no="109" i-offset="0" i-num="256" note="moje AO pro PLC"/>
-<disam:simatic-item i-db-no="-1" i-offset="0" i-num="0" note="= no more"/>
-</disam:simatic-subtype>
-<disam:simatic-subtype id="6">
-<disam:simatic-item i-db-no="101" i-offset="0" i-num="256" note="skutecne DI na PLC (32*8)"/>
-<disam:simatic-item i-db-no="102" i-offset="256" i-num="256" note="skutecne DO na PLC (32*8)"/>
-<disam:simatic-item i-db-no="103" i-offset="512" i-num="256" note="interni na PLC"/>
-<disam:simatic-item i-db-no="-1" i-offset="0" i-num="0" note="= no more"/>
-</disam:simatic-subtype>
-<disam:simatic-subtype id="7">
-<disam:simatic-item i-db-no="104" i-offset="0" i-num="256" note="moje DO pro PLC"/>
-<disam:simatic-item i-db-no="-1" i-offset="0" i-num="0" note="= no more"/>
-</disam:simatic-subtype>
-<disam:simatic-subtype id="8">
-<disam:simatic-item i-db-no="-1" i-offset="0" i-num="0" note="= no more"/>
-</disam:simatic-subtype>
-</disam:simatic-type>
-<disam:simatic-type id="02">
-<disam:simatic-subtype id="1">
-<disam:simatic-item i-db-no="110" i-offset="0" i-num="120" note="pro skutecne AI na PLC"/>
-<disam:simatic-item i-db-no="-1" i-offset="0" i-num="0" note="= no more"/>
-</disam:simatic-subtype>
-<disam:simatic-subtype id="2">
-<disam:simatic-item i-db-no="105" i-offset="0" i-num="120" note="pro skutecne raw AI na PLC"/>
-<disam:simatic-item i-db-no="-1" i-offset="0" i-num="0" note="= no more"/>
-</disam:simatic-subtype>
-<disam:simatic-subtype id="3">
-<disam:simatic-item i-db-no="-1" i-offset="0" i-num="0" note="= no more"/>
-</disam:simatic-subtype>
-<disam:simatic-subtype id="4">
-<disam:simatic-item i-db-no="106" i-offset="0" i-num="120" note="skutecne AI na PLC"/>
-<disam:simatic-item i-db-no="107" i-offset="128" i-num="24" note="skutecne AO na PLC"/>
-<disam:simatic-item i-db-no="108" i-offset="152" i-num="48" note="interni na PLC"/>
-<disam:simatic-item i-db-no="-1" i-offset="0" i-num="0" note="= no more"/>
-</disam:simatic-subtype>
-<disam:simatic-subtype id="5">
-<disam:simatic-item i-db-no="109" i-offset="0" i-num="256" note="moje AO pro PLC"/>
-<disam:simatic-item i-db-no="-1" i-offset="0" i-num="0" note="= no more"/>
-</disam:simatic-subtype>
-<disam:simatic-subtype id="6">
-<disam:simatic-item i-db-no="101" i-offset="0" i-num="256" note="skutecne DI na PLC (32*8)"/>
-<disam:simatic-item i-db-no="102" i-offset="256" i-num="256" note="skutecne DO na PLC (32*8)"/>
-<disam:simatic-item i-db-no="103" i-offset="512" i-num="256" note="interni na PLC"/>
-<disam:simatic-item i-db-no="-1" i-offset="0" i-num="0" note="= no more"/>
-</disam:simatic-subtype>
-<disam:simatic-subtype id="7">
-<disam:simatic-item i-db-no="104" i-offset="0" i-num="256" note="moje DO pro PLC"/>
-<disam:simatic-item i-db-no="-1" i-offset="0" i-num="0" note="= no more"/>
-</disam:simatic-subtype>
-<disam:simatic-subtype id="8">
-<disam:simatic-item i-db-no="-1" i-offset="0" i-num="0" note="= no more"/>
-</disam:simatic-subtype>
-</disam:simatic-type>
-</disam:simatic-apl-data>
-
-<disam:ws-status>
-<disam:ws-item disc-id="01" logged-id="99001" memory-id="99004" cpu-temp-id="99002" rezerva="-1"/>
-<disam:ws-item disc-id="02" logged-id="99011" memory-id="99014" cpu-temp-id="99012" rezerva="-1"/>
-</disam:ws-status>
-
+<?xml version="1.0" encoding="UTF-8"?>
+<disam:configuration xmlns:disam="http://www.disam.cz/Xmlns/Scada/Config/1.0/Data" id="kom_map" version="1.0" config-view="cfgview.xml">
+  <disam:admin-limits>
+    <disam:admin-item max-pnt="30000" max-ttype="400" max-aoi="256" max-nodes="20" kom-devices="1000" max-roc-ctrl="100" max-ss-ctrl="0" max-fb-ctrl="0" max-counter-ctrl="0"/>
+  </disam:admin-limits>
+  <disam:protocol-setup>
+    <disam:protocol-item id="01" kom-task-mbx="" kom-in-mbx="" leading-char-value="0x0" end-char-value="0x0" stuff-char-usage="" stuff-char-value="0x0" checksum-usage="" checksum-id="1" checksum-len="2" max-message-len="0" description="SIMATIC-300"/>
+    <disam:protocol-item id="02" kom-task-mbx="" kom-in-mbx="" leading-char-value="0x0" end-char-value="0x0" stuff-char-usage="" stuff-char-value="0x0" checksum-usage="" checksum-id="0" checksum-len="2" max-message-len="0" description="MODBUS"/>
+  </disam:protocol-setup>
+  <disam:com-setup>
+    <disam:com-item id="01" max-channel="1" max-os-per-channel="1" kom-in-port-task="kom_simatic_nio" kom-out-port-task="" kom-out-mbx="" baud-rate="0" parity="0" stop-bits="0" data-bits="0" kom-type="6" protokol-id="1" description="Kotle"/>
+    <disam:com-item id="02" max-channel="1" max-os-per-channel="1" kom-in-port-task="kom_simatic_nio" kom-out-port-task="" kom-out-mbx="" baud-rate="0" parity="0" stop-bits="0" data-bits="0" kom-type="6" protokol-id="1" description="Vymenikova stanice"/>
+    <disam:com-item id="03" max-channel="1" max-os-per-channel="1" kom-in-port-task="kom_modbus_uio" kom-out-port-task="" kom-out-mbx="" baud-rate="0" parity="0" stop-bits="0" data-bits="0" kom-type="6" protokol-id="2" description="SAH"/>
+  </disam:com-setup>
+  <disam:os-setup>
+    <disam:os-item id="01" os-type-id="301" os-type-name="SIMATIC S7 317" AI="192" DI="768" DO="256" AO="256" CT="0" anal-data-len="0" properties="0x0" fix-properties="0x0"/>
+    <disam:os-item id="02" os-type-id="302" os-type-name="SIMATIC S7 400" AI="360" DI="1792" DO="640" AO="304" CT="0" anal-data-len="0" properties="0x0" fix-properties="0x0"/>
+    <disam:os-item id="03" os-type-id="1019" os-type-name="SAH-MODBUS" AI="80" DI="80" DO="32" AO="32" CT="0" anal-data-len="0" properties="0x983040" fix-properties="0x983040"/>
+  </disam:os-setup>
+  <disam:ws-status>
+    <disam:ws-item disc-id="1" logged-id="99001" memory-id="99004" cpu-temp-id="99002" rezerva="-1"/>
+    <disam:ws-item disc-id="2" logged-id="99011" memory-id="99014" cpu-temp-id="99012" rezerva="-1"/>
+  </disam:ws-status>
+  <disam:simatic-apl-data>
+    <disam:simatic-type id="01">
+      <disam:simatic-subtype id="1">
+        <disam:simatic-item i-db-no="110" i-offset="0" i-num="120" note="pro skutecne AI na PLC"/>
+        <disam:simatic-item i-db-no="-1" i-offset="0" i-num="0" note="= no more"/>
+      </disam:simatic-subtype>
+      <disam:simatic-subtype id="2">
+        <disam:simatic-item i-db-no="-1" i-offset="0" i-num="0" note="= no more"/>
+      </disam:simatic-subtype>
+      <disam:simatic-subtype id="3">
+        <disam:simatic-item i-db-no="-1" i-offset="0" i-num="0" note="= no more"/>
+      </disam:simatic-subtype>
+      <disam:simatic-subtype id="4">
+        <disam:simatic-item i-db-no="106" i-offset="0" i-num="120" note="skutecne AI na PLC"/>
+        <disam:simatic-item i-db-no="107" i-offset="128" i-num="24" note="skutecne AO na PLC"/>
+        <disam:simatic-item i-db-no="108" i-offset="152" i-num="48" note="interni na PLC"/>
+        <disam:simatic-item i-db-no="-1" i-offset="0" i-num="0" note="= no more"/>
+      </disam:simatic-subtype>
+      <disam:simatic-subtype id="5">
+        <disam:simatic-item i-db-no="109" i-offset="0" i-num="256" note="moje AO pro PLC"/>
+        <disam:simatic-item i-db-no="-1" i-offset="0" i-num="0" note="= no more"/>
+      </disam:simatic-subtype>
+      <disam:simatic-subtype id="6">
+        <disam:simatic-item i-db-no="101" i-offset="0" i-num="256" note="skutecne DI na PLC (32*8)"/>
+        <disam:simatic-item i-db-no="102" i-offset="256" i-num="256" note="skutecne DO na PLC (32*8)"/>
+        <disam:simatic-item i-db-no="103" i-offset="512" i-num="256" note="interni na PLC"/>
+        <disam:simatic-item i-db-no="-1" i-offset="0" i-num="0" note="= no more"/>
+      </disam:simatic-subtype>
+      <disam:simatic-subtype id="7">
+        <disam:simatic-item i-db-no="104" i-offset="0" i-num="256" note="moje DO pro PLC"/>
+        <disam:simatic-item i-db-no="-1" i-offset="0" i-num="0" note="= no more"/>
+      </disam:simatic-subtype>
+      <disam:simatic-subtype id="8">
+        <disam:simatic-item i-db-no="-1" i-offset="0" i-num="0" note="= no more"/>
+      </disam:simatic-subtype>
+    </disam:simatic-type>
+    <disam:simatic-type id="02">
+      <disam:simatic-subtype id="1">
+        <disam:simatic-item i-db-no="110" i-offset="0" i-num="120" note="pro skutecne AI na PLC"/>
+        <disam:simatic-item i-db-no="-1" i-offset="0" i-num="0" note="= no more"/>
+      </disam:simatic-subtype>
+      <disam:simatic-subtype id="2">
+        <disam:simatic-item i-db-no="105" i-offset="0" i-num="120" note="pro skutecne raw AI na PLC"/>
+        <disam:simatic-item i-db-no="-1" i-offset="0" i-num="0" note="= no more"/>
+      </disam:simatic-subtype>
+      <disam:simatic-subtype id="3">
+        <disam:simatic-item i-db-no="-1" i-offset="0" i-num="0" note="= no more"/>
+      </disam:simatic-subtype>
+      <disam:simatic-subtype id="4">
+        <disam:simatic-item i-db-no="106" i-offset="0" i-num="120" note="skutecne AI na PLC"/>
+        <disam:simatic-item i-db-no="107" i-offset="128" i-num="24" note="skutecne AO na PLC"/>
+        <disam:simatic-item i-db-no="108" i-offset="152" i-num="48" note="interni na PLC"/>
+        <disam:simatic-item i-db-no="-1" i-offset="0" i-num="0" note="= no more"/>
+      </disam:simatic-subtype>
+      <disam:simatic-subtype id="5">
+        <disam:simatic-item i-db-no="109" i-offset="0" i-num="256" note="moje AO pro PLC"/>
+        <disam:simatic-item i-db-no="-1" i-offset="0" i-num="0" note="= no more"/>
+      </disam:simatic-subtype>
+      <disam:simatic-subtype id="6">
+        <disam:simatic-item i-db-no="101" i-offset="0" i-num="256" note="skutecne DI na PLC (32*8)"/>
+        <disam:simatic-item i-db-no="102" i-offset="256" i-num="256" note="skutecne DO na PLC (32*8)"/>
+        <disam:simatic-item i-db-no="103" i-offset="512" i-num="256" note="interni na PLC"/>
+        <disam:simatic-item i-db-no="-1" i-offset="0" i-num="0" note="= no more"/>
+      </disam:simatic-subtype>
+      <disam:simatic-subtype id="7">
+        <disam:simatic-item i-db-no="104" i-offset="0" i-num="256" note="moje DO pro PLC"/>
+        <disam:simatic-item i-db-no="-1" i-offset="0" i-num="0" note="= no more"/>
+      </disam:simatic-subtype>
+      <disam:simatic-subtype id="8">
+        <disam:simatic-item i-db-no="-1" i-offset="0" i-num="0" note="= no more"/>
+      </disam:simatic-subtype>
+    </disam:simatic-type>
+  </disam:simatic-apl-data>
 </disam:configuration>

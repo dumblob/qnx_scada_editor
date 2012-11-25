@@ -1,5 +1,6 @@
 highest priority functionality
   dokumentace
+    updatovat napisy a napovedy tlacitek (aby presne sedely s aplikaci)
     pridat nejake bezne use cases
     popsat "save as" variantu (ze se kopiruje cfgview.xml v pripade,
       ze se uklada do jineho adresare nez ze ktereho se aktualne
@@ -9,6 +10,7 @@ highest priority functionality
     pridat popisky chybovych vystupu ze src2xml.sh
     pridat informaci, ze XML minor verze je zpetne i dopredne kompatibilni
                              major verze NEni zpetne ani dopredne kompatibilni
+  zohlednovat "comment" jako bublinovou napovedu v tabulkach
   jmenne prostory + verze "sjednotit" (datovy + config-view musi byt
       stejna) a respektovat v editoru
     export

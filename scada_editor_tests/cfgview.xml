@@ -69,6 +69,16 @@
       </disam:table>
     </disam:tree-node>
 
+    <disam:tree-node name="WS Status">
+      <disam:table source="/configuration/ws-status/ws-item">
+        <column label="Disc ID" source="@disc-id" type="number" comment="Obsazeny prostor disku"/>
+        <column label="Logged ID" source="@logged-id" type="number" comment="Status prihlaseni"/>
+        <column label="Memory ID" source="@memory-id" type="number" comment="Obsazena pamet"/>
+        <column label="CPU temperature ID" source="@cpu-temp-id" type="number" comment="Teplota CPU"/>
+        <column label="rezerva" source="@rezerva" type="number" comment="Rezerva (viz. KFG_S_WS_STAT_LIST)"/>
+      </disam:table>
+    </disam:tree-node>
+
     <disam:tree-node name="Simatic Data">
       <disam:tree-node name="@id" source="/configuration/simatic-apl-data/simatic-type">
         <xsl:variable name="tid" select="@id"/>

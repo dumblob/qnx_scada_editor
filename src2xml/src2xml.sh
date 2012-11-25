@@ -39,6 +39,7 @@ if file "$F_IN" | cut -c $(echo "$F_IN" | wc -m)- | grep 'XML' > /dev/null; then
   echo "It is an XML document yet." >&2
   exit_fn 0
 else
+  echo "Converting to XML..." >&2
   cat "$F_IN" | F_IN="$(basename "$F_IN")" awk '
   BEGIN {
     NMSPC = "disam:"  # namespace
@@ -52,7 +53,7 @@ else
     # for case filename was only from dots
     if (! f_in) { f_in = ENVIRON["F_IN"] }
 
-    print "<?xml version=\"1.0\" encoding=\"utf-8\" ?>"
+    print "<?xml version=\"1.0\" encoding=\"utf-8\"?>"
     print "<" NMSPC "configuration" \
           " id=\"" f_in "\"" \
           " version=\"1.0\"" \
@@ -368,6 +369,7 @@ else
   }
   ' > "$F_OUT" || exit_fn 2
 
+  echo "Conversion successfull (however be aware of WARNings)!"
   exit_fn 1
 fi
 

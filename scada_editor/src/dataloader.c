@@ -13,17 +13,13 @@ extern struct scada_ed_global_vars_s scada_ed_global_vars;
 
 /** one of these 2 args must be NULL (but not both)
  * uses scada_ed_global_vars */
-int parseFile(char *filename, char *viewname)
+int parseFile(const char *filename, char *viewname)
 {
   xmlDocPtr data = NULL;
   xmlDocPtr view = NULL;
 
   xmlInitParser();
   LIBXML_TEST_VERSION
-
-#ifndef NDEBUG
-    printf("filename %s\n", filename);
-#endif
 
   if (filename == NULL)
   {
@@ -75,7 +71,7 @@ int parseFile(char *filename, char *viewname)
           return -1;
         }
         break;
-        /* conversion success */
+      /* conversion success */
       case 1:
         if ((data = xmlParseFile(dst)) == NULL) {
           fprintf(stderr, "Data file \"%s\" not parsed successfully.\n", dst);
@@ -91,37 +87,47 @@ int parseFile(char *filename, char *viewname)
         return -1;
     }
 
-    free(command);
-    free(dst);
+    if (scada_ed_global_vars.viewpath != NULL)
+      free(scada_ed_global_vars.viewpath);
+
+    if ((scada_ed_global_vars.viewpath =
+          getCfgviewNameFromData(data)) == NULL)
+      return -1;
 
     char *dirname_end;
-    char *s = getCfgviewNameFromData(data);
-
-    if (s == NULL) return -1;
 
     /* support both relative and absolute paths */
-    if ((dirname_end = strrchr(filename, '/')) == NULL)
-    {
-      view = xmlParseFile(s);
-    }
-    else
+    if ((dirname_end = strrchr(filename, '/')) != NULL)
     {
       viewname = (char *)malloc(sizeof(char) *
-          /* /some/path + / + s + \0 */
-          (dirname_end - filename +1 + strlen(s) +1));
+          /* /some/path + / + viewpath + \0 */
+          (dirname_end - filename +1 +
+           strlen(scada_ed_global_vars.viewpath) +1));
+
       if (viewname == NULL) PtExit(EXIT_FAILURE);
 
       /* dirname with end-slash from filename */
       *(dirname_end +1) = '\0';
-      sprintf(viewname, "%s%s", filename, s);
+      sprintf(viewname, "%s%s", filename, scada_ed_global_vars.viewpath);
 
-      view = xmlParseFile(viewname);
-      free(viewname);
+      xmlFree(BAD_CAST scada_ed_global_vars.viewpath);
+      scada_ed_global_vars.viewpath = viewname;
     }
 
-    xmlFree((xmlChar *)s);
+    if (scada_ed_global_vars.filepath != NULL)
+      free(scada_ed_global_vars.filepath);
 
-    if (view == NULL) return -1;
+    scada_ed_global_vars.filepath = dst;
+    free(command);
+
+#ifndef NDEBUG
+    printf("global.filepath %s\nglobal.viewpath %s\n",
+        scada_ed_global_vars.filepath,
+        scada_ed_global_vars.viewpath);
+#endif
+
+    if ((view = xmlParseFile(scada_ed_global_vars.viewpath)) == NULL)
+      return -1;
   }
 
   loadViewAndData(view, data);
@@ -225,7 +231,7 @@ void loadViewAndData(xmlDocPtr view, const xmlDocPtr data)
                 }
                 else
                   fprintf(stderr, "ERROR: XML major version other than "
-                      SCADA_ED_COMPAT_MAJOR " is not supported.\n",);
+                      SCADA_ED_COMPAT_MAJOR " is not supported.\n");
               }
               else
                 fprintf(stderr, "ERROR: Major version mismatch (%d x %d)"

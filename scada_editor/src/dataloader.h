@@ -28,7 +28,7 @@ typedef struct {
   t_xml_attr_type type;
 } t_xml_info;
 
-int parseFile(char *, char *);
+int parseFile(const char *, char *);
 char *getCfgviewNameFromData(xmlDocPtr);
 void loadViewAndData(xmlDocPtr, const xmlDocPtr);
 void parseTreeNode(xmlNodePtr, xmlNodePtr, const xmlDocPtr,

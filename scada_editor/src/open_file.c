@@ -36,11 +36,9 @@ int open_file(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
     freeAllMemory();
 
     if (scada_ed_global_vars.filepath != NULL)
-    {
       free(scada_ed_global_vars.filepath);
-      scada_ed_global_vars.filepath = NULL;
-    }
 
+    /* datafile.path is on stack (defined as path[SOME_MAX]) */
     scada_ed_global_vars.filepath = (char*)malloc(sizeof(datafile.path));
 
     if (scada_ed_global_vars.filepath == NULL)
@@ -48,7 +46,7 @@ int open_file(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
 
     strcpy(scada_ed_global_vars.filepath, datafile.path);
 
-    parseFile(datafile.path, NULL);
+    parseFile(scada_ed_global_vars.filepath, NULL);
   }
 
   return Pt_CONTINUE;
