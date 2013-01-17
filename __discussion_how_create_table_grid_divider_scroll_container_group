@@ -1,0 +1,11 @@
+I need a grid-like widget containing "inside" widgets (PtButton, PtText, PtToggleButton, PtNumericFloat or PtNumericInteger), with column resizing by dragging with mouse. These inside widgets should have uniform heigh and widgets in the same column should have the same width. Any of these inside widgets can get focus at any time (e.g. by clicking on it with LMB). There shall be possibility to remove and add the "inside" widgets (thus I can simulate row manipulation).
+
+I tried to implement this behavior using different methods provided by Photon API, but without any luck. I've tried to use anchoring, different containers (PtDivider, PtContainer, PtScrollContainer, PtGroup) and layouts. I've figured, layouts are probably working only in PtWindow; resize policies do not work in nested widgets (neither for parents nor for childs) and the only possibility to display nested widgets is to specify a fixed size which is of course unusable for my purposes. I know, PtScrollContainer needs to know from its childs their size, but it does not work either. It is apparent, the "PtDivider in PtTree" solution does not suffice because of the need to use different widgets inside different grid cells (and not only text separated by tabulator characters!).
+
+The following code demonstrates the latest attempt to acomplish a grid-like widget. I'd like to use the grid-like widget in my final application just as is shown in this demo (i.e. nested in a PtContainer which is a direct child of PtWindow). If I try to use e.g. "PtGroup" instead of "PtContainer with Pt_LAYOUT_VERTICAL", the buttons don't get resized (they both don't fill the available width and don't allow the PtDivider to resize the column width). I've tried to accomplish the widge using PtGridLayout instead of PtRowLayout, but the result was the same as with PtRowLayout (i.e. no widgets displayed).
+
+http://pastebin.com/2Ej9bEzg
+
+Any help would be much appreciated.
+
+vim: set wrap:

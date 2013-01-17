@@ -1,31 +1,19 @@
-# make [  | all | debug | submit | submit_zip | clean ]
-
-HDR = table.h main_testing.h
-SRC = main_testing.c table.c
-EXE ?= demo_table
-SUB ?= $(EXE)
-CC ?= cc
-CFLAGS ?= -W -Wall -Wextra -pedantic -lph #-lm -Werror -std=c99
-
+HDR = table_new.h
+SRC = table_new_demo.c table_new.c
 OBJ = $(SRC:.c=.o)
+EXE = table_new
+CC = gcc
+#-Wextra used to be -W
+CFLAGS = -DDEBUG -g3 -Wall -Wextra  #-lm -Werror -std=c99
+#CFLAGS = -DDEBUG -g3 -Wall -Wextra -pedantic  #-lm -Werror -std=c99
 
 all: $(EXE)
 
-debug: CFLAGS += -DDEBUG -g -ggdb3
-debug: CC += -DDEBUG -g
-debug: all
-
 $(EXE): $(OBJ)
-	$(CC) $(CFLAGS) -O2 -o $@ $(OBJ)
-
-submit:
-	tar cvzf $(SUB).tar.gz $(SRC) $(HDR) Makefile
-
-submit_zip:
-	zip -q $(SUB).zip -9 $(SRC) $(HDR) Makefile
-
-clean:
-	rm -f $(OBJ) $(EXE) $(SUB).tar.gz *~
+	$(CC) $(CFLAGS) -O2 -lph -lm -o $@ $(OBJ)  # -lpthread
 
 .c.o:
-	$(CC) $(CFLAGS) -c $<
+	$(CC) $(CFLAGS) -O2 -c $<
+
+clean:
+	rm -f $(OBJ) $(EXE) *~

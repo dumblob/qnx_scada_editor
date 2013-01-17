@@ -26,7 +26,8 @@ highest priority functionality
       pridat je do dataloader.c
       pridat je do export XML (tady budou potreba asi nejake konverze) a src
     sirka sloupce jako atribut cfgview.xml
-  limity (min, max) u cisel; zacervenit a pri ukladani modalni dialog...
+  limity (min, max) u cisel
+  pri ukladani zacervenit chybna mista + zobrazit modalni dialog (k cemu????)
   bug: resize/zvetseni okna => presunuti tabulky na jine souradnice
     zarovna se pravy horni roh "tabulky" (tzn. take container) k tomu
     "container" widgetu
