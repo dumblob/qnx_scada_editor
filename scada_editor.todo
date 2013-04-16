@@ -1,28 +1,54 @@
 highest priority functionality
   dokumentace
+    updatovat napisy a napovedy tlacitek (aby presne sedely s aplikaci)
+    pridat nejake bezne use cases
+      new_file + save
+      new_file + save_as
+      new_file + export2src
+      ...
+    popsat save/save_as - ze se vzdy pouzije relativni cesta, pokud
+      jsou oba soubory ve stejnem adresari; v ostatnich pripade se
+      pouzije absolutni cesta
     datovy(configuration) X konfiguracni/layout/view(config-view)
     pridat vsude obrazky
-  jmenne prostory + verze "sjednotit" (datovy + config-view musi byt stejna) a respektovat v editoru
-    respektovat verzi z XML konfiguraku (novejsi nez X.X editor odmitne otevrit!)
-    datovy: pokud xmlns:config-view="" zacina /, tak se jedna o absolutni cestu
-      jinak relativni (=> dirname "kom_map.xml" .. xmlns:config-view)
+    pridat popisky chybovych vystupu ze src2xml.sh
+    pridat informaci, ze XML minor verze je zpetne i dopredne kompatibilni
+                             major verze NEni zpetne ani dopredne kompatibilni
+  zohlednovat "comment" jako bublinovou napovedu v tabulkach
+  jmenne prostory + verze "sjednotit" (datovy + config-view musi byt
+      stejna) a respektovat v editoru
+    export
+      xml: natvrdo cfgview.xml + SCADA_ED_namespace...
+      src: if (sekce == ADMIN_LIMITS) then vypisuj sloupce na radek
   rozsirit funkcionalitu tabulkoveho widgetu
     nove typy (parita...) => nove widgety (combo-box atd.)
+      pridat je do cfgview.xml
+      pridat je do dataloader.c
+      pridat je do export XML (tady budou potreba asi nejake konverze) a src
     sirka sloupce jako atribut cfgview.xml
-  limity (min, max) u cisel; zacervenit a pri ukladani modalni dialog...
+  limity (min, max) u cisel
+  pri ukladani zacervenit chybna mista + zobrazit modalni dialog (k cemu????)
   bug: resize/zvetseni okna => presunuti tabulky na jine souradnice
     zarovna se pravy horni roh "tabulky" (tzn. take container) k tomu
     "container" widgetu
   bug: cut/copy/paste nejak nefunguje???
 
 testy
-  + ulozeni souboru (tzn. bez cehokoliv nacteneho/otevreneho) => pouze header je vystupem
-  + zavreni bez ulozeni kom_map.xml => OK
-  + ulozeni do xml (kontrola oproti xml ze skriptu) => OK
-  + ulozeni do src (kontrola oproti src originalu) => OK
-  + otevreni cfgview.xml namisto kom_map.xml a vice versa => vypise chybu
-  - otevreni jineho kom_map.xml => prida se proste za existujici strom
+  ? ulozeni souboru (tzn. bez cehokoliv nacteneho/otevreneho) => pouze header je vystupem
+  ? zavreni bez ulozeni kom_map.xml
+  - open_src + save (kontrola oproti xml ze skriptu) => chybi booleany
+  ? open_xml + save (kontrola oproti xml ze skriptu) => chybi booleany
+  - open_src + export_src (kontrola oproti src originalu) => uplne blbe
+  - open_xml + export_src (kontrola oproti src originalu) => uplne blbe
+  ? open_src + open_src_jiny
+  ? open_xml + open_xml_jiny
   ? otevreni znovu stejneho (jiz otevreneho) cfgview.xml
+  - new_file + save (tim testuji zaroven i new_file + save_as) => attribute
+      version not found!
+  ? open_src + new_file + save
+  ? open_xml + new_file + save
+  ? open_src + new_file + save_as
+  ? open_xml + new_file + save_as
 
 funcionalita
   zavirani fd?

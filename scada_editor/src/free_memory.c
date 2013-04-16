@@ -1,30 +1,35 @@
 /* Jan Pacner xpacne00@stud.fit.vutbr.cz 2012-08-11 11:06:03 CEST */
 
+#ifndef NDEBUG
+#include <fcntl.h>
+#include <stdio.h>
+#endif
+#include <stdbool.h>
+#include <assert.h>
 #include "free_memory.h"
 #include "dataloader.h"
-#include <assert.h>
-#include <stdbool.h>
-
-#include <fcntl.h>  //FIXME debug
-#include <stdio.h>  //FIXME debug
 
 void freeAllMemory()
 {
-  //FIXME debug
-  fcntl(fileno(stdout), F_SETFL, fcntl(stdout, F_GETFL) | O_SYNC);
+#ifndef NDEBUG
+  fcntl(fileno(stdout), F_SETFL, fcntl(fileno(stdout), F_GETFL) | O_SYNC);
+#endif
+
   /* free tables, xpaths, etc. */
   freeInnerStructures((PtGenTreeItem_t *)PtTreeRootItem(ABW_tree_wgt), false);
 
-//FIXME debug {{{
-static short first_call = 1;
-if (first_call)
-  first_call = 0;
-else
-  printf("END in freeAllMemory()\n");
-//FIXME }}}
+  /* no need to free the global list with attr names and values */
 
-  /* free ABW_tree_wgt content */
-  /*PtGenTreeFreeAllItems(ABW_tree_wgt);*/
+  /* can't use following, because of _keey_first */
+  //PtGenTreeFreeAllItems(ABW_tree_wgt);
+
+#ifndef NDEBUG
+  static short first_call = 1;
+  if (first_call)
+    first_call = 0;
+  else
+    printf("END in freeAllMemory()\n");
+#endif
 }
 
 
@@ -78,15 +83,11 @@ void freeInnerStructures(PtGenTreeItem_t *gen, bool _keep_first)
     {
       assert(data->xpath != NULL);
       xmlFree(data->xpath);
-      //data->xpath = NULL;//FIXME
 
       assert(data->enhanced_xpath != NULL);
       xmlFree(data->enhanced_xpath);
-      //data->enhanced_xpath = NULL;//FIXME
 
       free(data);
-      //((PtTreeItem_t *)gen)->data = NULL;
-      //data = NULL;//FIXME
     }
 
     PtGenTreeItem_t *tmp = gen;

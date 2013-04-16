@@ -16,9 +16,11 @@
 #include "dataloader.h"
 #include "filepicker.h"
 #include "free_memory.h"
+#include "global_vars.h"
 
-extern char *viewpath;
+extern struct scada_ed_global_vars_s scada_ed_global_vars;
 
+/** uses scada_ed_global_vars */
 int new_file(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
 {
   /* eliminate 'unreferenced' warnings */
@@ -27,23 +29,26 @@ int new_file(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
   int formatf = -1;
 
   PtFileSelectionInfo_t formatfile;
-  formatf = showFileSelector(&formatfile, "Select format file...","Select");
+  formatf = showFileSelector(&formatfile, "Select format file...", "Select");
 
   if (formatf == -1)
   {
-    return (Pt_CONTINUE);
+    return Pt_CONTINUE;
   }
   else
   {
     freeAllMemory();
 
-    if (viewpath != NULL) free(viewpath);
+    if (scada_ed_global_vars.viewpath != NULL)
+      free(scada_ed_global_vars.viewpath);
 
-    viewpath = (char*) malloc(sizeof(formatfile.path));
-    strcpy(viewpath, formatfile.path);
+    if ((scada_ed_global_vars.viewpath =
+          (char*)malloc(sizeof(formatfile.path))) == NULL)
+      PtExit(EXIT_FAILURE);
+
+    strcpy(scada_ed_global_vars.viewpath, formatfile.path);
     parseFile(NULL, formatfile.path);
   }
 
   return Pt_CONTINUE;
 }
-

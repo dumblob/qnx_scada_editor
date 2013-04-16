@@ -14,7 +14,7 @@ max_counter_ctrl=0;
 #id; kom_task_mbx (0/1), kom_in_mbx (0/1); \
 #    leading_char_value, end_char_value, stuff_char_usage (0/1), stuff_char_value; \
 #    checksum_usage (0/1), checksum_id, checksum_len; \
-#    max_mesage_len; description
+#    max_message_len; description
 01; 1, 1; 0x0, 0x0, 0, 0x0; 1, 1, 2; 2000; "SIMATIC-300"
 02; 1, 1; 0x0, 0x0, 0, 0x0; 1, 0, 2; 262; "MODBUS"
 

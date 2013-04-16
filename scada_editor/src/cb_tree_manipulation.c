@@ -17,17 +17,21 @@
 #include "dataloader.h"
 #include "assert.h"
 #include "free_memory.h"
+#include "global_vars.h"
 
-#define SCADA_EDITOR_MSG_NEW_ID "Write down a new, unique id:"
+#define SCADA_ED_MSG_NEW_ID "Write down a new, unique id:"
 #define BUF_MAX 128
+
+extern struct scada_ed_global_vars_s scada_ed_global_vars;
 
 enum en_manipulate_tree_action
 {
-  SCADA_EDITOR_ADD_ITEM_BEFORE,
-  SCADA_EDITOR_ADD_ITEM_AFTER,
-  SCADA_EDITOR_RENAME_ITEM
+  SCADA_ED_ADD_ITEM_BEFORE,
+  SCADA_ED_ADD_ITEM_AFTER,
+  SCADA_ED_RENAME_ITEM
 };
 
+/** uses scada_ed_global_vars */
 int newSkeleton(PtGenTreeItem_t *recent, PtGenTreeItem_t *pattern)
 {
   t_table_data *pattern_data = (t_table_data *)((PtTreeItem_t *)pattern)->data;
@@ -72,7 +76,7 @@ int newSkeleton(PtGenTreeItem_t *recent, PtGenTreeItem_t *pattern)
   }
 
   ((PtTreeItem_t *)recent)->data = newTableData(tbl,
-    xmlStrdup(pattern_data->xpath));
+    xmlStrdup(pattern_data->xpath), scada_ed_global_vars.l_head);
 
   PtTreeExpand(ABW_tree_wgt, (PtTreeItem_t *)recent, NULL);
 
@@ -88,10 +92,10 @@ void manipulateTree(enum en_manipulate_tree_action action)
   if (buf[0] != NULL && buf[0]->gen.father != NULL)
   {
     char answer[BUF_MAX];
-    char *msg = SCADA_EDITOR_MSG_NEW_ID;
+    char *msg = SCADA_ED_MSG_NEW_ID;
 
     /* prefill with current content (name) */
-    if (action == SCADA_EDITOR_RENAME_ITEM)
+    if (action == SCADA_ED_RENAME_ITEM)
     {
       strncpy(answer, buf[0]->string, BUF_MAX -1);
       answer[BUF_MAX -1] = '\0';
@@ -106,7 +110,7 @@ void manipulateTree(enum en_manipulate_tree_action action)
       int ret = PtPrompt(
           ABW_base, /* PtWidget_t *parent */
           NULL, /* PhPoint_t const *location */
-          (SCADA_EDITOR_RENAME_ITEM) ? "Rename item" : "New item", /* char const *title */
+          (SCADA_ED_RENAME_ITEM) ? "Rename item" : "New item", /* char const *title */
           NULL, /* PhImage_t const *image */
           msg, /* char const *message */
           NULL, /* char const *msgFont */
@@ -126,7 +130,7 @@ void manipulateTree(enum en_manipulate_tree_action action)
         if (*answer == '\0')
         {
           msg = "Given id must contain at least 1 character!\n"
-                SCADA_EDITOR_MSG_NEW_ID;
+                SCADA_ED_MSG_NEW_ID;
         }
         else
         {
@@ -148,11 +152,11 @@ void manipulateTree(enum en_manipulate_tree_action action)
           if (found)
           {
             msg = "Given id already exists!\n"
-                  SCADA_EDITOR_MSG_NEW_ID;
+                  SCADA_ED_MSG_NEW_ID;
           }
           else
           {
-            if (action == SCADA_EDITOR_RENAME_ITEM)
+            if (action == SCADA_ED_RENAME_ITEM)
             {
               PtTreeModifyItemString(ABW_tree_wgt, buf[0], answer);
             }
@@ -161,17 +165,17 @@ void manipulateTree(enum en_manipulate_tree_action action)
               PtTreeItem_t *item = PtTreeAllocItem(ABW_tree_wgt, answer, -1, -1);
               gen = buf[0]->gen.father->son;
 
-              if (action == SCADA_EDITOR_ADD_ITEM_AFTER)
+              if (action == SCADA_ED_ADD_ITEM_AFTER)
               {
                 PtTreeAddAfter(ABW_tree_wgt, item, gen);
               }
-              /* SCADA_EDITOR_ADD_ITEM_BEFORE, current item is the first one */
+              /* SCADA_ED_ADD_ITEM_BEFORE, current item is the first one */
               else if (gen == &buf[0]->gen)
               {
                 PtTreeAddFirst(ABW_tree_wgt, item,
                     (PtTreeItem_t *)buf[0]->gen.father);
               }
-              /* SCADA_EDITOR_ADD_ITEM_BEFORE */
+              /* SCADA_ED_ADD_ITEM_BEFORE */
               else
               {
                 while (gen->brother != &buf[0]->gen) gen = gen->brother;
@@ -202,7 +206,7 @@ int addTreeItemBefore(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cb
   /* eliminate 'unreferenced' warnings */
   widget = widget, apinfo = apinfo, cbinfo = cbinfo;
 
-  manipulateTree(SCADA_EDITOR_ADD_ITEM_BEFORE);
+  manipulateTree(SCADA_ED_ADD_ITEM_BEFORE);
 
   return Pt_CONTINUE;
 }
@@ -212,7 +216,7 @@ int addTreeItemAfter(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbi
 {
   widget = widget, apinfo = apinfo, cbinfo = cbinfo;
 
-  manipulateTree(SCADA_EDITOR_ADD_ITEM_AFTER);
+  manipulateTree(SCADA_ED_ADD_ITEM_AFTER);
 
   return Pt_CONTINUE;
 }
@@ -222,7 +226,7 @@ int renameTreeItem(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinf
 {
   widget = widget, apinfo = apinfo, cbinfo = cbinfo;
 
-  manipulateTree(SCADA_EDITOR_RENAME_ITEM);
+  manipulateTree(SCADA_ED_RENAME_ITEM);
 
   return Pt_CONTINUE;
 }

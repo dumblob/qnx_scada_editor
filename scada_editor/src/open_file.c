@@ -16,23 +16,18 @@
 #include "dataloader.h"
 #include "filepicker.h"
 #include "free_memory.h"
+#include "global_vars.h"
 
-char *filepath = NULL;
-char *viewpath = NULL;
+extern struct scada_ed_global_vars_s scada_ed_global_vars;
 
+/** uses scada_ed_global_vars */
 int open_file(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
 {
   /* eliminate 'unreferenced' warnings */
   widget = widget, apinfo = apinfo, cbinfo = cbinfo;
 
   int dataf = -1;
-  int formatf = -1;
   PtFileSelectionInfo_t datafile;
-  PtFileSelectionInfo_t formatfile;
-
-  formatf = showFileSelector(&formatfile, "Select format file...", "Open");
-
-  if (formatf == -1) return Pt_CONTINUE;
 
   dataf = showFileSelector(&datafile, "Select data file...", "Open");
 
@@ -40,26 +35,18 @@ int open_file(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
   {
     freeAllMemory();
 
-    if (filepath != NULL) {
-      free(filepath);
-      filepath = NULL;
-    }
+    if (scada_ed_global_vars.filepath != NULL)
+      free(scada_ed_global_vars.filepath);
 
-    if (viewpath != NULL) {
-      free(viewpath);
-      viewpath = NULL;
-    }
+    /* datafile.path is on stack (defined as path[SOME_MAX]) */
+    scada_ed_global_vars.filepath = (char*)malloc(sizeof(datafile.path));
 
-    if ((filepath = (char*)malloc(sizeof(datafile.path))) == NULL)
+    if (scada_ed_global_vars.filepath == NULL)
       PtExit(EXIT_FAILURE);
 
-    if ((viewpath = (char*)malloc(sizeof(formatfile.path))) == NULL)
-      PtExit(EXIT_FAILURE);
+    strcpy(scada_ed_global_vars.filepath, datafile.path);
 
-    strcpy(filepath, datafile.path);
-    strcpy(viewpath, formatfile.path);
-
-    parseFile(datafile.path, formatfile.path);
+    parseFile(scada_ed_global_vars.filepath, NULL);
   }
 
   return Pt_CONTINUE;

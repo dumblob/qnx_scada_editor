@@ -59,7 +59,7 @@ typedef struct
 /**
  * table widget destruction callback
  * @param calling widget
- * @param data (not used => NULL)
+ * @param data (NULL means "not used")
  * @param cbinfo (not used)
  * @return Pt_CONTINUE if OK; otherwise Pt_END
  */

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<disam:configuration xmlns:disam="http://www.disam.cz/Xmlns/Scada/Config/1.0/Data" id="kom_map" version="1.0" config-view="cfgview.xml">
+  <disam:admin-limits/>
+  <disam:protocol-setup/>
+  <disam:com-setup/>
+  <disam:os-setup/>
+  <disam:simatic-apl-data>
+    <disam:simatic-type id="1">
+      <disam:simatic-subtype id="1"/>
+      <disam:simatic-subtype id="2"/>
+      <disam:simatic-subtype id="3"/>
+      <disam:simatic-subtype id="4"/>
+      <disam:simatic-subtype id="5"/>
+      <disam:simatic-subtype id="6"/>
+      <disam:simatic-subtype id="7"/>
+      <disam:simatic-subtype id="8"/>
+    </disam:simatic-type>
+    <disam:simatic-type id="02">
+      <disam:simatic-subtype id="1"/>
+      <disam:simatic-subtype id="2"/>
+      <disam:simatic-subtype id="3"/>
+      <disam:simatic-subtype id="4"/>
+      <disam:simatic-subtype id="5"/>
+      <disam:simatic-subtype id="6"/>
+      <disam:simatic-subtype id="7"/>
+      <disam:simatic-subtype id="8"/>
+    </disam:simatic-type>
+    <disam:simatic-type id="03">
+      <disam:simatic-subtype id="1"/>
+      <disam:simatic-subtype id="2"/>
+      <disam:simatic-subtype id="3"/>
+      <disam:simatic-subtype id="4"/>
+      <disam:simatic-subtype id="5"/>
+      <disam:simatic-subtype id="6"/>
+      <disam:simatic-subtype id="7"/>
+      <disam:simatic-subtype id="8"/>
+    </disam:simatic-type>
+  </disam:simatic-apl-data>
+</disam:configuration>

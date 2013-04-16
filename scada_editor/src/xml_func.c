@@ -1,18 +1,19 @@
+/*
+ * xjerab13
+ * 2012-10-28 19:46:57 CET
+ */
+
 #include "xml_func.h"
 #include "assert.h"
-
-t_variable_list *first = NULL;
-t_variable_list *last = NULL;
-
-#define SCADA_EDITOR_NS_URI BAD_CAST "http://www.disam.cz/Xmlns/Scada/Configuration"
-#define SCADA_EDITOR_NS_PREFIX BAD_CAST "disam"
 
 #define myXMLNewChild(doc, node, s, ns, counter) \
 	do { \
 		if (counter == 0) { \
-			(ns) = xmlNewNs(NULL, SCADA_EDITOR_NS_URI, SCADA_EDITOR_NS_PREFIX); \
+			(ns) = xmlNewNs(NULL, BAD_CAST SCADA_ED_NS_URI, \
+					BAD_CAST SCADA_ED_NS_PREFIX); \
 			(node) = xmlNewNode((ns), BAD_CAST (s)); \
-			xmlNewNs((node), SCADA_EDITOR_NS_URI, SCADA_EDITOR_NS_PREFIX); \
+			xmlNewNs((node), BAD_CAST SCADA_ED_NS_URI, \
+					BAD_CAST SCADA_ED_NS_PREFIX); \
 			xmlDocSetRootElement((document), (node)); \
 		} \
 		else { \
@@ -22,11 +23,14 @@ t_variable_list *last = NULL;
 		++counter; \
 	} while (0)
 
-xmlXPathObjectPtr loadDataFromXpathNS(xmlChar* xpath, xmlDocPtr document, bool handle_new_file)
+
+xmlXPathObjectPtr loadDataFromXpathNS(xmlChar* xpath, xmlDocPtr document,
+		bool handle_new_file, t_variable_list *l_head)
 {
 	xmlXPathObjectPtr result = NULL;
-	xmlChar *enhanced_xpath = process_variable(xpath);
-	xmlChar *full_xpath = enhance_xpath(enhanced_xpath, SCADA_EDITOR_NS_PREFIX);
+	xmlChar *enhanced_xpath = process_variable(xpath, l_head);
+	xmlChar *full_xpath = enhance_xpath(enhanced_xpath,
+			BAD_CAST SCADA_ED_NS_PREFIX);
 
 	/* handle new file: construct a simple, minimal XML tree from the given
 	   xpath, containing always only one children  */
@@ -91,9 +95,14 @@ xmlXPathObjectPtr loadDataFromXpathNS(xmlChar* xpath, xmlDocPtr document, bool h
 		return NULL;
 	}
 
-	if (xmlXPathRegisterNs(context, SCADA_EDITOR_NS_PREFIX, SCADA_EDITOR_NS_URI))
+	/* avoid usage of SCADA_ED_NS_PREFIX and SCADA_ED_NS_URI because
+	   of problems with non-existing items in half-filled PtTree in GUI */
+	xmlNodePtr x = xmlDocGetRootElement(document);
+	assert(x->ns != NULL);
+
+	if (xmlXPathRegisterNs(context, x->ns->prefix, x->ns->href))
 	{
-		fprintf(stderr, "Error when registering namespace.\n");
+		fprintf(stderr, "Error while registering namespace.\n");
 		result = NULL;
 	}
 	else
@@ -103,6 +112,12 @@ xmlXPathObjectPtr loadDataFromXpathNS(xmlChar* xpath, xmlDocPtr document, bool h
 		/* no result detected */
 		if (result != NULL && xmlXPathNodeSetIsEmpty(result->nodesetval))
 		{
+			fprintf(stderr, "WARNING: No results for XPath %s\n", full_xpath);
+#ifndef NDEBUG
+			//xmlDocFormatDump(stderr, document, 1);
+			//htmlDocDump(stderr, document);
+			//xmlDebugDumpDocument(stderr, document);
+#endif
 			xmlXPathFreeObject(result);
 			result = NULL;
 		}
@@ -115,32 +130,16 @@ xmlXPathObjectPtr loadDataFromXpathNS(xmlChar* xpath, xmlDocPtr document, bool h
 }
 
 
-xmlChar * get_variable_value(xmlChar * var_name) {
-	t_variable_list *act = first;
-
-	while (act != NULL)
-	{
-		if (act->name == NULL) continue;
-
-		if (xmlStrEqual(act->name, var_name)) return act->value;
-
-		act = act->next;
-	}
-
-	return NULL;
-}
-
-
-xmlChar *process_variable(xmlChar *xpath)
+xmlChar *process_variable(xmlChar *xpath, t_variable_list *l_head)
 {
 	const xmlChar *var_start = NULL;
 	const xmlChar *var_end = NULL;
 	xmlChar *enhanced_xpath = xpath;
-	xmlChar dolar = '$';
+	xmlChar dollar = '$';
 	xmlChar *var_name = NULL;
 	xmlChar *var_value = NULL;
 
-	var_start = xmlStrchr(xpath, dolar);
+	var_start = xmlStrchr(xpath, dollar);
 
 	if (var_start != NULL)
 		enhanced_xpath = xmlCharStrndup((const char*)xpath, var_start - xpath);
@@ -149,7 +148,7 @@ xmlChar *process_variable(xmlChar *xpath)
 
 	while (var_start != NULL)
 	{
-		var_end = xmlStrchr(var_start + 1, ']');
+		var_end = xmlStrchr(var_start +1, ']');
 
 		if (var_end == NULL)
 		{
@@ -158,9 +157,23 @@ xmlChar *process_variable(xmlChar *xpath)
 		}
 		else
 		{
-			var_name = xmlCharStrndup((const char *) var_start + 1,
-					var_end - var_start - 1);
-			var_value = get_variable_value(var_name);
+			var_name = xmlCharStrndup((const char *) var_start +1,
+					var_end - var_start -1);
+			var_value = NULL;
+			t_variable_list *act = l_head;
+
+			while (act != NULL)
+			{
+				if (act->name == NULL) continue;
+
+				if (xmlStrEqual(act->name, var_name))
+				{
+					var_value = act->value;
+					break;
+				}
+
+				act = act->next;
+			}
 
 			if (var_value != NULL)
 			{
@@ -174,7 +187,7 @@ xmlChar *process_variable(xmlChar *xpath)
 			}
 
 			xmlFree(var_name);
-			var_start = xmlStrchr(var_end + 1, dolar);
+			var_start = xmlStrchr(var_end +1, dollar);
 
 			if (var_start == NULL)
 				enhanced_xpath = xmlStrcat(enhanced_xpath, var_end);
@@ -189,12 +202,13 @@ xmlChar *process_variable(xmlChar *xpath)
 
 
 /* /abc/xyz -> /disam:abc/disam:xyz */
-xmlChar *enhance_xpath(const xmlChar *xpath, const xmlChar * namespace)
+xmlChar *enhance_xpath(const xmlChar *xpath, const xmlChar *namespace)
 {
-	xmlChar *ens;
-	xmlChar *sep;
+	xmlChar *ens;  /* enhanced namespace */
+	xmlChar *sep;  /* separator          */
 	xmlChar *fullpath;
 
+	/* byte count from start of xpath to the current slash inclusive */
 	int f2 = 1;
 
 	ens = xmlCharStrdup("/");
@@ -206,9 +220,8 @@ xmlChar *enhance_xpath(const xmlChar *xpath, const xmlChar * namespace)
 	sep = (xmlChar *)xmlStrchr(xpath, (xmlChar)'/');
 
 	while (sep != NULL) {
-		f2 = sep - xpath + 1;
-		sep = (xmlChar *)xmlStrchr(sep + 1, (xmlChar)'/');
-
+		f2 = sep - xpath +1;
+		sep = (xmlChar *)xmlStrchr(sep +1, (xmlChar)'/');
 		if (sep != NULL) {
 			fullpath = xmlStrncat(fullpath, xpath + f2, sep - xpath - f2);
 			fullpath = xmlStrncat(fullpath, ens, xmlStrlen(ens));

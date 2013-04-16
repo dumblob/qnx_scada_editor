@@ -1,27 +1,26 @@
-<?xml version="1.0" encoding="utf-8" ?>
+<?xml version="1.0" encoding="utf-8"?>
 <disam:configuration id="kom_map" version="1.0" config-view="cfgview.xml" xmlns:disam="http://www.disam.cz/Xmlns/Scada/Config/1.0/Data">
-
   <disam:admin-limits>
     <disam:admin-item max-pnt="30000" max-ttype="400" max-aoi="256" max-nodes="20" kom-devices="1000" max-roc-ctrl="100" max-ss-ctrl="0" max-fb-ctrl="0" max-counter-ctrl="0"/>
   </disam:admin-limits>
-
   <disam:protocol-setup>
     <disam:protocol-item id="01" kom-task-mbx="1" kom-in-mbx="1" leading-char-value="0x0" end-char-value="0x0" stuff-char-usage="0" stuff-char-value="0x0" checksum-usage="1" checksum-id="1" checksum-len="2" max-mesage-len="2000" description="SIMATIC-300"/>
     <disam:protocol-item id="02" kom-task-mbx="1" kom-in-mbx="1" leading-char-value="0x0" end-char-value="0x0" stuff-char-usage="0" stuff-char-value="0x0" checksum-usage="1" checksum-id="0" checksum-len="2" max-mesage-len="262" description="MODBUS"/>
   </disam:protocol-setup>
-
   <disam:com-setup>
     <disam:com-item id="01" max-channel="1" max-os-per-channel="1" kom-in-port-task="kom_simatic_nio" kom-out-port-task="" kom-out-mbx="1" baud-rate="0" parity="0" stop-bits="0" data-bits="0" kom-type="6" protokol-id="1" description="Kotle"/>
     <disam:com-item id="02" max-channel="1" max-os-per-channel="1" kom-in-port-task="kom_simatic_nio" kom-out-port-task="" kom-out-mbx="1" baud-rate="0" parity="0" stop-bits="0" data-bits="0" kom-type="6" protokol-id="1" description="Vymenikova stanice"/>
     <disam:com-item id="03" max-channel="1" max-os-per-channel="1" kom-in-port-task="kom_modbus_uio" kom-out-port-task="" kom-out-mbx="1" baud-rate="0" parity="0" stop-bits="0" data-bits="0" kom-type="6" protokol-id="2" description="SAH"/>
   </disam:com-setup>
-
   <disam:os-setup>
     <disam:os-item id="01" os-type-id="301" os-type-name="SIMATIC S7 317" AI="192" DI="768" DO="256" AO="256" CT="0" anal-data-len="0" properties="0x0" fix-properties="0x0"/>
     <disam:os-item id="02" os-type-id="302" os-type-name="SIMATIC S7 400" AI="360" DI="1792" DO="640" AO="304" CT="0" anal-data-len="0" properties="0x0" fix-properties="0x0"/>
     <disam:os-item id="03" os-type-id="1019" os-type-name="SAH-MODBUS" AI="80" DI="80" DO="32" AO="32" CT="0" anal-data-len="0" properties="0xf0000" fix-properties="0xf0000"/>
   </disam:os-setup>
-
+  <disam:ws-status>
+    <disam:ws-item disc-id="01" logged-id="99001" memory-id="99004" cpu-temp-id="99002" rezerva="-1"/>
+    <disam:ws-item disc-id="02" logged-id="99011" memory-id="99014" cpu-temp-id="99012" rezerva="-1"/>
+  </disam:ws-status>
   <disam:simatic-apl-data>
     <disam:simatic-type id="01">
       <disam:simatic-subtype id="1">
@@ -95,10 +94,4 @@
       </disam:simatic-subtype>
     </disam:simatic-type>
   </disam:simatic-apl-data>
-
-  <disam:ws-status>
-    <disam:ws-item disc-id="01" logged-id="99001" memory-id="99004" cpu-temp-id="99002" rezerva="-1"/>
-    <disam:ws-item disc-id="02" logged-id="99011" memory-id="99014" cpu-temp-id="99012" rezerva="-1"/>
-  </disam:ws-status>
-
 </disam:configuration>

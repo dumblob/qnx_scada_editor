@@ -39,11 +39,13 @@ if file "$F_IN" | cut -c $(echo "$F_IN" | wc -m)- | grep 'XML' > /dev/null; then
   echo "It is an XML document yet." >&2
   exit_fn 0
 else
+  echo "Converting to XML..." >&2
   cat "$F_IN" | F_IN="$(basename "$F_IN")" awk '
   BEGIN {
     NMSPC = "disam:"  # namespace
     delete footers[0]  # reserve var name for array
     footers_cnt = -1
+    format_beginning_line = -1  # line where the format comment begins
 
     f_in = ENVIRON["F_IN"]
     sub(/[.]+$/, "", f_in)  # remove trailing dots
@@ -51,7 +53,7 @@ else
     # for case filename was only from dots
     if (! f_in) { f_in = ENVIRON["F_IN"] }
 
-    print "<?xml version=\"1.0\" encoding=\"utf-8\" ?>"
+    print "<?xml version=\"1.0\" encoding=\"utf-8\"?>"
     print "<" NMSPC "configuration" \
           " id=\"" f_in "\"" \
           " version=\"1.0\"" \
@@ -99,6 +101,11 @@ else
     return ret
   }
 
+  function warn_on_unnecessary_comment() {
+    print "WARN [" NR "]: unsupported comment " \
+          "(the \"description\" item field is not enough?)" | "cat 1>&2"
+  }
+
   {
     # convert CRLF to LF
     sub(/\r$/, "", $0)
@@ -110,13 +117,6 @@ else
 
     else if (sub(/^[[:space:]]*:/, "", $0)) {
     # new section {{{
-      # FIXME
-      #if (eq_sign_found_in_data) {
-      #  print "/>"
-      #  eq_sign_found_in_data=""
-      #}
-      eq_sign_found_in_data=""
-
       print_footers()
 
       # normalize FIXME what about other chars like &"''<>
@@ -132,19 +132,24 @@ else
       backslashfound = "true"
       formatprocessed = ""
       depth = 0
+      eq_sign_found_in_data=""
+      format_beginning_line = -1
 
       allow_cmt = "true"  # next line shall be a coment
     }
     # }}}
 
+    # unnecessary comment => warn
     else if (sub(/^[[:space:]]*#[[:space:]]*---+[[:space:]]*/, "", $0)) {
-    # human comment {{{
-      print "line " NR ": " $0 | "cat 1>&2"
+      warn_on_unnecessary_comment()
     }
-    # }}}
 
     else if (sub(/^[[:space:]]*#[[:space:]]*/, "", $0)) {
-    # comment {{{
+    # comment (format) {{{
+      if (format_beginning_line == -1) {
+        format_beginning_line = NR
+      }
+
       if (allow_cmt) {
         if (backslashfound)
           format[ii] = format[ii] $0
@@ -158,10 +163,9 @@ else
           backslashfound = ""
         }
       }
-      # unnecessary comment found => warn
+      # unnecessary comment => warn
       else {
-        print "line " NR ": unsupported comment found, " \
-              "use the \"description\" field instead" | "cat 1>&2"
+        warn_on_unnecessary_comment()
       }
     }
     # }}}
@@ -295,6 +299,12 @@ else
         else {
         # there was a one-line comment {{{
           if (! formatprocessed) {
+            if (! (0 in format)) {
+              print "ERR [" NR "]: no comment line(s) with " \
+                    "items description found" | "cat 1>&2"
+              exit 2
+            }
+
             sub(/[][,;]+$/, "", format[0])
             format_fin[-1] = split(format[0], format_fin, /[][,;]+/)
 
@@ -305,9 +315,13 @@ else
               sub(/[[:space:]]+$/, "", format_fin[x])
 
               if (match(format_fin[x], /[[:space:]]*\([^)]*\)$/)) {
-                print "line " NR ": cfgview.xml constraint `" \
+                #print "WARN [" NR "]: cfgview.xml constraint `" \
+                print "WARN [" NR "]: constraint `" \
                       substr(format_fin[x], RSTART, RLENGTH) \
-                      "'"'"' found on one of previous lines" | "cat 1>&2"
+                      "'"'"' found in comment starting at line " \
+                      format_beginning_line \
+                      "\n\tsuch constraints are suitable for cfgview.xml" \
+                      | "cat 1>&2"
                 format_fin[x] = substr(format_fin[x], 1, RSTART -1)
               }
 
@@ -322,10 +336,6 @@ else
           }
 
           printf("<%s%s-item", NMSPC, sec_prefix)
-
-          #FIXME !!!!!!!!!!!!!!!!!!!!! FIXME !!!!!!!!!!!!
-          #assert(! format_fin.empty()) # proste, ze se tam vubec nejaky
-                                       # formatovaci radek objevil
 
           # creates global array notes[] and items[]
           item_cnt = handle_item($0)
@@ -354,14 +364,12 @@ else
   }
 
   END {
-    #FIXME
-    #if (eq_sign_found_in_data) { print "/>" }
-
     print_footers()
     print "</" NMSPC "configuration>"
   }
   ' > "$F_OUT" || exit_fn 2
 
+  echo "Conversion successfull (however be aware of WARNings)!"
   exit_fn 1
 fi
 

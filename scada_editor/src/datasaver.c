@@ -1,236 +1,306 @@
+/*
+ * Casey & Jan Pacner
+ * 2012-10-28 18:22:18 CET
+ */
+
 #include "datasaver.h"
 #include "dataloader.h"
 #include "xml_func.h"
+#include "global_vars.h"
 
-extern char *filepath;
-extern char *viewpath;
+extern struct scada_ed_global_vars_s scada_ed_global_vars;
 
-xmlDocPtr save_doc;
-xmlNsPtr ns;
 
-void save_data()
+
+
+
+
+
+// FIXME respektovat global_vars.viewpath pri exportu!!!
+
+// FIXME + popsat vybranou variantu pri "save as" do dokumentace
+//   v pripade prvniho ukladani noveho souboru se spousti take "save_file_as"
+//   namisto save_data()
+
+
+
+
+
+
+
+
+/** uses scada_ed_global_vars */
+void save_data(void)
 {
-	generateXMLfromTree();
+  xmlNodePtr root_node = NULL;
+  xmlDocPtr save_doc = xmlNewDoc(BAD_CAST "1.0");  /* XML version="1.0" */
+
+  /* FIXME some magic ;), do not touch! */
+  xmlNsPtr ns = xmlNewNs(NULL, (const xmlChar *)SCADA_ED_NS_URI,
+      (const xmlChar *)SCADA_ED_NS_PREFIX);
+  root_node = xmlNewNode(ns, BAD_CAST SCADA_ED_ROOT_NODE_CONFIGURATION);
+  ns = xmlNewNs(root_node, (const xmlChar *)SCADA_ED_NS_URI,
+      (const xmlChar *)SCADA_ED_NS_PREFIX);
+
+  //FIXME pridat tuhle logiku take do "export to src"
+
+  //FIXME musim oba retezce zkopirovat! (protoze save a save_as mohu
+  //  dat vicekrat!)
+
+  /* pointers will never be NULL, becase viewpath and filepath always
+     contain a normalized absolute path */
+  char *view_p = strrchr(scada_ed_global_vars.viewpath, '/');
+  char *file_p = strrchr(scada_ed_global_vars.filepath, '/');
+  *view_p = '\0';
+  *file_p = '\0';
+
+  /* dirname viewpath == dirname filepath */
+  if (strcmp(scada_ed_global_vars.viewpath, scada_ed_global_vars.filepath))
+  {
+    /* will use absolute path to cfgview.xml */
+    *view_p = '/';
+    view_p = scada_ed_global_vars.viewpath;
+  }
+  else
+  {
+    /* will use relative path to cfgview.xml */
+    view_p++;
+  }
+
+  *file_p = '/';
+
+  xmlDocSetRootElement(save_doc, root_node);
+  xmlNewProp(root_node, BAD_CAST "id", BAD_CAST "kom_map");
+  xmlNewProp(root_node, BAD_CAST SCADA_ED_ATTR_VERSION,
+      BAD_CAST SCADA_ED_COMPAT_MAJOR "." SCADA_ED_COMPAT_MINOR);
+  xmlNewProp(root_node, BAD_CAST SCADA_ED_ATTR_CONFIG_VIEW, BAD_CAST view_p);
+
+  xmlDocPtr view;
+
+  if ((view = xmlParseFile(scada_ed_global_vars.viewpath)) == NULL)
+  {
+    fprintf(stderr, "ERROR: Could'n parse %s\n",
+        scada_ed_global_vars.viewpath);
+    return;
+  }
+
+  PtGenTreeItem_t *gen = (PtGenTreeItem_t *)PtTreeRootItem(ABW_tree_wgt);
+  walkOverTreeBranch(gen, save_doc, ns, view);
+
+  xmlSaveFormatFileEnc(scada_ed_global_vars.filepath, save_doc, "UTF-8", 2);
+
+  xmlFreeDoc(save_doc);
+  xmlCleanupParser();
+}
+
+
+void walkOverTreeBranch(PtGenTreeItem_t *gen, xmlDocPtr save_doc, xmlNsPtr ns,
+    xmlDocPtr view)
+{
+  while (gen != NULL)
+  {
+    /* t_table_data */
+    assert(((PtTreeItem_t *)gen)->data != NULL);
+    assert(((t_table_data *)((PtTreeItem_t *)gen)->data)->xpath != NULL);
+
+    generateXML(((PtTreeItem_t *)gen)->data, save_doc, ns, view);
+
+    if (gen->son != NULL) walkOverTreeBranch(gen->son, save_doc, ns, view);
+
+    gen = gen->brother;
+  }
+}
+
+/** uses scada_ed_global_vars */
+void generateXML(t_table_data *data, xmlDocPtr save_doc, xmlNsPtr ns,
+    xmlDocPtr view)
+{
+  xmlXPathObjectPtr result = NULL;
+  xmlNodeSetPtr nodeset;
+  xmlNodePtr lastnode = NULL;
+  xmlChar *nodename = NULL;
+  xmlChar* source;
+  int f2 = 1;
+
+  //FIXME add support (not only) for bool values in xml!!!
+  xmlChar *enhanced_xpath = data->enhanced_xpath;
+  xmlChar *xpath = data->xpath;
+
+  xmlChar *sep = enhanced_xpath;
+  xmlChar *last_exist_path = xmlCharStrdup("/");
+  int new_prop = 0;
+
+  while (sep != NULL)
+  {
+    f2 = sep - enhanced_xpath +1;
+    sep = (xmlChar *)xmlStrchr(sep +1, (xmlChar)'/');
+
+    if (sep != NULL)
+    {
+      nodename = xmlStrndup(enhanced_xpath + f2, sep - enhanced_xpath - f2);
+      last_exist_path = xmlStrcat(last_exist_path,nodename);
+
+      if (new_prop)
+        result = NULL;
+      else
+        result = loadDataFromXpathNS(last_exist_path, save_doc, false,
+            scada_ed_global_vars.l_head);
+
+      if (result != NULL)
+      {
+        /* node exists => load node to lastnode and skip */
+        nodeset = result->nodesetval;
+        lastnode = nodeset->nodeTab[0];
+        assert(nodeset->nodeNr <= 1);
+      }
+      else
+      {
+        new_prop = 1;
+        lastnode = process_node(lastnode, nodename, ns);
+      }
+
+      last_exist_path = xmlStrcat(last_exist_path, (xmlChar *)"/");
+    }
+    else
+    {
+      if (data->table == NULL)
+      {
+        fprintf(stderr, "ERROR: No table data. This should NOT happen!\n");
+        continue;
+      }
+
+      nodename = xmlStrndup(enhanced_xpath + f2, xmlStrlen(enhanced_xpath + f2));
+      //lastnode = process_node(lastnode, nodename, ns);//FIXME
+
+      xmlXPathContextPtr context = xmlXPathNewContext(view);
+
+      /* avoid usage of SCADA_ED_NS_PREFIX and SCADA_ED_NS_URI because
+         of problems with non-existing items in half-filled PtTree in GUI */
+      xmlNodePtr x = xmlDocGetRootElement(view);
+      assert(x->ns != NULL);
+
+      if (xmlXPathRegisterNs(context, x->ns->prefix, x->ns->href))
+      {
+        fprintf(stderr, "ERROR while registering namespace.");
+        continue;
+      }
+
+      xmlChar *tablepath;
+      tablepath = xmlCharStrdup("//disam:table[@source='");
+      tablepath = xmlStrcat(tablepath, xpath);
+      tablepath = xmlStrcat(tablepath, (const xmlChar *)"']");
+      result = xmlXPathEvalExpression(tablepath, context);
+
+      if (result == NULL)
+      {
+        fprintf(stderr, "WARNING: No resulting table data.\n");
+        continue;
+      }
+
+      if (xmlXPathNodeSetIsEmpty(result->nodesetval))
+      {
+        xmlXPathFreeObject(result);
+        continue;
+      }
+
+      nodeset = result->nodesetval;
+
+      xmlNodePtr column;
+      xmlNodePtr node;
+      int clmn;
+
+      int rows = tblLastRow((PtWidget_t *)data->table);
+      int r;
+
+      for (r = 1; r <= rows; ++r)
+      {
+        column = nodeset->nodeTab[0]->xmlChildrenNode;
+        clmn = 0;
+        node = process_node(lastnode, nodename, ns);
+
+        while (column != NULL)
+        {
+          if ((!xmlStrcmp(column->name, BAD_CAST "column")))
+          {
+            source = xmlGetProp(column, BAD_CAST "source");
+            char *cell_text;
+            tblGetCellResource((PtWidget_t *)data->table, clmn, r,
+                Pt_ARG_TEXT_STRING, &cell_text, 0);
+
+            xmlNewProp(node, source+1 , BAD_CAST cell_text);
+
+            xmlFree(source);
+            clmn++;
+          }
+
+          column = column->next;
+        }
+      }
+    }
+
+    xmlFree(nodename);
+  }
+}
+
+xmlNodePtr process_node(xmlNodePtr lastnode, xmlChar *nodename, xmlNsPtr ns)
+{
+  xmlNodePtr tmp;
+
+  if (node_have_attribude(nodename))
+  {
+    xmlChar *attrname = getAttrNameFrom(nodename);
+    xmlChar *attrvalue = getAttrValueFrom(nodename);
+    xmlChar *nodename_pure = getPureNodeNameFrom(nodename);
+    tmp = xmlNewChild(lastnode, ns, BAD_CAST nodename_pure, NULL);
+    xmlNewProp(tmp, BAD_CAST attrname, BAD_CAST attrvalue);
+  }
+  else
+  {
+    tmp = xmlNewChild(lastnode, ns, BAD_CAST nodename, NULL);
+  }
+
+  return tmp;
+}
+
+
+int node_have_attribude(xmlChar *nodename)
+{
+  return (xmlStrchr(nodename,'@') == NULL) ? 0 : 1;
+}
+
+xmlChar* getAttrNameFrom(xmlChar *nodename)
+{
+  const xmlChar *start = xmlStrchr(nodename,'@');
+
+  return xmlStrndup(start +1, xmlStrchr(nodename,'=') - start -1);
+}
+
+xmlChar* getAttrValueFrom(xmlChar *nodename)
+{
+  const xmlChar *start = xmlStrchr(nodename,'=');
+
+  return xmlStrndup(start +1, xmlStrchr(nodename,']') - start -1);
+}
+
+xmlChar* getPureNodeNameFrom(xmlChar *nodename)
+{
+  return xmlStrndup(nodename, xmlStrchr(nodename,'[') - nodename);
 }
 
 
 void exportToSrc(char *path)
 {
-	FILE *fp = fopen(path, "w");
+  FILE *fp = fopen(path, "w");
 
-	if (fp != NULL)
-	{
-		generateSrcFromTree(fp);
-		fclose(fp);
-	}
-	else
-	{
-		fprintf(stderr, "\nFile open error.\n");
-	}
-}
-
-
-void generateXMLfromTree()
-{
-	xmlNodePtr root_node = NULL;
-	save_doc = xmlNewDoc(BAD_CAST "1.0");
-
-	//FIXME some magic ;), do not touch!
-	ns = xmlNewNs(NULL, (const xmlChar *) "http://www.disam.cz/Xmlns/Scada/Configuration", (const xmlChar *) "disam");
-	root_node = xmlNewNode(ns, BAD_CAST "configuration");
-	xmlNewNs(root_node, (const xmlChar *) "http://www.disam.cz/Xmlns/Scada/Configuration", (const xmlChar *) "disam");
-
-	xmlDocSetRootElement(save_doc, root_node);
-	xmlNewProp(root_node, BAD_CAST "id", BAD_CAST "kom_map");
-	xmlNewProp(root_node, BAD_CAST "version", BAD_CAST "1.0");
-
-	PtGenTreeItem_t *gen = (PtGenTreeItem_t *)PtTreeRootItem(ABW_tree_wgt);
-	walkOverTreeBranch(gen);
-
-	xmlSaveFormatFileEnc(filepath, save_doc, "UTF-8", 2);
-
-	xmlFreeDoc(save_doc);
-	xmlCleanupParser();
-}
-
-
-void walkOverTreeBranch(PtGenTreeItem_t *gen)
-{
-	while (gen != NULL)
-	{
-		/* t_table_data */
-		assert(((PtTreeItem_t *)gen)->data != NULL);
-		assert(((t_table_data *)((PtTreeItem_t *)gen)->data)->xpath != NULL);
-
-		generateXML(((PtTreeItem_t *)gen)->data);
-
-		if (gen->son != NULL) walkOverTreeBranch(gen->son);
-
-		gen = gen->brother;
-	}
-}
-
-void generateXML(t_table_data *data)
-{
-	xmlXPathObjectPtr result = NULL;
-	xmlNodeSetPtr nodeset;
-	xmlNodePtr lastnode = NULL;
-	xmlChar *nodename = NULL;
-	xmlChar* source;
-	int f2 = 1;
-
-	xmlDocPtr view = xmlParseFile(viewpath);
-
-	xmlChar *enhanced_xpath = data->enhanced_xpath;
-	xmlChar *xpath = data->xpath;
-
-	xmlChar *sep = enhanced_xpath;
-	xmlChar *last_exist_path = xmlCharStrdup("/");
-	int new_prop = 0;
-
-	while (sep != NULL) {
-
-		f2 = sep - enhanced_xpath + 1;
-		sep = (xmlChar *)xmlStrchr(sep + 1, (xmlChar) '/');
-		if (sep != NULL) {
-			nodename = xmlStrndup(enhanced_xpath + f2, sep - enhanced_xpath - f2);
-			last_exist_path = xmlStrcat(last_exist_path,nodename);
-
-			if (!new_prop) {
-				result = loadDataFromXpathNS(last_exist_path, save_doc, false);
-			} else {
-				result = NULL;
-			}
-
-			if (result != NULL){
-				/* node exists => load node to lastnode and skip */
-				nodeset = result->nodesetval;
-				lastnode = nodeset->nodeTab[0];
-        assert(nodeset->nodeNr <= 1);
-			} else {
-				new_prop = 1;
-				lastnode = process_node(lastnode, nodename);
-			}
-
-			last_exist_path = xmlStrcat(last_exist_path,(xmlChar *)"/");
-		} else {
-			if (data->table == NULL) {
-				printf("no table data\n");
-				continue;
-			}
-
-			nodename = xmlStrndup(enhanced_xpath + f2, xmlStrlen(enhanced_xpath + f2));
-			//lastnode = process_node(lastnode, nodename);//FIXME
-
-			xmlXPathContextPtr context = xmlXPathNewContext(view);
-
-			if (xmlXPathRegisterNs(
-					context,
-					BAD_CAST "disam",
-					BAD_CAST "http://www.disam.cz/Xmlns/Scada/ConfigEditor/Layout")
-					!= 0) {
-				fprintf(stderr, "ERROR while registering namespace.");
-				continue;
-			};
-
-			xmlChar *tablepath;
-			tablepath = xmlCharStrdup("//disam:table[@source='");
-
-			tablepath = xmlStrcat(tablepath, xpath);
-			tablepath = xmlStrcat(tablepath, (const xmlChar *)"']");
-
-			result = xmlXPathEvalExpression(tablepath, context);
-
-			if (result == NULL){
-				printf("no table data \n");
-				continue;
-			}
-
-			if (xmlXPathNodeSetIsEmpty(result->nodesetval)) {
-					xmlXPathFreeObject(result);
-					continue;
-			}
-
-			nodeset = result->nodesetval;
-
-			xmlNodePtr column;
-			xmlNodePtr node;
-			int clmn;
-
-			int rows = tblLastRow((PtWidget_t *)data->table);
-			int r;
-
-			for (r = 1; r <= rows; ++r)
-			{
-				column = nodeset->nodeTab[0]->xmlChildrenNode;
-				clmn = 0;
-				node = process_node(lastnode, nodename);
-
-				while (column != NULL)
-				{
-					if ((!xmlStrcmp(column->name, BAD_CAST "column")))
-					{
-						source = xmlGetProp(column, BAD_CAST "source");
-						char *cell_text;
-						tblGetCellResource((PtWidget_t *)data->table, clmn, r,
-                Pt_ARG_TEXT_STRING, &cell_text, 0);
-
-						xmlNewProp(node, source+1 , BAD_CAST cell_text);
-
-						xmlFree(source);
-						clmn++;
-					}
-
-					column = column->next;
-				}
-			}
-		}
-
-		xmlFree(nodename);
-	}
-}
-
-xmlNodePtr process_node(xmlNodePtr lastnode, xmlChar * nodename){
-	xmlNodePtr tmp;
-
-	if (node_have_attribude(nodename))
-	{
-		xmlChar *attrname = getAttrNameFrom(nodename);
-		xmlChar *attrvalue = getAttrValueFrom(nodename);
-		xmlChar *nodename_pure = getPureNodeNameFrom(nodename);
-		tmp = xmlNewChild(lastnode, ns, BAD_CAST nodename_pure, NULL);
-		xmlNewProp(tmp, BAD_CAST attrname, BAD_CAST attrvalue);
-	}else{
-		tmp = xmlNewChild(lastnode, ns, BAD_CAST nodename, NULL);
-	}
-
-	return tmp;
-}
-
-
-int node_have_attribude(xmlChar * nodename){
-	const xmlChar *tmp = xmlStrchr(nodename,'@');
-	return (tmp == NULL) ? 0 : 1 ;
-}
-
-xmlChar* getAttrNameFrom(xmlChar * nodename){
-	const xmlChar *start = xmlStrchr(nodename,'@');
-	const xmlChar *stop = xmlStrchr(nodename,'=');
-	return xmlStrndup(start+1, stop-start-1);
-
-}
-
-xmlChar* getAttrValueFrom(xmlChar * nodename){
-	const xmlChar *start = xmlStrchr(nodename,'=');
-	const xmlChar *stop = xmlStrchr(nodename,']');
-	return xmlStrndup(start+1, stop-start-1);
-
-}
-
-xmlChar* getPureNodeNameFrom(xmlChar * nodename){
-	const xmlChar *stop = xmlStrchr(nodename,'[');
-	return xmlStrndup(nodename, stop-nodename);
-
+  if (fp != NULL)
+  {
+    generateSrcFromTree(fp);
+    fclose(fp);
+  }
+  else
+  {
+    fprintf(stderr, "\nFile open error.\n");
+  }
 }
 
 
@@ -318,19 +388,19 @@ void printTableLines(PtWidget_t *tbl, int col, int colm, int row, int rowm,
 
       switch (info->type)
       {
-        case SCADA_EDITOR_XML_ATTR_TYPE_BOOL:
+        case SCADA_ED_XML_ATTR_TYPE_BOOL:
           tblGetCellResource(tbl, col, row, Pt_ARG_FLAGS, &flags, 0);
           fprintf(f, "%d", (*flags & Pt_SET) ? 1 : 0);
           break;
 
-        case SCADA_EDITOR_XML_ATTR_TYPE_STRING:
+        case SCADA_ED_XML_ATTR_TYPE_STRING:
           s = NULL;
           tblGetCellResource(tbl, col, row, Pt_ARG_TEXT_STRING, &s, 0);
           fprintf(f, "\"%s\"", (s == NULL) ? "" : s);
           break;
 
-        /* SCADA_EDITOR_XML_ATTR_TYPE_NUMBER */
-        /* SCADA_EDITOR_XML_ATTR_TYPE_CHAR */
+          /* SCADA_ED_XML_ATTR_TYPE_NUMBER */
+          /* SCADA_ED_XML_ATTR_TYPE_CHAR */
         default:
           s = NULL;
           tblGetCellResource(tbl, col, row, Pt_ARG_TEXT_STRING, &s, 0);
@@ -386,7 +456,7 @@ void saveAttrToSrc(PtGenTreeItem_t *gen, FILE *f, unsigned short depth)
       fputs((const char *)info->source +1, f);
 
       /* bool */
-      if (info->type == SCADA_EDITOR_XML_ATTR_TYPE_BOOL)
+      if (info->type == SCADA_ED_XML_ATTR_TYPE_BOOL)
         fputs(" (0/1)", f);
     }
 
@@ -394,7 +464,7 @@ void saveAttrToSrc(PtGenTreeItem_t *gen, FILE *f, unsigned short depth)
 
     /* only for SIMATIC APL DATA */
     if (depth != 0)
-     {
+    {
       fputs("# ", f);
       FPUTS_N(depth +1, "  ", f);
       fputs("...\n# ", f);
@@ -403,7 +473,7 @@ void saveAttrToSrc(PtGenTreeItem_t *gen, FILE *f, unsigned short depth)
       /* the last table line contains values we are interested in */
       int row_max = tblLastRow(tbl);
       printTableLines(tbl, 0, col_max, row_max, row_max,
-            f, ((PtTreeItem_t *)gen)->string);
+          f, ((PtTreeItem_t *)gen)->string);
 
       /* footer */
       fputs(";\n# ", f);
@@ -426,7 +496,7 @@ void saveAttrToSrc(PtGenTreeItem_t *gen, FILE *f, unsigned short depth)
     fputs("# ", f);
     FPUTS_N(depth +1, "  ", f);
     fputs("...\n", f);
-    /* FIXME WTF? Why is it twice in kom_map.src? */
+    /* FIXME WTF? Why is it twice in the testing kom_map.src? */
     saveAttrToSrc((depth) ? gen->son : gen->son->son, f, depth +1);
 
     /* footer */
@@ -468,7 +538,7 @@ void saveValToSrc(PtGenTreeItem_t *gen, FILE *f, unsigned short depth)
     {
       FPUTS_N(depth, "  ", f);
       printTableLines(tbl, 0, col_max, row, row,
-            f, ((PtTreeItem_t *)gen)->string);
+          f, ((PtTreeItem_t *)gen)->string);
       fputs((depth == 0) ? "\n" : ";\n", f);
     }
   }

@@ -4,6 +4,20 @@
     xmlns:xsl="http://www.xsl.com">
   <disam:tree preserve-order="true">
 
+    <disam:tree-node name="Admin Limits">
+      <disam:table source="/configuration/admin-limits/admin-item" preserve-order="true">
+        <column label="max-pnt" source="@max-pnt" type="number"/>
+        <column label="max-ttype" source="@max-ttype" type="number"/>
+        <column label="max-aoi" source="@max-aoi" type="number"/>
+        <column label="max-nodes" source="@max-nodes" type="number"/>
+        <column label="kom-devices" source="@kom-devices" type="number"/>
+        <column label="max-roc-ctrl" source="@max-roc-ctrl" type="number"/>
+        <column label="max-ss-ctrl" source="@max-ss-ctrl" type="number"/>
+        <column label="max-fb-ctrl" source="@max-fb-ctrl" type="number"/>
+        <column label="max-counter-ctrl" source="@max-counter-ctrl" type="number"/>
+      </disam:table>
+    </disam:tree-node>
+
     <disam:tree-node name="Protocol Setup">
       <disam:table source="/configuration/protocol-setup/protocol-item" preserve-order="true">
         <column label="Id" source="@id" type="string"/>
@@ -52,6 +66,16 @@
         <column label="anal-data-len" source="@anal-data-len" type="number" comment=""/>
         <column label="properties" source="@properties" type="char" comment=""/>
         <column label="fix-properties" source="@fix-properties" type="char" comment=""/>
+      </disam:table>
+    </disam:tree-node>
+
+    <disam:tree-node name="WS Status">
+      <disam:table source="/configuration/ws-status/ws-item">
+        <column label="Disc ID" source="@disc-id" type="number" comment="Obsazeny prostor disku"/>
+        <column label="Logged ID" source="@logged-id" type="number" comment="Status prihlaseni"/>
+        <column label="Memory ID" source="@memory-id" type="number" comment="Obsazena pamet"/>
+        <column label="CPU temperature ID" source="@cpu-temp-id" type="number" comment="Teplota CPU"/>
+        <column label="rezerva" source="@rezerva" type="number" comment="Rezerva (viz. KFG_S_WS_STAT_LIST)"/>
       </disam:table>
     </disam:tree-node>
 
