@@ -1,5 +1,5 @@
 HDR = table_new.h
-SRC = table_new_demo.c table_new.c
+SRC = table_new_demo.c # table_new.c
 OBJ = $(SRC:.c=.o)
 EXE = table_new
 CC = gcc
@@ -11,6 +11,9 @@ all: $(EXE)
 
 $(EXE): $(OBJ)
 	$(CC) $(CFLAGS) -O2 -lph -lm -o $@ $(OBJ)  # -lpthread
+
+r: clean $(EXE)
+	./$(EXE)
 
 .c.o:
 	$(CC) $(CFLAGS) -O2 -c $<

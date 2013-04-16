@@ -3,23 +3,16 @@
 
 int cb_resize00(PtWidget_t *w, void *d, PtCallbackInfo_t *cbinfo) {
   w = w;
-  cbinfo = cbinfo;
-  static int x = 0;
 
   //FIXME
-  //PtReRealizeWidget( d );
-  /*
-  PtUnrealizeWidget( d );
-  PtRealizeWidget( d );
-  */
-
+  PtReRealizeWidget( d );
+  cbinfo = cbinfo;
   return Pt_CONTINUE;
 }
 
 int main( int argc, char *argv[] )
 {
-  PtWidget_t *window, *container, *scroll, *group,
-             *divider00, *divider01, *divider_rows,
+  PtWidget_t *window, *container, *scroll, *group, *divider00, *divider01,
              *column00, *column01;
   PtArg_t args[20];
   int i = 0;
@@ -113,10 +106,6 @@ int main( int argc, char *argv[] )
       //Pt_LEFT_IS_ANCHORED   | Pt_RIGHT_IS_ANCHORED );
   divider00 = PtCreateWidget( PtDivider, group, i, args );
 
-  callbacks[0].event_f = cb_resize00;
-  callbacks[0].data = group;
-  PtSetArg(&args[i++], Pt_CB_RESIZE, callbacks,
-      sizeof(callbacks)/sizeof(callbacks[0]));
   PtSetArg( &args[i++], Pt_ARG_RESIZE_FLAGS, Pt_RESIZE_XY_ALWAYS, 0 );
   PtSetArg( &args[i++], Pt_ARG_DIVIDER_FLAGS, Pt_FALSE, Pt_DIVIDER_RESIZE_BOTH );
   divider01 = PtCreateWidget( PtDivider, group, i, args );
