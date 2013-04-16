@@ -1,1 +1,3 @@
 *.o
+scada_editor/x86/o-g/libxml2.so.10
+scada_editor/x86/o/libxml2.so.10
