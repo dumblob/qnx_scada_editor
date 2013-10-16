@@ -1,0 +1,17 @@
+COMPILE
+
+  gcc -O2 -Wall -Wextra -lsocket -o keepalive_daemon *c
+
+USAGE
+
+  run as master listening on port 23454:
+    ./keepalive_daemon -m 23454
+
+  run as slave:
+    ./keepalive_daemon -s 'exec sleep 5' 192.168.0.1 23454
+
+NOTES
+
+  Under QNX, the child has to trap SIGTERM, because the default behavior
+  of direct child is to resends the signal to its parent, thus
+  effectively terminating this daemon!
