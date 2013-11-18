@@ -1,7 +1,6 @@
-HDR = table_new.h
-SRC = table_new_demo.c
+SRC = foundry27_post00.c
 OBJ = $(SRC:.c=.o)
-EXE = table_new_demo
+EXE = ptDividerChilds
 CC = gcc
 #-Wextra used to be -W
 CFLAGS = -DDEBUG -g3 -Wall -Wextra  #-lm -Werror -std=c99

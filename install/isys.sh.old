@@ -1,0 +1,307 @@
+#   !/bin/sh
+#ifdef __USAGE
+#
+#  Instalace sys souboru na merici resp. pracovni stanici na pozadovany uzel
+#  Predpoklada se volani z roota a adresare isys.
+#
+#  Spusteni :  isys 
+# udelat:
+#	rozbehnout sit (touch ... a restart)
+#	nastavit fonty ???
+	
+#
+#endif
+# ------------------------------------------------------------------------
+copy_sym_link_dirs ()
+# ------------------------------------------------------------------------
+{
+	typeset -i num
+	while test $# -gt 0
+	do
+		c_skip=`echo $1 | cut -f1 -d~`
+		if test $c_skip = $1; then
+			num=`find $1 -follow -type d | wc -l`	
+			if test $num -gt 0; then
+				dest=${1#./}	
+#				echo "cp -rpcv $1/* $target_node/$dest"
+				cp -rpcv $1/* $target_node/$dest
+#			else
+#				echo "$1 neni sym-link-dir"
+			fi
+		fi	
+		shift
+	done
+}
+# ------------------------------------------------------------------------
+#  Nahradi soubory - symbolicke linky skutecnym souborem s aktualnim obsahem
+# ------------------------------------------------------------------------
+copy_sym_link_files ()
+# ------------------------------------------------------------------------
+{
+	typeset -i num
+	while test $# -gt 0
+	do
+		echo "zpracovavam $1"
+#		num=`find $1 -follow -type d | wc -l`	
+#		if test $num -gt 0; then
+			src=${1#./}
+			dest=${src%%".RLnk"}	
+			echo "rm -v $target_node/$src"
+			echo "cp -v $1 $target_node/$dest"
+#		else
+#			echo "$1 neni sym-link-file to be replaced by real file"
+#		fi
+		shift
+	done
+}
+# ------------------------------------------------------------------------
+#  Kopirovani adresaru na dotaz
+# ------------------------------------------------------------------------
+inq_copy_dir()
+# ------------------------------------------------------------------------
+{
+	typeset -i num
+	while test $# -gt 0
+	do
+		tpath=${1%~*}
+		tpath=${tpath#./}
+		tdir=${1##*~}
+		read input?"Copy (a) or install (i) $1 [a/i/N]: "
+		if test "$input" = "a" || test "$input" = "A" || test "$input" = "y" || test "$input" = "Y"; then
+			echo "cp -Mqnx -rv $1 $target_node/$tpath$tdir"
+			cp -Mqnx -rv $1 $target_node/$tpath$tdir
+		elif test "$input" = "i" || test "$input" = "I"; then
+			tdir=${tdir%%-*}
+			echo "cp -Mqnx -rv $1 $target_node/$tpath$tdir"
+			cp -Mqnx -rv $1 $target_node/$tpath$tdir
+		fi
+		shift
+	done
+}
+# ------------------------------------------------------------------------
+#	main
+# ------------------------------------------------------------------------
+
+echo ""
+read projekt?"Projekt : "
+read tnode?"Aktualni jmeno uzlu : "
+if test -n $tnode; then 
+	target_node=/net/$tnode
+else
+	target_node=""
+fi
+
+read tnode_id?"Predpokladane cislo uzlu : "
+echo "" 
+echo "node_name=$target_node id=$tnode_id"
+
+if test ! -d $target_node/; then
+	echo "Neni pristup na $target_node/"
+	exit
+elif test ! -d $target_node/usr/qnx630; then
+	echo "Nenalezen qnx-base-dir $target_dir/usr/qnx630"
+	exit
+fi
+
+base_dir=$PWD
+
+# ....................... zalohovani existujicich souboru
+mv $target_node/etc/photon/launchmenu $target_node/etc/photon/launchmenu.bkp
+
+# ....................... zkopirovani vsech podadresaru isys
+
+echo "Kopiruji vsechny adresare z isys ...\n"
+cp -rpcv `find . -type d -level 1 ! -name "~*"` $target_node/
+echo "Kopriovani ukonceno."
+
+chown -R root:root $target_node/usr/disam
+
+# ..................................................... drt rozsireni photonu do /usr/qnx630
+#
+if test -d $target_node/usr/qnx630/target/qnx6/usr/include; then
+	cp -rpv usr/include/drt/ $target_node/usr/qnx630/target/qnx6/usr/include/drt
+fi
+#
+# ..................................................... /etc/group
+#
+grep -e "drt" $target_node/etc/group > /dev/null
+if test $? -eq 1;then
+	echo "Pridavam skupinu drt"
+	echo "drt::100:" >> $target_node/etc/group
+fi
+
+grep -e "mcs03" $target_node/etc/group > /dev/null
+if test $? -eq 1; then
+	echo "Pridavam skupinu mcs03"
+	echo "mcs03:x:101:" >> $target_node/etc/group
+fi
+#
+# ..................................................... users
+#
+grep -e "kost" $target_node/etc/passwd > /dev/null			# uzivatel kost
+if test $? -ne 0; then
+	mkdir $target_node/home/kost
+	mkdir $target_node/home/kost/.ph
+	if test $inode -eq 1; then
+		cp -rc home/~ms_admin/.ph/* $target_node/home/kost/.ph/ 
+	else
+		cp -rc home/~ps_admin/.ph/* $target_node/home/kost/.ph/
+	fi	
+	chown -R 100:100 $target_node/home/kost
+	echo "kost::100:100:V.Košťál:/home/kost:/bin/sh" >> $target_node/etc/passwd
+else
+	echo "user kost already defined"
+fi
+#
+if test ! -d $target_node/libr/; then
+	mkdir $target_node/libr/
+	chown root:root  $target_node/libr/
+fi
+if test ! -d $target_node/libr/$projekt; then
+	mkdir $target_node/libr/$projekt
+fi
+grep -e "$projekt" $target_node/etc/passwd > /dev/null		# spravce projektu
+if test $? -ne 0; then
+	puid=`grep -e $projekt /etc/passwd | cut -f3 -d:`
+	if test -z "$puid"; then
+		puid="101"
+	fi
+	mkdir $target_node/libr/$projekt/bin
+	mkdir $target_node/libr/$projekt/gbin
+	mkdir $target_node/libr/$projekt/source
+	mkdir $target_node/libr/$projekt/include
+	mkdir $target_node/libr/$projekt/ph_app
+	mkdir $target_node/libr/$projekt/.ph
+	if test $inode -eq 1; then
+		cp -rc home/~ms_admin/.ph/* $target_node/libr/$projekt/.ph/
+	else
+		cp -rc home/~ps_admin/.ph/* $target_node/libr/$projekt/.ph/
+	fi	
+	chown -R $puid:100 $target_node/libr/$projekt
+	echo "$projekt::$puid:100:Správce-projektu:/libr/$projekt:/bin/sh" >> $target_node/etc/passwd
+else
+	echo "user $projekt already defined"
+fi
+#
+echo "User name ?"
+read tuser
+let ipom=200+$tnode_id 
+grep -e "$tuser" $target_node/etc/passwd > /dev/null		# technologicky uzivatel
+
+if test $? -ne 0; then
+	echo "$tuser::$ipom:101:Std. uživatel:/home/$tuser:/bin/sh" >> $target_node/etc/passwd
+	if test ! -d $target_node/home/$tuser; then
+		mkdir $target_node/home/$tuser
+	fi
+else
+	echo "uzivatel $tuser already defined"
+fi
+mkdir $target_node/home/$tuser/exe
+mkdir $target_node/home/$tuser/err
+mkdir $target_node/home/$tuser/litters
+mkdir $target_node/home/$tuser/.ph
+if test $tnode_id -eq 1; then
+	mkdir $target_node/home/$tuser/alr
+	mkdir $target_node/home/$tuser/arc
+   	mkdir $target_node/home/$tuser/kfg
+   	mkdir $target_node/home/$tuser/server
+   	mkdir $target_node/home/$tuser/graf
+	mkdir $target_node/home/$tuser/eng
+	mkdir $target_node/home/$tuser/monitor
+	cp -rc home/~ms/.ph/* $target_node/home/$tuser/.ph/
+else
+	cp -rc home/~ps/.ph/* $target_node/home/$tuser/.ph/
+fi
+chown -R $ipom:101 $target_node/home/$tuser
+#chmod -R g+wx $target_node/home/$tuser
+
+grep -e "drt" $target_node/etc/passwd > /dev/null		# drt-service
+if test $? -ne 0; then
+	if test $tnode_id -eq 1; then
+		service="ms_drt"
+	else
+		service="ps_drt"
+	fi	
+	echo "$service::199:101:Drt-service:/home/$service:/bin/sh" >> $target_node/etc/passwd
+	if test ! -d $target_node/home/$service; then
+		mkdir $target_node/home/$service
+	fi
+else
+	echo "uzivatel $service already defined"
+fi
+mkdir $target_node/home/$tuser/.ph
+cd $target_node/home/$home/$service
+ln -s /home/$tuser/err .
+ln -s /home/$tuser/exe .
+ln -s /home/$tuser/litters
+if test $tnode_id -eq 1; then
+	ln -s /home/$tuser/alr .
+	ln -s /home/$tuser/arc .
+   	ln -s /home/$tuser/kfg
+   	ln -s /home/$tuser/server .
+   	ln -s /home/$tuser/graf .
+	ln -s /home/$tuser/eng .
+	ln -s /home/$tuser/monitor .
+fi
+chown -R 199:101 $target_node/home/$service
+cd $base_dir
+#	chmod -R g+wx $target_node/home/$service
+
+grep -e "admin" $target_node/etc/passwd > /dev/null			# uzivatel admin
+if test $? -ne 0; then
+	mkdir $target_node/home/admin
+	mkdir $target_node/home/admin/.ph
+	if test $inode -eq 1; then
+		cp -rc home/~ms_admin/.ph/* $target_node/home/admin/.ph/
+	else
+		cp -rc home/~ps_admin/.ph/* $target_node/home/admin/.ph/
+	fi	
+	chown -R 200:101 $target_node/home/admin
+	echo "admin::200:101:Administrator:/home/admin:/bin/sh" >> $target_node/etc/passwd
+else
+	echo "user admin already defined"
+fi
+
+# ...................... os release specific
+
+inq_copy_dir `find . -level 1 -name "~*"`
+ 
+# ...................... licence
+
+echo ""
+echo "Prepis licence :"
+echo "    0) skip (bez prepisu)"
+echo "    1) licence qnx 6.3.0"
+echo "    2) licence qnx 6.3.2"
+echo "    3) licence qnx 6.5.0"
+let done=0
+src_license=""
+while test $done -eq 0
+do
+	read input?" Volba nastaveni licence : "
+	case $input in 
+		0) let done=1;;
+ 		1) src_license=etc/qnx/license/licenses-630.drt; let done=1;;
+ 		2) src_license=etc/qnx/license/licenses-632.drt; let done=1;;
+ 		3) src_license=etc/qnx/license/licenses-650.drt; let done=1;;
+		*) ;;
+    esac
+done
+if test "$src_license" != ""; then
+	mv -v $target_node/etc/qnx/license/licenses $target_node/etc/qnx/license/licenses.old
+	cp -v $src_license $target_node/etc/qnx/license/licenses
+fi
+	
+# ...................... help
+
+ln -s /usr/help/product/Disam $target_node/usr/qnx630/target/qnx6/usr/help/product/
+ln -s /usr/help/product/Disam.toc $target_node/usr/qnx630/target/qnx6/usr/help/product/
+# skutecny help je zkopirovan via symb.links
+
+# .......... nakonec jeste vsechny adresare a soubory,  ktere jsou vytvoreny symbolickymi linkami :
+
+echo "\nKopie adresaru realizovanych via sym-links ..."
+copy_sym_link_dirs `find . -type l`
+
+echo "\nKopie souboru realizovanych via sym-links ..."
+copy_sym_link_files `find . -type l -name "*.RLnk"`

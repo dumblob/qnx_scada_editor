@@ -1,0 +1,20 @@
+#!/bin/sh
+
+SB="192.168.0.131"  # side B ("other station")
+IP="192.168.0.129"  # shared IP alias
+INT="wm0"           # network interface for IP alias
+NM="255.255.255.0"  # netmask
+PO="23455"          # port on which master runs
+
+sleep "$(tr -c -d 0-9 < /dev/urandom | head -c2)"
+if ping -q -c 1 "$SB"; then
+  # start "slave"
+  CMD="$(cat <<END
+END
+  )"
+  keepalive_daemon -s "$CMD" "$SB" "$PO" > /dev/null
+else
+  # start "master"
+  keepalive_daemon -m "$PO" > /dev/null
+  #master -d sys
+fi
