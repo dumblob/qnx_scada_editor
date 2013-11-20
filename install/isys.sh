@@ -4,6 +4,17 @@
 #  rozbehnout sit (touch ... a restart)
 #  nastavit fonty ???
 
+# FIXME create README.new with new stuff (how the behavior changed)
+#   new users and groups get GID and UID automatically chosen
+
+# FIXME
+# formerly
+#   home/~ms_admin/.ph/
+#   home/~ps_admin/.ph/
+# but in the isis.gtar is only
+#   home/ms/.ph/
+#   home/ps/.ph/
+
 TSTAMP="$(date '+%Y%m%d-%H%M%S')"
 SRCPATH='./'
 #FIXME $project
@@ -11,7 +22,10 @@ PROJECT=
 #FIXME target_node=/net/$tnode
 NODE=
 #FIXME tnode_id
-NODEID=
+NODE_ID=
+MEA_ST=
+
+TECH_USER=
 
 print_help() {
   echo "SYNOPSIS"
@@ -19,8 +33,11 @@ print_help() {
   echo "  Owerwritten files are backed-up."
   echo "USAGE"
   echo "  install.sh [-h]"
-  echo "  install.sh [-s <src_path>] -p <project_name> -n <node> -i <node_id>"
+  echo "  install.sh [-m] [-s <src_path>] -p <project_name> -n <node> -i <node_id> -t <tech_user>"
   echo "OPTIONS"
+  echo "  -m"
+  echo "    install measurement station (aka \`Merici stanice')"
+  echo "    default: install workstation (aka \`Pracovni stanice')"
   echo "  -s <src_path>"
   echo "    path to dir with all SCADA files (those, which will be installed)"
   echo "    default: ./"
@@ -30,6 +47,13 @@ print_help() {
   echo "    path to current node (e.g. /net/local_node_name)"
   echo "  -i <node_id>"
   echo "    node number (ID)"
+  echo "  -t <tech_user>"
+  echo "    technological user name"
+  exit $1
+}
+
+exit_msg() {
+  echo "$2" >&2
   exit $1
 }
 
@@ -37,34 +61,35 @@ while [ $# -gt 0 ]; do
   case "$1" in
     '-h')
       print_help 0 ;;
+    '-m')
+      MEA_ST='yes' ;;
     '-s')
       shift
-      [ $# -ge 1 ] || {
-        echo "ERR -s demands <src_path>." >&2
-        exit 1
-      }
+      [ $# -ge 1 ] || exit_msg 1 "ERR -s demands <src_path>."
       SRCPATH="$1" ;;
     '-p')
       shift
-      [ $# -ge 1 ] || {
-        echo "ERR -p demands <project_name>." >&2
-        exit 1
-      }
+      [ $# -ge 1 ] || exit_msg 1 "ERR -p demands <project_name>."
       PROJECT="$1" ;;
     '-n')
       shift
-      [ $# -ge 1 ] || {
-        echo "ERR -p demands <node>." >&2
-        exit 1
-      }
+      [ $# -ge 1 ] || exit_msg 1 "ERR -n demands <node>."
       NODE="$1" ;;
     '-i')
       shift
-      [ $# -ge 1 ] || {
-        echo "ERR -p demands <node_num>." >&2
-        exit 1
-      }
-      NODEID="$1" ;;
+      [ $# -ge 1 ] || exit_msg 1 "ERR -i demands <node_num>."
+      NODE_ID="$1" ;;
+      echo "$NODE_ID" | awk 'BEGIN { RS="" }
+        { if ($0 !~ /^[0-9]+$/) { exit 1 } }' ||
+          exit_msg 1 'ERR <node_num> has to match [0-9]+'
+    '-t')
+      shift
+      [ $# -ge 1 ] || exit_msg 1 "ERR -t demands <tech_user>."
+      TECH_USER="$1"
+      echo "$TECH_USER" | awk 'BEGIN { RS="" }
+        { if ($0 !~ /^[a-z_][a-z0-9_-]*[$]$/) { exit 1 } }' ||
+          exit_msg 1 'ERR <tech_user> has to match [a-z_][a-z0-9_-]*[$]'
+      ;;
     *)
       echo "ERR Unknown argument $1" >&2
       exit 1
@@ -73,35 +98,42 @@ while [ $# -gt 0 ]; do
 done
 
 shift
-if [ $# -gt 0 ]; then
-  echo "ERR Unknown arguments given." >&2
-  exit 1
-elif [ -z "$PROJECT" ]; then
-  echo "ERR Non-empty <project_name> desired." >&2
-  exit 1
-elif [ -z "$NODE" ]; then
-  echo "ERR Non-empty <node> desired." >&2
-  exit 1
-elif [ -z "$NODEID" ]; then
-  echo "ERR Non-empty <node_id> desired." >&2
-  exit 1
-elif [ $(if -u) -eq 0 ]; then
-  echo "ERR root privileges needed." >&2
-  exit 1
-fi
+[ $# -gt 0 ]         && exit_msg 1 "ERR Unknown arguments given."
+[ -z "$PROJECT" ]    && exit_msg 1 "ERR Non-empty <project_name> desired."
+[ -z "$NODE" ]       && exit_msg 1 "ERR Non-empty <node> desired."
+[ -z "$NODE_ID" ]     && exit_msg 1 "ERR Non-empty <node_id> desired."
+[ -z "$TECH_USER" ]  && exit_msg 1 "ERR Non-empty <tech_user> desired."
+[ "$(if -u)" -eq 0 ] && exit_msg 1 "ERR root privileges needed."
 
-for f in "$NODE" "$NODE/usr/qnx630/"; do
-  [ -d "$f" ] || {
-    echo "ERR $NODE doesn't exist." >&2
-    exit 1
-  }
+for d in "$NODE" "$NODE/usr/qnx630/"; do
+  [ -d "$d" ] || exit_msg 1 "ERR $NODE doesn't exist."
 done
+
+# interactively ask user if he wants to ignore $1
+ask_ignore() {
+  [ -n "$2" ] && echo "$1" >&2
+  while echo "Would you like to ignore it? [y/n] "; do
+    read x
+    case "$x" in
+      y|Y) return 0;;
+      n|N) return 1;;
+      *) echo "Please choose either \`y' as \`yes' or \`n' as \`no'";;
+    esac
+  done
+}
+
+backup() {
+  [ -e "$1" ] || return
+  echo "INFO Backing up $1."
+  mv "$1" "${1}.bak$TSTAMP"
+}
 
 # name pass GID user_list
 group_add() {
+  (
   [ $# -eq 4 ] || return 1
-  grep -E "^$1" < "$NODE/etc/group" > /dev/null 2>&1 && {
-    echo "ERR User \`$1' already exists."
+  grep -E "^$1:" < "$NODE/etc/group" > /dev/null 2>&1 && {
+    echo "ERR Group \`$1' already exists."
     return 2
   }
   _gid="$3"
@@ -116,13 +148,14 @@ group_add() {
   fi
   echo "$1:$2:$_gid:$4" >> "$NODE/etc/group"
   echo "$_gid"
-  unset _gid
+  )
 }
 
 # login pass UID GID comment home_dir cmd_interpret
 user_add() {
+  (
   [ $# -eq 7 ] || return 1
-  grep -E "^$1" < "$NODE/etc/passwd" > /dev/null 2>&1 && {
+  grep -E "^$1:" < "$NODE/etc/passwd" > /dev/null 2>&1 && {
     echo "ERR User \`$1' already exists."
     return 2
   }
@@ -143,160 +176,180 @@ user_add() {
   echo "$1:$2:$_uid:$4:$5:$6:$7" >> "$NODE/etc/passwd"
   [ -d "$6" ] || mkdir -p "$6"
   chown "$_uid":"$4" "$6"
-  unset _uid
+  echo "$_uid"
+  )
+}
+
+# uid|gid <name>
+get_id() {
+  (
+  if [ "$1" = 'gid' ]; then
+    f="$NODE/etc/group"
+    m="ERR Group $2 not found."
+  else
+    f="$NODE/etc/passwd"
+    m="ERR User $2 not found."
+  fi
+  awk -F: "{ if (\$1 == \"$2\") { print \$3; x = 1; exit 0 } }
+    END { if (! x) { print \"$m\"; exit 1 } }" < "$f"
+  )
 }
 
 echo "INFO Extension for backups is \`.bak$TSTAMP'"
-#FIXME presunout tam, kde se instaluje launchmenu (je to v nasledujicim cyklu?)
-echo "INFO Backing up files..."
-mv "$NODE/etc/photon/launchmenu" "$NODE/etc/photon/launchmenu.bak$TSTAMP"
-
 echo 'INFO Installing system files...'
-for f in "$SRCPATH"/*/; do
-  basename "$f" | awk '/^~\*/ { exit(1) }' && cp -rp "$f" "$NODE"
-done
-chown -R root:root "$NODE/usr/disam/"
 
-# Photon extension
-for f in "$NODE"/usr/qnx6*/target/qnx6/usr/include/; do
-  cp -rpv "$SRCPATH/usr/include/drt/" "$f"
+cp -rp "$SRCPATH"/common/* "$NODE"
+chown -R root:root "$NODE/usr/disam/"
+chown -R root:root "$NODE/usr/include/drt"
+chmod -R ugo+r "$NODE/usr/include/drt"
+ls -1 -d "$NODE"/usr/qnx6*/target/qnx6/usr/include/ 2>/dev/null | while read d; do
+  cd "$d"
+  ln -s '/usr/include/drt'
+  cd "$OLDPWD"
 done
 
 echo "INFO Adding groups (if needed) to \`$NODE/etc/group'."
-gid_drt="$(group_add 'drt' '' '' '')"
-[ $? -eq 3 ] { echo "$gid_drt" >&2; exit 1; }
-gid_mcs03="$(group_add 'mcs03' '' '' '')"
-[ $? -eq 3 ] { echo "$gid_mcs03" >&2; exit 1; }
+
+# formerly GID=100
+gid_drt="$(group_add 'drt' '' '' '')" || {
+  # ignore "Group already exists" error
+  [ $? -eq 2 ] || ask_ignore "$gid_drt" || exit 1
+  # ensure gid_drt is set (in case of $?==2 or if user ignored some ERR)
+  gid_drt="$(get_id gid 'drt')" || exit_msg 1 "$gid_drt"
+}
+
+# formerly GID=101
+gid_mcs03="$(group_add 'mcs03' '' '' '')" || {
+  [ $? -eq 2 ] || ask_ignore "$gid_mcs03" || exit 1
+  gid_mcs03="$(get_id gid 'mcs03')" || exit_msg 1 "$gid_mcs03"
+}
 
 echo "INFO Adding users (if needed) to \`$NODE/etc/passwd'."
+
+
+# formerly UID=100 GID=100
 ret="$(user_add 'kost' '' "$gid_drt" "$gid_drt"
-  'V.Košťál' '/home/kost' '/bin/sh')" || { echo "$ret" >&2; exit 1; }
-mkdir -p "$NODE/home/kost/.ph/"
-#FIXME merici stanice
-#cp -r "$SRCPATH/home/ms/.ph/" "$NODE/home/kost/.ph/"
-#FIXME pracovni stanice
-cp -r "$SRCPATH/home/ps/.ph/" "$NODE/home/kost/.ph/"
-chown -R "$gid_drt":"$gid_drt" "$NODE/home/kost/.ph/"
+  'V. Košťál' '/home/kost' '/bin/sh')" ||
+# ignore "User already exists" error
+[ $? -eq 2 ] || ask_ignore "$ret" || exit 1
+if [ -n "$MEA_ST" ]; then
+  cp -r "$SRCPATH/common/home/ms/.ph/" "$NODE/home/kost/"
+else
+  cp -r "$SRCPATH/common/home/ps/.ph/" "$NODE/home/kost/"
+fi
+chown -R "$gid_drt:$gid_drt" "$NODE/home/kost/.ph/"
 
-[ -d "$NODE/libr/$PROJECT" ] || mkdir -p "$NODE/libr/$PROJECT"
-# project manager
-grep -e "$project" $target_node/etc/passwd > /dev/null
-if test $? -ne 0; then
-	puid=`grep -e $project /etc/passwd | cut -f3 -d:`
-	if test -z "$puid"; then
-		puid="101"
-	fi
-	mkdir $target_node/libr/$project/bin
-	mkdir $target_node/libr/$project/gbin
-	mkdir $target_node/libr/$project/source
-	mkdir $target_node/libr/$project/include
-	mkdir $target_node/libr/$project/ph_app
-	mkdir $target_node/libr/$project/.ph
-	if test $inode -eq 1; then
-		cp -rc home/~ms_admin/.ph/* $target_node/libr/$project/.ph/
-	else
-		cp -rc home/~ps_admin/.ph/* $target_node/libr/$project/.ph/
-	fi
-	chown -R $puid:100 $target_node/libr/$project
-	echo "$project::$puid:100:Správce-projectu:/libr/$project:/bin/sh" >> $target_node/etc/passwd
-else
-	echo "user $project already defined"
-fi
-#
-echo "User name ?"
-read tuser
-let ipom=200+$tnode_id
-grep -e "$tuser" $target_node/etc/passwd > /dev/null		# technologicky uzivatel
 
-if test $? -ne 0; then
-	echo "$tuser::$ipom:101:Std. uživatel:/home/$tuser:/bin/sh" >> $target_node/etc/passwd
-	if test ! -d $target_node/home/$tuser; then
-		mkdir $target_node/home/$tuser
-	fi
-else
-	echo "uzivatel $tuser already defined"
-fi
-mkdir $target_node/home/$tuser/exe
-mkdir $target_node/home/$tuser/err
-mkdir $target_node/home/$tuser/litters
-mkdir $target_node/home/$tuser/.ph
-if test $tnode_id -eq 1; then
-	mkdir $target_node/home/$tuser/alr
-	mkdir $target_node/home/$tuser/arc
-   	mkdir $target_node/home/$tuser/kfg
-   	mkdir $target_node/home/$tuser/server
-   	mkdir $target_node/home/$tuser/graf
-	mkdir $target_node/home/$tuser/eng
-	mkdir $target_node/home/$tuser/monitor
-	cp -rc home/~ms/.ph/* $target_node/home/$tuser/.ph/
-else
-	cp -rc home/~ps/.ph/* $target_node/home/$tuser/.ph/
-fi
-chown -R $ipom:101 $target_node/home/$tuser
-#chmod -R g+wx $target_node/home/$tuser
-
-grep -e "drt" $target_node/etc/passwd > /dev/null		# drt-service
-if test $? -ne 0; then
-	if test $tnode_id -eq 1; then
-		service="ms_drt"
-	else
-		service="ps_drt"
-	fi
-	echo "$service::199:101:Drt-service:/home/$service:/bin/sh" >> $target_node/etc/passwd
-	if test ! -d $target_node/home/$service; then
-		mkdir $target_node/home/$service
-	fi
-else
-	echo "uzivatel $service already defined"
-fi
-mkdir $target_node/home/$tuser/.ph
-tmp="$PWD"
-cd $target_node/home/$home/$service
-ln -s /home/$tuser/err .
-ln -s /home/$tuser/exe .
-ln -s /home/$tuser/litters
-[ $tnode_id -eq 1 ] && {
-  ln -s /home/$tuser/alr .
-  ln -s /home/$tuser/arc .
-  ln -s /home/$tuser/kfg
-  ln -s /home/$tuser/server .
-  ln -s /home/$tuser/graf .
-  ln -s /home/$tuser/eng .
-  ln -s /home/$tuser/monitor .
+# formerly UID=101
+uid_pm="$(user_add "$PROJECT" '' '' "$gid_drt"
+  'Správce projektu' "/libr/$PROJECT" '/bin/sh')" || {
+  [ $? -eq 2 ] || ask_ignore "$uid_pm" || exit 1
+  uid_pm="$(get_id uid "$PROJECT")" || exit_msg 1 "$uid_pm"
 }
-chown -R 199:101 $target_node/home/$service
-cd "$tmp"
-#	chmod -R g+wx $target_node/home/$service
-
-if grep -e "admin" $target_node/etc/passwd > /dev/null; then
-	mkdir $target_node/home/admin
-	mkdir $target_node/home/admin/.ph
-	if test $inode -eq 1; then
-		cp -rc home/~ms_admin/.ph/* $target_node/home/admin/.ph/
-	else
-		cp -rc home/~ps_admin/.ph/* $target_node/home/admin/.ph/
-	fi
-	chown -R 200:101 $target_node/home/admin
-	echo "admin::200:101:Administrator:/home/admin:/bin/sh" >> $target_node/etc/passwd
+for d in bin gbin source include ph_app; do
+  mkdir -p "$NODE/libr/$PROJECT/$d"
+done
+if [ -n "$MEA_ST" ]; then
+  cp -r "$SRCPATH/common/home/ms/.ph/" "$NODE/libr/$PROJECT"
 else
-	echo "user admin already defined"
+  cp -r "$SRCPATH/common/home/ps/.ph/" "$NODE/libr/$PROJECT"
 fi
+chown -R "$uid_pm:$gid_drt" "$NODE/libr/$PROJECT/"
 
-# os release specific
+
+# formerly UID=(200 + $NODE_ID)
+uid_tu="$(user_add "$TECH_USER" '' '' "$gid_mcs03"
+  'Stand. uživatel' "/home/$TECH_USER" '/bin/sh')" || {
+  [ $? -eq 2 ] || ask_ignore "$uid_tu" || exit 1
+  uid_tu="$(get_id uid "$TECH_USER")" || exit_msg 1 "$uid_tu"
+}
+for d in exe err litters; do
+  mkdir -p "$NODE/home/$TECH_USER/$d"
+done
+if [ "$NODE_ID" -eq 1 ]; then
+  for d in alr arc kfg server graf eng monitor; do
+    mkdir -p "$NODE/home/$TECH_USER/$d"
+  done
+  #FIXME cp -r "$SRCPATH/common/home/~ms/.ph/ ...
+  cp -r "$SRCPATH/common/home/ms/.ph/" "$NODE/home/$TECH_USER"
+else
+  #FIXME cp -r "$SRCPATH/common/home/~ps/.ph/ ...
+  cp -r "$SRCPATH/common/home/ps/.ph/" "$NODE/home/$TECH_USER"
+fi
+chown -R "$uid_tu:$gid_mcs03" "$NODE/home/$TECH_USER"
+
+
+if [ "$NODE_ID" -eq 1 ]; then
+  user_drt="ms_drt"
+else
+  user_drt="ps_drt"
+fi
+# formerly UID=199
+uid_drt="$(user_add "$user_drt" '' '' "$gid_mcs03"
+  'Drt-service' "/home/$user_drt" '/bin/sh')" || {
+  [ $? -eq 2 ] || ask_ignore "$uid_drt" || exit 1
+  uid_drt="$(get_id uid "$user_drt")" || exit_msg 1 "$uid_drt"
+}
+cd "$NODE/home/$user_drt"
+for d in exe err litters; do
+  ln -s "/home/$TECH_USER/$d"
+done
+[ "$NODE_ID" -eq 1 ] && {
+  for d in alr arc kfg server graf eng monitor; do
+    ln -s "/home/$TECH_USER/$d"
+  done
+}
+cd "$OLDPWD"
+#FIXME this recursively overwrites owner from "$uid_tu:$gid_mcs03" of
+#  "$NODE/home/$TECH_USER"
+#chown -R "$uid_drt:$gid_mcs03" "$NODE/home/$user_drt"
+
+
+# formerly UID=200
+uid_admin="$(user_add 'admin' '' '' "$gid_mcs03"
+  '' "/home/admin" '/bin/sh')" || {
+  [ $? -eq 2 ] || ask_ignore "$uid_admin" || exit 1
+  uid_admin="$(get_id uid 'admin')" || exit_msg 1 "$uid_admin"
+}
+if [ -n "$MEA_ST" ]; then
+  cp -r "$SRCPATH/common/home/ms/.ph/" "$NODE/home/admin/"
+else
+  cp -r "$SRCPATH/common/home/ps/.ph/" "$NODE/home/admin/"
+fi
+chown -R "$uid_admin:$gid_mcs03" "$NODE/home/admin/"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#FIXME presunout presne tam, kde se instaluje launchmenu na zadost
+backup "$NODE/etc/photon/launchmenu"
 
 find ./ -level 1 -name "~*" | while read a; do
   tpath=${a%~*}
   tpath=${tpath#./}
   tdir=${1##*~}
-  read input?"Copy (a) or install (i) $1 [a/i/N]: "
-  if test "$input" = "a" || test "$input" = "A" || test "$input" = "y" || test "$input" = "Y"; then
-    echo "cp -Mqnx -rv $1 $target_node/$tpath$tdir"
-    cp -Mqnx -rv $1 $target_node/$tpath$tdir
-  elif test "$input" = "i" || test "$input" = "I"; then
-    tdir=${tdir%%-*}
-    echo "cp -Mqnx -rv $1 $target_node/$tpath$tdir"
-    cp -Mqnx -rv $1 $target_node/$tpath$tdir
-  fi
+  while read x?"Copy (a) or install (i) $1 [a/i/N]: "; do
+    case "$x" in
+      a|A|y|Y)
+        break ;;
+      i|I)
+        tdir=${tdir%%-*}
+        break ;;
+      *)
+        echo "ERR Unkown answer, try it again! [y/N/i]" >&2 ;;
+    esac
+  done
+  cp -Mqnx -rv $1 $target_node/$tpath$tdir
 done
 
 
