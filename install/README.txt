@@ -2,8 +2,8 @@
 --------------------------
 
 Kopiruje soubory z lokalnich adresaru na cilovy pocitac:
-boot, etc, home, libr, usr
-ostatni adresare jejichz jmeno zacina '~' jsou instalovany podminene.
+  boot, etc, home, libr, usr
+ostatni adresare jejichz jmeno zacina '~' jsou instalovany podminene
 
 etc/photon
   ruzne varianty konfigurace Launch buttonu (napr. root), standarni
@@ -11,8 +11,8 @@ etc/photon
   doplneni pro operatory s vyssi autorizaci (_auth)
 
 etc/qnx/
-  RT licence pro 6.4.1 je platna ta pres linku, nechal jsem to tam pro
-  ilustraci, instalace qnx vcetne licence by asi mela byt resena jinak?
+  RT licence pro 6.4.1 je platna ta pres symlink, nechal jsem to tam pro
+  ilustraci (instalace qnx vcetne licence by asi mela byt resena jinak)
 
 etc/hostnames.run
   slouzi pro variabilni funci stanice, parametry ORIG_HOSTNAME,
@@ -27,16 +27,16 @@ etc/rc.d/rc.ntp
   intenet nebo musi pouzivat ntp-server napr. z podnikove site
 
 usr/disam
-  obsahuje nektere soubory a skripty, ktere jsou blizko k systemu a scade,
+  obsahuje nektere soubory a skripty, ktere jsou blizko k systemu a SCADe,
   ale jsou na pocitaci jenom jednou bez ohledu pocet operatoru pripadne
-  souviseji s konkretni implentaci scady : zalohovani "systemovych dat",
+  souviseji s konkretni implentaci scady: zalohovani "systemovych dat",
   zrcadleni dat na zalozni merici stanici, konfigurace listy a jeji
-  spousteni, linku na ulohy sap0x, protoze nektere z nich jsou spousteny
-  ze systemu, ktery nemusi mit v PATH /libr/$PROJEKT/bin...
+  spousteni, symlinky na ulohy sap0x, protoze nektere z nich jsou
+  spousteny ze systemu, ktery nemusi mit v PATH /libr/$PROJEKT/bin...
 
 usr/help
   help pro MCS (v pripade, ze je system instalovan na vyvojove verzi QNX,
-  je nezbytne dodelat linku doQNX_TARGET/usr/help/product
+  je nezbytne dodelat symlink do QNX_TARGET/usr/help/product
 
 usr/qnx630
   nekolik souboru, ktere jsou instalovany na pocitac s vyvojovym
