@@ -393,7 +393,7 @@ ls -1 "$SRCPATH"/specific_license/etc/qnx/license/licenses* 2>/dev/null | {
 }
 #FIXME detect (otherwise it could break display.conf)
 #install_tree "$SRCPATH/specific_matrox"
-ls -1 -d "$NODE"/usr/qnx6*/target/qnx6/usr/include/ 2>/dev/null |
+ls -1 -d "$NODE"/usr/qnx6*/target/qnx6/usr/include 2>/dev/null |
   while read d; do
     cp_n_backup "$SRCPATH/specific_symlinks/usr/include/drt" "$d/drt"
   done
