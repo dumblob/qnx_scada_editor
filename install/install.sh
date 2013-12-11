@@ -307,16 +307,20 @@ get_id() {
 [ "$STATE" = 'uninstall' ] && {
   msg 'INFO Restoring all files from backup and removing files/dirs'
   msg '     introduced in that particular Disam RT SCADA installation.'
-  sort "$BACKUP_DIR/installed_files" | while read f; do
-    if [ -e "$BACKUP_DIR/$f" ]; then
+  sort -r "$BACKUP_DIR/installed_files" | while read f; do
+    if [ -e "$BACKUP_DIR/tree/$f" ]; then
       # use cp -p where possible because cp_tar is slow
-      if [ -d "$BACKUP_DIR/$f" ]; then
-        cp_tar "$BACKUP_DIR/$f" "$NODE/$f"
+      if [ -d "$BACKUP_DIR/tree/$f" ]; then
+        cp_tar "$BACKUP_DIR/tree/$f" "$NODE/$f"
       else
-        mv "$BACKUP_DIR/$f" "$NODE/$f"
+        mv "$BACKUP_DIR/tree/$f" "$NODE/$f"
       fi
     else
-      [ -e "$NODE/$f" ] && rm -rf "$NODE/$f"
+      if [ -d "$NODE/$f" ]; then
+        rmdir "$NODE/$f"
+      elif [ -e "$NODE/$f" ]; then
+        rm -f "$NODE/$f"
+      fi
     fi
   done
   msg 'INFO Done uninstalling Disam RT SCADA.'
