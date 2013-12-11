@@ -73,7 +73,7 @@ emsg() {
 }
 
 exit_msg() {
-  emsg "$2"
+  echo "$2" >&2
   exit $1
 }
 
