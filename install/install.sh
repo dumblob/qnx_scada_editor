@@ -84,33 +84,33 @@ while [ $# -gt 0 ]; do
       STATE='help' ;;
     'install')
       [ -n "$STATE" ] && exit_msg 1 "ERR Mode could be specified only once."
-      STATE='inst' ;;
+      STATE='install' ;;
     'uninstall')
       [ -n "$STATE" ] && exit_msg 1 "ERR Mode could be specified only once."
-      STATE='uninst' ;;
+      STATE='uninstall' ;;
     '-m')
-      [ "$STATE" = 'inst' ] || exit_msg 1 "ERR Unknown argument \`$1'."
+      [ "$STATE" = 'install' ] || exit_msg 1 "ERR Unknown argument \`$1'."
       shift
       [ $# -ge 1 ] || exit_msg 1 "ERR -m demands <ms_hostname>."
       MEA_ST="$1" ;;
     '-s')
-      [ "$STATE" = 'inst' ] || exit_msg 1 "ERR Unknown argument \`$1'."
+      [ "$STATE" = 'install' ] || exit_msg 1 "ERR Unknown argument \`$1'."
       shift
       [ $# -ge 1 ] || exit_msg 1 "ERR -s demands <src_path>."
       SRCPATH="$(full_path "$1")" ;;
     '-n')
-      [ "$STATE" = 'inst' -o "$STATE" = 'uninst' ] ||
+      [ "$STATE" = 'install' -o "$STATE" = 'uninstall' ] ||
         exit_msg 1 "ERR Unknown argument \`$1'."
       shift
       [ $# -ge 1 ] || exit_msg 1 "ERR -n demands <node_path>."
       NODE="$(full_path "$1")" ;;
     '-p')
-      [ "$STATE" = 'inst' ] || exit_msg 1 "ERR Unknown argument \`$1'."
+      [ "$STATE" = 'install' ] || exit_msg 1 "ERR Unknown argument \`$1'."
       shift
       [ $# -ge 1 ] || exit_msg 1 "ERR -p demands <project_name>."
       PROJECT="$1" ;;
     '-i')
-      [ "$STATE" = 'inst' ] || exit_msg 1 "ERR Unknown argument \`$1'."
+      [ "$STATE" = 'install' ] || exit_msg 1 "ERR Unknown argument \`$1'."
       shift
       [ $# -ge 1 ] || exit_msg 1 "ERR -i demands <node_num>."
       NODE_ID="$1"
@@ -119,7 +119,7 @@ while [ $# -gt 0 ]; do
       { if ($0 !~ /^[0-9]+$/) { exit 1 } }' ||
         exit_msg 1 'ERR <node_num> has to match [0-9]+' ;;
     '-t')
-      [ "$STATE" = 'inst' ] || exit_msg 1 "ERR Unknown argument \`$1'."
+      [ "$STATE" = 'install' ] || exit_msg 1 "ERR Unknown argument \`$1'."
       shift
       [ $# -ge 1 ] || exit_msg 1 "ERR -t demands <tech_user>."
       TECH_USER="$1"
@@ -128,7 +128,7 @@ while [ $# -gt 0 ]; do
       { if ($0 !~ /^[a-z_][a-z0-9_-]*[$]?$/) { exit 1 } }' ||
         exit_msg 1 'ERR <tech_user> has to match [a-z_][a-z0-9_-]*[$]' ;;
     '-b')
-      [ "$STATE" = 'uninst' ] || exit_msg 1 "ERR Unknown argument \`$1'."
+      [ "$STATE" = 'uninstall' ] || exit_msg 1 "ERR Unknown argument \`$1'."
       shift
       [ $# -ge 1 ] || exit_msg 1 "ERR -b demands <backup_dir>."
       BACKUP_DIR="$(full_path "$1")" ;;
@@ -304,7 +304,7 @@ get_id() {
 }
 
 
-[ "$STATE" = 'uninst' ] && {
+[ "$STATE" = 'uninstall' ] && {
   msg 'INFO Restoring all files from backup and removing files/dirs'
   msg '     introduced in that particular Disam RT SCADA installation.'
   sort "$BACKUP_DIR/installed_files" | while read f; do
