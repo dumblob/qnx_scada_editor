@@ -317,7 +317,7 @@ get_id() {
       fi
     else
       if [ -d "$NODE/$f" ]; then
-        rmdir "$NODE/$f"
+        rmdir "$NODE/$f" 2> /dev/null
       elif [ -e "$NODE/$f" ]; then
         rm -f "$NODE/$f"
       fi
