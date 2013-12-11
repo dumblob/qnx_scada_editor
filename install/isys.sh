@@ -2,7 +2,8 @@
 
 # TODO
 #   rozbehnout sit (touch ... a restart)
-#   nastavit fonty ???
+#   nastavit fonty
+#   add the table editor to install files
 
 # FIXME create README.new with new stuff (how the behavior changed)
 #   new users and groups get GID and UID automatically chosen
@@ -10,6 +11,7 @@
 #   common/etc/qnx/ (containing license stuff) moved to specific/etc/
 #   no need to replace symlinks, because they are (have to be!) relative in SRCPATH
 #   assume no special files like *.RLnk are present in SRCPATH
+#   QNX licenses are not installed any more
 #   not needed, because the permissions are already in SRCPATH
 #     chown -R root:root "$NODE/usr/disam/"
 #     chown -R root:root "$NODE/usr/include/drt"
@@ -42,21 +44,15 @@
 
 print_help() {
   echo "SYNOPSIS"
-  echo "  Installs SCADA system-wide on measure- or work- station node."
-  echo "  Owerwritten files are backed-up."
+  echo "  Installs Disam SCADA system-wide on measure- or work- station node."
+  echo "  All owerwritten files are backed-up."
   echo "USAGE"
-  echo "  install.sh help"
-  echo "  install.sh install [-m] [-s <src_path>] [-n <node_path>] [-l <license_path>]"
-  echo "                     -p <project_name> -i <node_id> -t <tech_user>"
-  echo "  install.sh uninstall [-n <node_path>] <dir_with_backup>"
-  #FIXME
-  echo "  install.sh useradd"
-  #FIXME
-  echo "  install.sh userdel"
-  #FIXME
-  echo "  install.sh groupadd name pass GID user_list"
-  #FIXME
-  echo "  install.sh groupdel {-n <name>|-gid <GID>}"
+  echo "  install.sh <mode>"
+  echo "MODES"
+  echo "  help"
+  echo "  install [-m] [-s <src_path>] [-n <node_path>] [-l <license_path>]"
+  echo "          -p <project_name> -i <node_id> -t <tech_user>"
+  echo "  uninstall [-n <node_path>] <dir_with_backup>"
   echo "OPTIONS"
   echo "  -m"
   echo "    install measurement station (aka \`Merici stanice')"
@@ -72,15 +68,9 @@ print_help() {
   echo "  -p <project_name>"
   echo "    name of the project"
   echo "  -i <node_id>"
-  echo "    node number (ID)"
+  echo "    node number (ID); ID=1 has a special meaning"
   echo "  -t <tech_user>"
   echo "    technological user name"
-  exit $1
-}
-
-exit_msg() {
-  echo "$2" >&2
-  exit $1
 }
 
 # call in subshell to not pollute/change environment
@@ -105,31 +95,33 @@ LICENSE=
 PROJECT=
 NODE_ID=
 TECH_USER=
-
-# inst uninst uadd udel gadd gdel
+# help inst uninst
 STATE=
+
+msg() {
+  echo "$@" | tee -a "$BACKUP_DIR/install.log"
+}
+
+emsg() {
+  echo "$@" | tee -a "$BACKUP_DIR/install.log" >&2
+}
+
+exit_msg() {
+  emsg "$2"
+  exit $1
+}
 
 while [ $# -gt 0 ]; do
   case "$1" in
     'help')
-      print_help 0 ;;
+      [ -n "$STATE" ] && exit_msg 1 "ERR Mode could be specified only once."
+      STATE='help' ;;
     'install')
+      [ -n "$STATE" ] && exit_msg 1 "ERR Mode could be specified only once."
       STATE='inst' ;;
     'uninstall')
-      echo 'ERR Not implemented yet!' >&2; exit 1
+      [ -n "$STATE" ] && exit_msg 1 "ERR Mode could be specified only once."
       STATE='uninst' ;;
-    'useradd')
-      echo 'ERR Not implemented yet!' >&2; exit 1
-      STATE='uadd' ;;
-    'userdel')
-      echo 'ERR Not implemented yet!' >&2; exit 1
-      STATE='udel' ;;
-    'groupadd')
-      echo 'ERR Not implemented yet!' >&2; exit 1
-      STATE='gadd' ;;
-    'groupdel')
-      echo 'ERR Not implemented yet!' >&2; exit 1
-      STATE='gdel' ;;
     '-m')
       [ "$STATE" = 'inst' ] || exit_msg 1 "ERR Unknown argument \`$1'."
       MEA_ST='yes' ;;
@@ -139,7 +131,8 @@ while [ $# -gt 0 ]; do
       [ $# -ge 1 ] || exit_msg 1 "ERR -s demands <src_path>."
       SRCPATH="$(full_path "$1")" ;;
     '-n')
-      [ "$STATE" = 'inst' ] || exit_msg 1 "ERR Unknown argument \`$1'."
+      [ "$STATE" = 'inst' -o "$STATE" = 'uninst' ] ||
+        exit_msg 1 "ERR Unknown argument \`$1'."
       shift
       [ $# -ge 1 ] || exit_msg 1 "ERR -n demands <node_path>."
       NODE="$(full_path "$1")" ;;
@@ -160,8 +153,8 @@ while [ $# -gt 0 ]; do
       NODE_ID="$1"
       # be aware of newline characters!
       echo "$NODE_ID" | awk 'BEGIN { RS="" }
-        { if ($0 !~ /^[0-9]+$/) { exit 1 } }' ||
-          exit_msg 1 'ERR <node_num> has to match [0-9]+' ;;
+      { if ($0 !~ /^[0-9]+$/) { exit 1 } }' ||
+        exit_msg 1 'ERR <node_num> has to match [0-9]+' ;;
     '-t')
       [ "$STATE" = 'inst' ] || exit_msg 1 "ERR Unknown argument \`$1'."
       shift
@@ -169,20 +162,31 @@ while [ $# -gt 0 ]; do
       TECH_USER="$1"
       # be aware of newline characters!
       echo "$TECH_USER" | awk 'BEGIN { RS="" }
-        { if ($0 !~ /^[a-z_][a-z0-9_-]*[$]?$/) { exit 1 } }' ||
-          exit_msg 1 'ERR <tech_user> has to match [a-z_][a-z0-9_-]*[$]' ;;
+      { if ($0 !~ /^[a-z_][a-z0-9_-]*[$]?$/) { exit 1 } }' ||
+        exit_msg 1 'ERR <tech_user> has to match [a-z_][a-z0-9_-]*[$]' ;;
     *)
       exit_msg 1 "ERR Unknown argument \`$1'." ;;
   esac
   shift
 done
 
-[ -z "$STATE" ]      && exit_msg 1 "ERR Mode (help|install|...) required."
-[ -z "$PROJECT" ]    && exit_msg 1 "ERR Non-empty <project_name> required."
-[ -z "$NODE_ID" ]    && exit_msg 1 "ERR Non-empty <node_id> required."
-[ -z "$TECH_USER" ]  && exit_msg 1 "ERR Non-empty <tech_user> required."
+case "$STATE" in
+  'help')
+    print_help
+    exit 0;;
+  'install')
+    [ -z "$PROJECT" ]   && exit_msg 1 "ERR Non-empty <project_name> required."
+    [ -z "$NODE_ID" ]   && exit_msg 1 "ERR Non-empty <node_id> required."
+    [ -z "$TECH_USER" ] && exit_msg 1 "ERR Non-empty <tech_user> required."
+    [ -d "$NODE" ]      || exit_msg 1 "ERR Directory $NODE doesn't exist."
+    ;;
+  'uninstall')
+    ;;
+  *) exit_msg 1 "ERR Mode (help|...) required." ;;
+esac
+
 [ "$(id -u)" -eq 0 ] || exit_msg 1 "ERR Root privileges needed."
-[ -d "$NODE" ]       || exit_msg 1 "ERR Directory $NODE doesn't exist."
+BACKUP_DIR="$NODE/backup_$TSTAMP"; mkdir -p "$BACKUP_DIR" || exit $?
 
 ask() {
   while printf '%s' "$1"; do
@@ -190,13 +194,13 @@ ask() {
     case "$x" in
       y|Y) return 0;;
       n|N) return 1;;
-      *) echo "Please choose either \`y' as \`yes' or \`n' as \`no'";;
+      *) msg "Please choose either \`y' as \`yes' or \`n' as \`no'";;
     esac
   done
 }
 
 ask_ignore() {
-  [ -n "$1" ] && echo "$1" >&2
+  [ -n "$1" ] && emsg "$1"
   ask "Would you like to ignore it? [y/n] "
 }
 
@@ -205,32 +209,33 @@ ask_ignore() {
 #   directories are not copied recursively (thus they will be empty)
 #   no checks for path existence are done (path should already exist -
 #     ensure it using e.g. `find . | sort')
+#   if src and dst are the same file
 cp_n_backup() {
-  [ -z "$_BACKUP_DIR" ] && {
-    _BACKUP_DIR="$NODE/backup_$TSTAMP"
+  [ -z "$_BACKUP_TREE" ] && {
+    _BACKUP_TREE="$BACKUP_DIR/tree"
     # in case we are in subshell => this is to prevent >1 outputs
-    [ -e "$_BACKUP_DIR" ] || {
-      mkdir -p "$_BACKUP_DIR"
-      echo "INFO Backuped files are stored in $_BACKUP_DIR"
+    [ -e "$_BACKUP_TREE" ] || {
+      mkdir -p "$_BACKUP_TREE"
+      msg "INFO Backuped files are stored in $_BACKUP_TREE"
     }
   }
 
   if [ -d "$1" ]; then
     [ -e "$NODE/$2" ] && {
       # `copy' while preserving permissions, ownership, mtime and ctime
-      (cd "$(dirname "$NODE/$2")" && tar --no-recursion -c "$(basename "$2")") |
+      { cd "$(dirname "$NODE/$2")" && tar --no-recursion -c "$(basename "$2")"; } |
       # overwrite metadata if file|dir exists
-      (cd "$(dirname "$_BACKUP_DIR/$2")" && tar --same-owner -xp) || {
-        echo "ERR Backup failed, original file \`$NODE/$2' preserved."
+      { cd "$(dirname "$_BACKUP_DIR/$2")" && tar --same-owner -xp; } || {
+        emsg "ERR Backup failed, original file \`$NODE/$2' preserved."
         return 1
       }
     }
-    (cd "$(dirname "$1")" && tar --no-recursion -c "$(basename "$1")") |
-    (cd "$(dirname "$NODE/$2")" && tar --same-owner -xp)
+    { cd "$(dirname "$1")" && tar --no-recursion -c "$(basename "$1")"; } |
+    { cd "$(dirname "$NODE/$2")" && tar --same-owner -xp; }
   else
     [ -e "$NODE/$2" ] && {
       mv "$NODE/$2" "$_BACKUP_DIR/$2" 2> /dev/null || {
-        echo "ERR Backup failed, original file \`$NODE/$2' preserved."
+        emsg "ERR Backup failed, original file \`$NODE/$2' preserved."
         return 1
       }
     }
@@ -240,7 +245,8 @@ cp_n_backup() {
 
 install_tree() {
   _len="$(echo "$1" | wc -c)"
-  find "$1" | sort | while read f; do
+  # cut off first line because it is the $1 itself
+  find "$1" | sort | tail -n +2 | while read f; do
     cp_n_backup "$f" "$(echo "$f" | cut -b $_len-)"
   done
 }
@@ -308,65 +314,90 @@ get_id() {
     _m="ERR User $2 not found."
   fi
   awk -F: "{ if (\$1 == \"$2\") { print \$3; x = 1; exit 0 } }
-    END { if (! x) { print \"$_m\"; exit 1 } }" < "$_f"
+  END { if (! x) { print \"$_m\"; exit 1 } }" < "$_f"
   )
 }
 
 
-echo 'INFO Installing system files...'
+msg 'INFO Installing system files...'
 
 
 install_tree "$SRCPATH/common"
-ls -1 -d "$NODE"/usr/qnx6*/target/qnx6/usr/include/ 2>/dev/null |
-  while read d; do
-    ln -s '/usr/include/drt' "$d"
-  done
-ls -1 -d "$NODE"/usr/qnx6*/target/qnx6/usr/help/product 2>/dev/null |
-  while read d; do
-    ln -s '/usr/help/product/Disam' "$d"
-    ln -s '/usr/help/product/Disam.toc' "$d"
-  done
+msg \
+  "WARN Please check the following files for your specific settings," \
+  "     because they were overwritten." \
+  "  $NODE/etc/rc.local" \
+  "  $NODE/etc/ntp.conf"
+msg "WARN Assuming hostname \`$(hostname)' of the target node \`$NODE'."
+#FIXME which abbreviations are valid?
+#  WS work-station aka `pracovni stanice'
+#  ES <unknown>
+#  MS measurement-station aka `merici stanice'
+#  ZMS backup measurement-station aka `zalozni merici stanice'
+#  PS <unknown>
+echo \
+  "ORIG_HOSTNAME=$(hostname)" \
+  "ALIAS_HOSTNAME=$(hostname)" \
+  "HOST_FCE=$(if [ "$MEA_ST" ]; then echo MS; else echo WS; fi)  # WS|ES|MS MS/ZMS/PS" \
+  > "$NODE/etc/hostnames.run"
 
 
-echo 'INFO Installing specific/optional system files...'
+msg 'INFO Installing specific/optional system files...'
 
 
-install_tree "$SRCPATH/specific_dll"
 install_tree "$SRCPATH/specific_etc"
+msg "WARN Please check if /etc/ham-ph.cfg contains the right values."
+# permissions are preserved when using sh > redirection
+f='/etc/profile.d/scada.sh'
+#FIXME reversed semantics of MEA_ST
+sed -r \
+  -e 's|(SCADA_MS_NODE=)MS_dummy_name|\1'"$MEA_ST"'|' \
+  -e 's|(PROJEKT=)MCS_dummy|\1'"$PROJECT"'|' \
+  "$SRCPATH/common/$f" > "$NODE/$f"
+msg "WARN Please check \`$NODE/$f' for sockets and ftp-server settings."
+#FIXME detect did: 293e,27de,7012
+install_tree "$SRCPATH/specific_dll"
+#FIXME create the tree with editor for this
+#install_tree "$SRCPATH/specific_editor"
+#FIXME detect did: 293e,27de,7012
 install_tree "$SRCPATH/specific_io-audio"
+#FIXME auto-detect Qnet over IP?
+install_tree "$SRCPATH/specific_ip-qnet"
 install_tree "$SRCPATH/specific_launchmenu"
 # just for information - we won't install any QNX license automatically!
 if [ -e "$NODE/etc/qnx/license/licenses" ]; then
-  echo "INFO QNX license found."
+  msg "INFO QNX license found."
 else
-  echo "WARN No QNX license found."
+  msg "WARN No QNX license found, some SCADA functionality mustn't work."
 fi
-echo "INFO Version of the currently running QNX microkernel is \`$(uname -r)'."
-echo "INFO Available licenses for manual installation:"
-found=
-ls -1 "$SRCPATH"/specific_license/etc/qnx/license/licenses* 2>/dev/null |
+msg "INFO Currently running QNX microkernel: $(uname -r)"
+msg "INFO Available licenses for manual installation:"
+ls -1 "$SRCPATH"/specific_license/etc/qnx/license/licenses* 2>/dev/null | {
+  found=
   while read l; do
     found='yes'
-    printf "  %s\n" "$l"
+    msg "  $l"
   done
-[ -z "$found" ] && echo "  <none>"
+  [ -z "$found" ] && msg "  <none>"
+}
+#FIXME detect (otherwise it could break display.conf)
+#install_tree "$SRCPATH/specific_matrox"
+ls -1 -d "$NODE"/usr/qnx6*/target/qnx6/usr/include/ 2>/dev/null |
+  while read d; do
+    cp_n_backup "$SRCPATH/specific_symlinks/usr/include/drt" "$d"
+  done
+ls -1 -d "$NODE"/usr/qnx6*/target/qnx6/usr/help/product 2>/dev/null |
+  while read d; do
+    cp_n_backup "$SRCPATH/specific_symlinks/usr/help/product/Disam" "$d"
+    cp_n_backup "$SRCPATH/specific_symlinks/usr/help/product/Disam.toc" "$d"
+  done
 
 
-echo 'INFO Setting hostname to ?????'
-
-
-#FIXME (ps|ms)[0-9]+ WS|ES|MS
-#printf '%s\n%s\n%s\n' \
-#  "ORIG_HOSTNAME=ps1" \
-#  "ALIAS_HOSTNAME=ps1" \
-#  "HOST_FCE=WS" > "$NODE/etc/hostnames.run"
-
-
-echo "INFO Adding groups (if needed)."
+msg "INFO Adding groups (if needed)."
 
 
 # formerly GID=100
-echo "INFO   groupadd \`drt'"
+msg "INFO   groupadd \`drt'"
 gid_drt="$(group_add 'drt' '' '' '')" || {
   # ignore "Group already exists" error
   [ $? -eq 2 ] || ask_ignore "$gid_drt" || exit 1
@@ -374,19 +405,20 @@ gid_drt="$(group_add 'drt' '' '' '')" || {
   gid_drt="$(get_id gid 'drt')" || exit_msg 1 "$gid_drt"
 }
 
+
 # formerly GID=101
-echo "INFO   groupadd \`mcs03'"
+msg "INFO   groupadd \`mcs03'"
 gid_mcs03="$(group_add 'mcs03' '' '' '')" || {
   [ $? -eq 2 ] || ask_ignore "$gid_mcs03" || exit 1
   gid_mcs03="$(get_id gid 'mcs03')" || exit_msg 1 "$gid_mcs03"
 }
 
 
-echo "INFO Adding users (if needed)."
+msg "INFO Adding users (if needed)."
 
 
 # formerly UID=100 GID=100
-echo "INFO   useradd \`kost'"
+msg "INFO   useradd \`kost'"
 ret="$(user_add 'kost' '' "$gid_drt" "$gid_drt" \
   'V. Košťál' '/home/kost' '/bin/sh')" ||
 # ignore "User already exists" error
@@ -400,7 +432,7 @@ chown -R "$gid_drt:$gid_drt" "$NODE/home/kost/.ph/"
 
 
 # formerly UID=101
-echo "INFO   useradd \`$PROJECT'"
+msg "INFO   useradd \`$PROJECT'"
 uid_pm="$(user_add "$PROJECT" '' '' "$gid_drt" \
   'Správce projektu' "/libr/$PROJECT" '/bin/sh')" || {
   [ $? -eq 2 ] || ask_ignore "$uid_pm" || exit 1
@@ -417,8 +449,41 @@ fi
 chown -R "$uid_pm:$gid_drt" "$NODE/libr/$PROJECT/"
 
 
+# formerly UID=200
+msg "INFO   useradd \`ms'"
+# SCADA software runs from here
+uid_ms="$(user_add 'ms' '' '' "$gid_mcs03" \
+  'MS-SCADA-QNX' '/home/ms' '/bin/sh')" || {
+  [ $? -eq 2 ] || ask_ignore "$uid_ms" || exit 1
+  uid_ms="$(get_id uid 'ms')" || exit_msg 1 "$uid_ms"
+}
+# FIXME see /home/ms/.ph/README.txt for detailed installation
+chown -R "$uid_ms:$gid_mcs03" "$NODE/home/ms"
+
+
+# formerly UID=201
+msg "INFO   useradd \`ps'"
+# SCADA HMI software runs from here
+uid_ps="$(user_add 'ps' '' '' "$gid_mcs03" \
+  'PS-SCADA-QNX' '/home/ps' '/bin/sh')" || {
+  [ $? -eq 2 ] || ask_ignore "$uid_ps" || exit 1
+  uid_ps="$(get_id uid 'ps')" || exit_msg 1 "$uid_ps"
+}
+# FIXME see /home/ps/.ph/README.txt for detailed installation
+chown -R "$uid_ps:$gid_mcs03" "$NODE/home/ps"
+
+
+# formerly UID=202
+msg "INFO   useradd \`rps'"
+uid_rps="$(user_add 'rps' '' '' "$gid_mcs03" \
+  'Remote PS' '/home/rps' '/bin/sh')" || {
+  [ $? -eq 2 ] || ask_ignore "$uid_rps" || exit 1
+  uid_rps="$(get_id uid 'rps')" || exit_msg 1 "$uid_rps"
+}
+
+
 # formerly UID=(200 + $NODE_ID)
-echo "INFO   useradd \`$TECH_USER'"
+msg "INFO   useradd \`$TECH_USER'"
 uid_tu="$(user_add "$TECH_USER" '' '' "$gid_mcs03" \
   'Stand. uživatel' "/home/$TECH_USER" '/bin/sh')" || {
   [ $? -eq 2 ] || ask_ignore "$uid_tu" || exit 1
@@ -446,7 +511,7 @@ else
   user_drt="ps_drt"
 fi
 # formerly UID=199
-echo "INFO   useradd \`$user_drt'"
+msg "INFO   useradd \`$user_drt'"
 uid_drt="$(user_add "$user_drt" '' '' "$gid_mcs03" \
   'Drt-service' "/home/$user_drt" '/bin/sh')" || {
   [ $? -eq 2 ] || ask_ignore "$uid_drt" || exit 1
@@ -460,13 +525,13 @@ done
     ln -s "/home/$TECH_USER/$d" "$NODE/home/$user_drt"
   done
 }
-#FIXME this recursively overwrites owner from "$uid_tu:$gid_mcs03" of
-#  "$NODE/home/$TECH_USER"
+#FIXME this recursively overwrites owner of "$NODE/home/$TECH_USER"
+#  from "$uid_tu:$gid_mcs03"
 #chown -R "$uid_drt:$gid_mcs03" "$NODE/home/$user_drt"
 
 
 # formerly UID=200
-echo "INFO   useradd \`admin'"
+msg "INFO   useradd \`admin'"
 uid_admin="$(user_add 'admin' '' '' "$gid_mcs03" \
   '' "/home/admin" '/bin/sh')" || {
   [ $? -eq 2 ] || ask_ignore "$uid_admin" || exit 1
@@ -478,3 +543,5 @@ else
   cp -rp "$SRCPATH/common/home/ps/.ph/" "$NODE/home/admin/"
 fi
 chown -R "$uid_admin:$gid_mcs03" "$NODE/home/admin/"
+
+

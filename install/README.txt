@@ -1,32 +1,33 @@
-1 instalacni script : isys
---------------------------
++/etc/photon
+  ruzne varianty konfigurace Launch buttonu
+    root
+    standarni uzivatel (operator systemu MCS) na pracovni stanici (_ps)
+    operatori s vyssi autorizaci (_auth)
 
-Kopiruje soubory z lokalnich adresaru na cilovy pocitac:
-  boot, etc, home, libr, usr
-ostatni adresare jejichz jmeno zacina '~' jsou instalovany podminene
++/home/ms
+  home adresar operatora, ze ktereho je provozovan SW scady, instalace
+  viz /home/ms/.ph/README.txt, chown -R ms:101 /home/ms !
 
-etc/photon
-  ruzne varianty konfigurace Launch buttonu (napr. root), standarni
-  uzivatel (operator systemu MCS) na pracovni stanici (_ps), pripadne
-  doplneni pro operatory s vyssi autorizaci (_auth)
++/home/ps
+  home adresar operatora, ze ktereho je provozovan SW HMI scady, instalace
+  viz /home/ps/.ph/README.txt, chown -R ps:101 /home/ps !
 
-etc/qnx/
-  RT licence pro 6.4.1 je platna ta pres symlink, nechal jsem to tam pro
-  ilustraci (instalace qnx vcetne licence by asi mela byt resena jinak)
++/libr/MCS
+  SW scady (PROJEKT="MCS")
 
-etc/hostnames.run
++etc/hostnames.run
   slouzi pro variabilni funci stanice, parametry ORIG_HOSTNAME,
   ALIAS_HOSTNAME by se mely nastavit dle skutecneho jmena stanice,
   HOST_FCE dle funkce
   tento soubor je modifkovan aplikaci rep02
 
-etc/rc.d/rc.ntp
++etc/rc.d/rc.ntp
   skript pro podminene spousteni ntpd pri rozbehu pocitace (klicovano
   existenci souboru /etc/ntp.cfg), pro spravnou funkci je nutne
   upravit /etc/ntp/ntp.conf - zalezi na tom jestli pocitac dosahne na
   intenet nebo musi pouzivat ntp-server napr. z podnikove site
 
-usr/disam
++usr/disam
   obsahuje nektere soubory a skripty, ktere jsou blizko k systemu a SCADe,
   ale jsou na pocitaci jenom jednou bez ohledu pocet operatoru pripadne
   souviseji s konkretni implentaci scady: zalohovani "systemovych dat",
@@ -34,20 +35,20 @@ usr/disam
   spousteni, symlinky na ulohy sap0x, protoze nektere z nich jsou
   spousteny ze systemu, ktery nemusi mit v PATH /libr/$PROJEKT/bin...
 
-usr/help
++usr/help
   help pro MCS (v pripade, ze je system instalovan na vyvojove verzi QNX,
   je nezbytne dodelat symlink do QNX_TARGET/usr/help/product
 
-usr/qnx630
++usr/qnx630
   nekolik souboru, ktere jsou instalovany na pocitac s vyvojovym
   prostredim a to pouze v pripade, ze existuje link /usr/qnx630 na Base
   directoty (viz qconfig) tzn. /usr/qnx641
 
-usr/share
++usr/share
   pozadi pro operatora MCS, predpoklada se, ze dle funkce stanice je
-  vytvorena spravna linka,
+  vytvorena spravna linka
 
-~lib
++~lib
   = dll moduly
   experimetalni verze dll knihoven (originaly pokud existuji jsou
   zkopirovany jako *.so.1, nove verze jako linka k nejvyssi verzi so,
@@ -59,13 +60,13 @@ usr/share
       display.conf), nelze menit typ driveru za jizdy
     radeon: ten uz asi nepotkame
 
-sbin
++~sbin
   dtto [aforementioned; abovementioned] ~lib
 
-~etc-64x/photon/launchmenu
++~etc-64x/photon/launchmenu
   finalni podoba konfigurace launch buttonu
 
-~etc-64x/profile.d/scada.sh
++~etc-64x/profile.d/scada.sh
   standardni nastaveni environmentu pro operatora scady, promenne PROJEKT
   a SCADA_MS_NODE budou vyzadovat aktualni nastaveni dle skutecnosti a
   typu instalovane stanice. Tento modul je automaticky spousten pri
@@ -82,55 +83,52 @@ sbin
   jednom souboru (ktery by si kazdy, kdo to potrebuje precetl jako 1.),
   a odkazy na tyto zakladni odkazy se rozpracovavali az v druhem kroku
 
-~etc-64x/rc.d/rc.sysinit
++~etc-64x/rc.d/rc.sysinit
   lehce modifikovany standarni systemovy soubor (automaticky spousteny
   pri rozbehu pocitace)
 
-~etc-64x/rc.d/rc.ham_setup
++~etc-64x/rc.d/rc.ham_setup
   spusteni HAM
-~etc-64x/rc.d/rc.start_scada
-  automaticky rozbeh scady pr najeti pocitace - merici stanice
-~etc-64x/rc.d/set_cpu_affinity
+
++~etc-64x/rc.d/rc.start_scada
+  automaticky rozbeh scady pri najeti pocitace - merici stanice
+
++~etc-64x/rc.d/set_cpu_affinity
   skript, ktery resi problem, ktery ma qxn v kombinaci 2-headed monitoru
   a vicejadroveho procesoru
-~etc-64x/rc.d/set_tcp_addr
+
++~etc-64x/rc.d/set_tcp_addr
   skript, ktery mel uz hodne podob, vlastne nastavuje/modifikuje IP
   adresy dle funkce stanice a /etc/hosts
-~etc-64x/rc.d/rc.pnet
+
++~etc-64x/rc.d/rc.pnet
   neco podobneho, ale pro pripad nezavislych instanci uloh io-pkt...
 
-~etc-64x/rc.d/rc.local
++~etc-64x/rc.d/rc.local
   automaticky spousteny pri rozbehu pocitace z /etc/rc.d/rc.sysinit, jeho
   obsah je nutne modifikovat dle funkce stanice (MS/ZMS/PS) a konkretni
   implementace
-~etc-64x/rc.d/rc.local-vk
+
++~etc-64x/rc.d/rc.local-vk
   spousteny z /etc/rc.d/rc.local
 
-~etc-64x/system/config/display.conf.matroxp
-  v pripade maxtrox musi byt prejmenovan jako display.conf
-
-~etc-64x/IP-cfg.*
++~etc-64x/IP-cfg.*
   soubory pro script /etc/rc.d/set_tcp_addr, obsah dle konkretni
   implementace
-~etc-64x/ham-general.cfg
+
++~etc-64x/ham-general.cfg
   konfigurace HAM via sap02
-~etc-64x/ham-ph.cfg
+
++~etc-64x/ham-ph.cfg
   konfigurace HAM via sap02 pro grafiku, parametry vid a did je nezbytne
   nastavit dle skutecnosti
-~etc-64x/sap04.cfg
+
++~etc-64x/sap04.cfg
   konfigurace pro sap04
-~etc-64x/sap08.cfg
+
++~etc-64x/sap08.cfg
   konfigurace pro sap08
 
-etc-ip-qnet
-  nekolik souboru, ktere, v pripade, ze se system provozuje s qnet na
-  ip-protokolem prijdou do /etc
-
-/home/ms
-  home adresar operatora, ze ktereho je provozovan SW scady, instalace
-  viz /home/ms/.ph/README.txt, chown -R ms:101 /home/ms !
-/home/ps
-  home adresar operatora, ze ktereho je provozovan SW HMI scady, instalace
-  viz /home/ps/.ph/README.txt, chown -R ps:101 /home/ps !
-/libr/MCS
-  SW scady (PROJEKT="MCS")
++etc-ip-qnet
+  nekolik souboru, ktere v pripade, ze se system provozuje s qnet nad
+  protokolem IP prijdou do /etc
