@@ -195,7 +195,7 @@ cp_n_backup() {
   if [ -d "$1" ]; then
     [ -e "$NODE/$2" ] && {
       cp_tar "$NODE/$2" "$_BACKUP_DIR/$2" || {
-        emsg "ERR Backup failed, original file \`$NODE/$2' preserved."
+        emsg "ERR Backup failed, original file \`$NODE$2' preserved."
         return 1
       }
     }
@@ -203,7 +203,7 @@ cp_n_backup() {
   else
     [ -e "$NODE/$2" ] && {
       mv "$NODE/$2" "$_BACKUP_DIR/$2" 2> /dev/null || {
-        emsg "ERR Backup failed, original file \`$NODE/$2' preserved."
+        emsg "ERR Backup failed, original file \`$NODE$2' preserved."
         return 1
       }
     }
@@ -335,11 +335,10 @@ msg 'INFO Installing system files...'
 
 
 install_tree "$SRCPATH/common"
-msg \
-  "WARN Please check the following files for your specific settings," \
-  "     because they were overwritten." \
-  "  $NODE/etc/rc.local" \
-  "  $NODE/etc/ntp.conf"
+msg "WARN Please check the following files for your specific settings,"
+msg "     because they were overwritten."
+msg "  $NODE/etc/rc.local"
+msg "  $NODE/etc/ntp.conf"
 msg "WARN Assuming hostname \`$(hostname)' of the target node \`$NODE'."
 #FIXME which abbreviations are valid?
 #  WS work-station aka `pracovni stanice'
@@ -357,24 +356,24 @@ echo \
 msg 'INFO Installing specific/optional system files...'
 
 
+#FIXME detect did: 293e,27de,7012
+install_tree "$SRCPATH/specific_dll"
+install_tree "$SRCPATH/specific_editor"
 install_tree "$SRCPATH/specific_etc"
-msg "WARN Please check if /etc/ham-ph.cfg contains the right values."
+msg "WARN Please check if \`$NODE/etc/ham-ph.cfg contains the right values."
 # permissions are preserved when using sh > redirection
 f='/etc/profile.d/scada.sh'
 sed -r \
   -e 's|(SCADA_MS_NODE=)MS_dummy_name|\1'"$(
     if [ -z "$MEA_ST" ]; then hostname; else echo "$MEA_ST"; fi)"'|' \
   -e 's|(PROJEKT=)MCS_dummy|\1'"$PROJECT"'|' \
-  "$SRCPATH/common/$f" > "$NODE/$f"
-msg "WARN Please check \`$NODE/$f' for sockets and ftp-server settings."
-#FIXME detect did: 293e,27de,7012
-install_tree "$SRCPATH/specific_dll"
-#FIXME create the tree with editor for this
-#install_tree "$SRCPATH/specific_editor"
+  "$SRCPATH/specific_etc$f" > "$NODE$f"
+msg "WARN Please check \`$NODE$f' for sockets and ftp-server settings."
 #FIXME detect did: 293e,27de,7012
 install_tree "$SRCPATH/specific_io-audio"
 #FIXME auto-detect Qnet over IP?
 install_tree "$SRCPATH/specific_ip-qnet"
+install_tree "$SRCPATH/specific_keepalive"
 install_tree "$SRCPATH/specific_launchmenu"
 # just for information - we won't install any QNX license automatically!
 if [ -e "$NODE/etc/qnx/license/licenses" ]; then
@@ -396,12 +395,14 @@ ls -1 "$SRCPATH"/specific_license/etc/qnx/license/licenses* 2>/dev/null | {
 #install_tree "$SRCPATH/specific_matrox"
 ls -1 -d "$NODE"/usr/qnx6*/target/qnx6/usr/include/ 2>/dev/null |
   while read d; do
-    cp_n_backup "$SRCPATH/specific_symlinks/usr/include/drt" "$d"
+    cp_n_backup "$SRCPATH/specific_symlinks/usr/include/drt" "$d/drt"
   done
 ls -1 -d "$NODE"/usr/qnx6*/target/qnx6/usr/help/product 2>/dev/null |
   while read d; do
-    cp_n_backup "$SRCPATH/specific_symlinks/usr/help/product/Disam" "$d"
-    cp_n_backup "$SRCPATH/specific_symlinks/usr/help/product/Disam.toc" "$d"
+    cp_n_backup \
+      "$SRCPATH/specific_symlinks/usr/help/product/Disam" "$d/Disam"
+    cp_n_backup \
+      "$SRCPATH/specific_symlinks/usr/help/product/Disam.toc" "$d/Disam.toc"
   done
 
 
