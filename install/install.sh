@@ -3,74 +3,40 @@
 # TODO
 #   rozbehnout sit (touch ... a restart)
 #   nastavit fonty
-#   add the table editor to install files
-
-# FIXME create README.new with new stuff (how the behavior changed)
-#   new users and groups get GID and UID automatically chosen
-#   ~dir and non-tilda dirs divided into two separate subfolders (common & specific)
-#   common/etc/qnx/ (containing license stuff) moved to specific/etc/
-#   no need to replace symlinks, because they are (have to be!) relative in SRCPATH
-#   assume no special files like *.RLnk are present in SRCPATH
-#   QNX licenses are not installed any more
-#   not needed, because the permissions are already in SRCPATH
-#     chown -R root:root "$NODE/usr/disam/"
-#     chown -R root:root "$NODE/usr/include/drt"
-#     chmod -R ugo+r "$NODE/usr/include/drt"
-
-# FIXME
-# formerly
-#   home/~ms_admin/.ph/
-#   home/~ps_admin/.ph/
-# but in the isis.gtar is only
-#   home/ms/.ph/
-#   home/ps/.ph/
-# FIXME
-#   preset passwords for newly created accounts
-
-# /etc/group
-# mcs-03:x:101:
-# /etc/passwd
-# vilem:x:100:0:Vilem Srovnal:/home/vilem:/bin/sh
-# ms::200:101:MS-SCADA-QNX:/home/ms:/bin/sh
-# ps::201:101:PS-SCADA-QNX:/home/ps:/bin/sh
-# rps:x:202:101:Remote PS:/home/rps:/bin/sh
-
-# /etc/group
-# mcs-03:x:101:
-# /etc/passwd
-# ms::200:101:MS-SCADA-QNX:/home/ms:/bin/sh
-# ps::201:101:PS-SCADA-QNX:/home/ps:/bin/sh
-# rps:x:202:101:Remote PS:/home/rps:/bin/sh
+#   useradd should add the name to the corresponding groups in /etc/group
+#   backup files/dirs in /home/... as well as all other system files
+#   add the table editor (and its documentation) to install files
 
 print_help() {
   echo "SYNOPSIS"
-  echo "  Installs Disam SCADA system-wide on measure- or work- station node."
+  echo "  Installs Disam RT SCADA system-wide on measure- or work- station node."
   echo "  All owerwritten files are backed-up."
   echo "USAGE"
   echo "  install.sh <mode>"
   echo "MODES"
   echo "  help"
-  echo "  install [-m] [-s <src_path>] [-n <node_path>] [-l <license_path>]"
+  echo "  install [-m <ms_hostname>] [-s <src_path>] [-n <node_path>]"
   echo "          -p <project_name> -i <node_id> -t <tech_user>"
-  echo "  uninstall [-n <node_path>] <dir_with_backup>"
+  echo "  uninstall [-n <node_path>] -b <backup_dir>"
   echo "OPTIONS"
-  echo "  -m"
-  echo "    install measurement station (aka \`Merici stanice')"
-  echo "    default: install workstation (aka \`Pracovni stanice')"
+  echo "  -m <ms_hostname>"
+  echo "    install as workstation (aka \`Pracovni stanice') connected to"
+  echo "      the given measurement station hostname."
+  echo "    default: install as measurement station (aka \`Merici stanice')"
   echo "  -s <src_path>"
   echo "    path to dir with all SCADA files (those, which will be installed)"
   echo "    default: ./"
   echo "  -n <node_path>"
   echo "    path to node we will operate on (e.g. /net/node_name)"
   echo "    default: /"
-  echo "  -l <license_path>"
-  echo "    (re)write SCADA license"
   echo "  -p <project_name>"
   echo "    name of the project"
   echo "  -i <node_id>"
   echo "    node number (ID); ID=1 has a special meaning"
   echo "  -t <tech_user>"
   echo "    technological user name"
+  echo "  -b <backup_dir>"
+  echo "    path to dir with backup"
 }
 
 # call in subshell to not pollute/change environment
@@ -91,10 +57,10 @@ TSTAMP="$(date '+%Y%m%d-%H%M%S')"
 MEA_ST=
 SRCPATH="$(full_path '.')"
 NODE='/'
-LICENSE=
 PROJECT=
 NODE_ID=
 TECH_USER=
+BACKUP_DIR=
 # help inst uninst
 STATE=
 
@@ -124,7 +90,9 @@ while [ $# -gt 0 ]; do
       STATE='uninst' ;;
     '-m')
       [ "$STATE" = 'inst' ] || exit_msg 1 "ERR Unknown argument \`$1'."
-      MEA_ST='yes' ;;
+      shift
+      [ $# -ge 1 ] || exit_msg 1 "ERR -m demands <ms_hostname>."
+      MEA_ST="$1" ;;
     '-s')
       [ "$STATE" = 'inst' ] || exit_msg 1 "ERR Unknown argument \`$1'."
       shift
@@ -136,11 +104,6 @@ while [ $# -gt 0 ]; do
       shift
       [ $# -ge 1 ] || exit_msg 1 "ERR -n demands <node_path>."
       NODE="$(full_path "$1")" ;;
-    '-l')
-      [ "$STATE" = 'inst' ] || exit_msg 1 "ERR Unknown argument \`$1'."
-      shift
-      [ $# -ge 1 ] || exit_msg 1 "ERR -l demands <license_path>."
-      LICENSE="$1" ;;
     '-p')
       [ "$STATE" = 'inst' ] || exit_msg 1 "ERR Unknown argument \`$1'."
       shift
@@ -164,6 +127,11 @@ while [ $# -gt 0 ]; do
       echo "$TECH_USER" | awk 'BEGIN { RS="" }
       { if ($0 !~ /^[a-z_][a-z0-9_-]*[$]?$/) { exit 1 } }' ||
         exit_msg 1 'ERR <tech_user> has to match [a-z_][a-z0-9_-]*[$]' ;;
+    '-b')
+      [ "$STATE" = 'uninst' ] || exit_msg 1 "ERR Unknown argument \`$1'."
+      shift
+      [ $# -ge 1 ] || exit_msg 1 "ERR -b demands <backup_dir>."
+      BACKUP_DIR="$(full_path "$1")" ;;
     *)
       exit_msg 1 "ERR Unknown argument \`$1'." ;;
   esac
@@ -173,7 +141,7 @@ done
 case "$STATE" in
   'help')
     print_help
-    exit 0;;
+    exit 0 ;;
   'install')
     [ -z "$PROJECT" ]   && exit_msg 1 "ERR Non-empty <project_name> required."
     [ -z "$NODE_ID" ]   && exit_msg 1 "ERR Non-empty <node_id> required."
@@ -181,12 +149,12 @@ case "$STATE" in
     [ -d "$NODE" ]      || exit_msg 1 "ERR Directory $NODE doesn't exist."
     ;;
   'uninstall')
+    [ -z "$BACKUP_DIR" ] && exit_msg 1 "ERR Non-empty <backup_dir> required."
     ;;
   *) exit_msg 1 "ERR Mode (help|...) required." ;;
 esac
 
 [ "$(id -u)" -eq 0 ] || exit_msg 1 "ERR Root privileges needed."
-BACKUP_DIR="$NODE/backup_$TSTAMP"; mkdir -p "$BACKUP_DIR" || exit $?
 
 ask() {
   while printf '%s' "$1"; do
@@ -204,34 +172,34 @@ ask_ignore() {
   ask "Would you like to ignore it? [y/n] "
 }
 
+# non-recursive `cp' with permissions, ownership, mtime and ctime preservation
+cp_tar() {
+  (cd "$(dirname "$1")" && tar --no-recursion -c "$(basename "$1")") |
+  # overwrite metadata if file|dir exists
+  { cd "$(dirname "$2")" && tar --same-owner -xp; }
+}
+
 # <full_path_of_file_or_dir_to_copy> <dst_path_relative_to_/_of_the_target_system>
 # NOTE
 #   directories are not copied recursively (thus they will be empty)
 #   no checks for path existence are done (path should already exist -
 #     ensure it using e.g. `find . | sort')
-#   if src and dst are the same file
 cp_n_backup() {
   [ -z "$_BACKUP_TREE" ] && {
     _BACKUP_TREE="$BACKUP_DIR/tree"
-    # in case we are in subshell => this is to prevent >1 outputs
-    [ -e "$_BACKUP_TREE" ] || {
-      mkdir -p "$_BACKUP_TREE"
-      msg "INFO Backuped files are stored in $_BACKUP_TREE"
-    }
+    # this check is to prevent >1 outputs in case we are in subshell
+    [ -e "$_BACKUP_TREE" ] || mkdir -p "$_BACKUP_TREE"
   }
 
+  # use cp -p where possible because cp_tar is slow
   if [ -d "$1" ]; then
     [ -e "$NODE/$2" ] && {
-      # `copy' while preserving permissions, ownership, mtime and ctime
-      { cd "$(dirname "$NODE/$2")" && tar --no-recursion -c "$(basename "$2")"; } |
-      # overwrite metadata if file|dir exists
-      { cd "$(dirname "$_BACKUP_DIR/$2")" && tar --same-owner -xp; } || {
+      cp_tar "$NODE/$2" "$_BACKUP_DIR/$2" || {
         emsg "ERR Backup failed, original file \`$NODE/$2' preserved."
         return 1
       }
     }
-    { cd "$(dirname "$1")" && tar --no-recursion -c "$(basename "$1")"; } |
-    { cd "$(dirname "$NODE/$2")" && tar --same-owner -xp; }
+    cp_tar "$1" "$NODE/$2"
   else
     [ -e "$NODE/$2" ] && {
       mv "$NODE/$2" "$_BACKUP_DIR/$2" 2> /dev/null || {
@@ -241,11 +209,12 @@ cp_n_backup() {
     }
     cp -p "$1" "$NODE/$2"
   fi
+  echo "$2" >> "$BACKUP_DIR/installed_files"
 }
 
 install_tree() {
   _len="$(echo "$1" | wc -c)"
-  # cut off first line because it is the $1 itself
+  # skip first line because it is the $1 itself
   find "$1" | sort | tail -n +2 | while read f; do
     cp_n_backup "$f" "$(echo "$f" | cut -b $_len-)"
   done
@@ -255,6 +224,12 @@ install_tree() {
 group_add() {
   (
   [ $# -eq 4 ] || return 1
+  [ -e "$BACKUP_DIR/tree/etc/group" ] || {
+    mkdir -p "$BACKUP_DIR/tree"
+    cp_tar "$NODE/etc" "$BACKUP_DIR/tree/etc"
+    cp -p "$NODE/etc/group" "$BACKUP_DIR/tree/etc/group"
+    echo '/etc/group' >> "$BACKUP_DIR/installed_files"
+  }
   grep -E "^$1:" < "$NODE/etc/group" > /dev/null 2>&1 && {
     echo "ERR Group \`$1' already exists."
     return 2
@@ -278,6 +253,13 @@ group_add() {
 user_add() {
   (
   [ $# -eq 7 ] || return 1
+  [ -e "$BACKUP_DIR/tree/etc/passwd" ] || {
+    mkdir -p "$BACKUP_DIR/tree"
+    cp_tar "$NODE/etc" "$BACKUP_DIR/tree/etc"
+    cp -p "$NODE/etc/passwd" "$BACKUP_DIR/tree/etc/passwd"
+    echo "$NODE/etc/passwd" "$BACKUP_DIR/tree/etc/passwd"
+    echo '/etc/passwd' >> "$BACKUP_DIR/installed_files"
+  }
   grep -E "^$1:" < "$NODE/etc/passwd" > /dev/null 2>&1 && {
     echo "ERR User \`$1' already exists."
     return 2
@@ -313,10 +295,40 @@ get_id() {
     _f="$NODE/etc/passwd"
     _m="ERR User $2 not found."
   fi
-  awk -F: "{ if (\$1 == \"$2\") { print \$3; x = 1; exit 0 } }
-  END { if (! x) { print \"$_m\"; exit 1 } }" < "$_f"
+  awk -F: "{ if (\$1 == \"$2\") { print \$3; found = 1; exit 0 } }
+    END { if (! found) { exit 1 } }" < "$_f" || {
+      emsg "$_m"
+      exit 1
+    }
   )
 }
+
+
+[ "$STATE" = 'uninst' ] && {
+  msg 'INFO Restoring all files from backup and removing files/dirs'
+  msg '     introduced in that particular Disam RT SCADA installation.'
+  sort "$BACKUP_DIR/installed_files" | while read f; do
+    if [ -e "$BACKUP_DIR/$f" ]; then
+      # use cp -p where possible because cp_tar is slow
+      if [ -d "$BACKUP_DIR/$f" ]; then
+        cp_tar "$BACKUP_DIR/$f" "$NODE/$f"
+      else
+        mv "$BACKUP_DIR/$f" "$NODE/$f"
+      fi
+    else
+      [ -e "$NODE/$f" ] && rm -rf "$NODE/$f"
+    fi
+  done
+  msg 'INFO Done uninstalling Disam RT SCADA.'
+  msg "INFO You can safely remove \`$BACKUP_DIR' if you don't"
+  msg '     need logs any more).'
+  exit
+}
+
+
+BACKUP_DIR="$NODE/backup_$TSTAMP"
+mkdir -p "$BACKUP_DIR" || exit $?
+msg "INFO Backup directory is \`$BACKUP_DIR'"
 
 
 msg 'INFO Installing system files...'
@@ -338,7 +350,7 @@ msg "WARN Assuming hostname \`$(hostname)' of the target node \`$NODE'."
 echo \
   "ORIG_HOSTNAME=$(hostname)" \
   "ALIAS_HOSTNAME=$(hostname)" \
-  "HOST_FCE=$(if [ "$MEA_ST" ]; then echo MS; else echo WS; fi)  # WS|ES|MS MS/ZMS/PS" \
+  "HOST_FCE=$(if [ -z "$MEA_ST" ]; then echo MS; else echo WS; fi)  # WS|ES|MS MS/ZMS/PS" \
   > "$NODE/etc/hostnames.run"
 
 
@@ -349,9 +361,9 @@ install_tree "$SRCPATH/specific_etc"
 msg "WARN Please check if /etc/ham-ph.cfg contains the right values."
 # permissions are preserved when using sh > redirection
 f='/etc/profile.d/scada.sh'
-#FIXME reversed semantics of MEA_ST
 sed -r \
-  -e 's|(SCADA_MS_NODE=)MS_dummy_name|\1'"$MEA_ST"'|' \
+  -e 's|(SCADA_MS_NODE=)MS_dummy_name|\1'"$(
+    if [ -z "$MEA_ST" ]; then hostname; else echo "$MEA_ST"; fi)"'|' \
   -e 's|(PROJEKT=)MCS_dummy|\1'"$PROJECT"'|' \
   "$SRCPATH/common/$f" > "$NODE/$f"
 msg "WARN Please check \`$NODE/$f' for sockets and ftp-server settings."
@@ -423,7 +435,7 @@ ret="$(user_add 'kost' '' "$gid_drt" "$gid_drt" \
   'V. Košťál' '/home/kost' '/bin/sh')" ||
 # ignore "User already exists" error
 [ $? -eq 2 ] || ask_ignore "$ret" || exit 1
-if [ -n "$MEA_ST" ]; then
+if [ -z "$MEA_ST" ]; then
   cp -rp "$SRCPATH/common/home/ms/.ph/" "$NODE/home/kost/"
 else
   cp -rp "$SRCPATH/common/home/ps/.ph/" "$NODE/home/kost/"
@@ -441,7 +453,7 @@ uid_pm="$(user_add "$PROJECT" '' '' "$gid_drt" \
 for d in bin gbin source include ph_app; do
   mkdir -p "$NODE/libr/$PROJECT/$d"
 done
-if [ -n "$MEA_ST" ]; then
+if [ -z "$MEA_ST" ]; then
   cp -rp "$SRCPATH/common/home/ms/.ph/" "$NODE/libr/$PROJECT"
 else
   cp -rp "$SRCPATH/common/home/ps/.ph/" "$NODE/libr/$PROJECT"
@@ -525,9 +537,10 @@ done
     ln -s "/home/$TECH_USER/$d" "$NODE/home/$user_drt"
   done
 }
-#FIXME this recursively overwrites owner of "$NODE/home/$TECH_USER"
-#  from "$uid_tu:$gid_mcs03"
-#chown -R "$uid_drt:$gid_mcs03" "$NODE/home/$user_drt"
+# do not chown -R "$uid_drt:$gid_mcs03" "$NODE/home/$user_drt"
+#   because symlinks are always ugo+rwx and chown -R do work only
+#   with the symlink destination (there is no way to change owner
+#   of symlink in shell under QNX)
 
 
 # formerly UID=200
@@ -537,7 +550,7 @@ uid_admin="$(user_add 'admin' '' '' "$gid_mcs03" \
   [ $? -eq 2 ] || ask_ignore "$uid_admin" || exit 1
   uid_admin="$(get_id uid 'admin')" || exit_msg 1 "$uid_admin"
 }
-if [ -n "$MEA_ST" ]; then
+if [ -z "$MEA_ST" ]; then
   cp -rp "$SRCPATH/common/home/ms/.ph/" "$NODE/home/admin/"
 else
   cp -rp "$SRCPATH/common/home/ps/.ph/" "$NODE/home/admin/"
@@ -545,3 +558,6 @@ fi
 chown -R "$uid_admin:$gid_mcs03" "$NODE/home/admin/"
 
 
+msg 'WARN Please set passwords to the newly created accounts. Currently'
+msg '     all passwords are empty and thus everybody can login.'
+msg 'INFO Installation of Disam RT SCADA successful.'
