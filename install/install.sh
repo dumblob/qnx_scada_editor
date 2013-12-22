@@ -219,20 +219,21 @@ cp_n_backup() {
 #   recursively copy the content of the given tree_path into $NODE/, i.e.
 #     cp -r <tree_path>/* $NODE/
 #   but with hidden files of course
-# <tree_path> <dst_tree_prefix> [<uid:gid>]
+# <tree_path> <already_existing_dst_tree_prefix> [<uid:gid>]
 #   recursively copy the given tree_path into (!) the
 #   $NODE/dst_tree_prefix/ directory, i.e.
 #     cp -r <tree_path>/ $NODE/<dst_tree_prefix>/
-# both <tree_path> and <dst_tree_prefix> always have to begin with /
-install_tree() {
+# both <tree_path> and <dst_tree_prefix> always have to begin with / character
+install_tree() {(
   _len="$(echo "$1" | wc -c)"
+  _full_prefix="$2/$(basename "$1")"
   # create path first
-  [ $# -gt 1 ] && cp_n_backup "$1" "$2/$(basename "$1")" || return $?
+  [ $# -gt 1 ] && cp_n_backup "$1" "$_full_prefix" || exit $?
   # skip first line because it is the $1 itself
   find "$1" | sort | tail -n +2 | while read f; do
-    cp_n_backup "$f" "$2$(echo "$f" | cut -b $_len-)" "$3"
+    cp_n_backup "$f" "$_full_prefix/$(echo "$f" | cut -b $_len-)" "$3"
   done
-}
+)}
 
 # name pass GID user_list
 group_add() {
@@ -412,7 +413,7 @@ if [ -e "$NODE/etc/qnx/license/licenses" ]; then
 else
   msg "WARN No installed QNX license found, some SCADA functionality mustn't work."
 fi
-msg "INFO Currently running QNX microkernel: $(uname -r)"
+msg "INFO Currently running on QNX microkernel $(uname -r)"
 msg "INFO Available licenses for manual installation:"
 ls -1 "$SRCPATH"/specific_license/etc/qnx/license/licenses* 2>/dev/null | {
   found=
