@@ -1,11 +1,12 @@
 #!/bin/sh
 
 # TODO
-#   rozbehnout sit (touch ... a restart)
-#   nastavit fonty
-#   useradd should add the name to the corresponding groups in /etc/group
-#   backup files/dirs in /home/... as well as all other system files
-#   add the table editor (and its documentation) to install files
+#   set up network (touch ... and restart?)
+#   set fonts
+#   add support for >1 group into the useradd interface
+#   replace non-POSIX constructs
+#     sed -i
+#     tar --no-recursion
 
 print_help() {
   echo "SYNOPSIS"
@@ -126,7 +127,7 @@ while [ $# -gt 0 ]; do
       # be aware of newline characters!
       echo "$TECH_USER" | awk 'BEGIN { RS="" }
       { if ($0 !~ /^[a-z_][a-z0-9_-]*[$]?$/) { exit 1 } }' ||
-        exit_msg 1 'ERR <tech_user> has to match [a-z_][a-z0-9_-]*[$]' ;;
+        exit_msg 1 'ERR <tech_user> has to match [a-z_][a-z0-9_-]*[$]?' ;;
     '-b')
       [ "$STATE" = 'uninstall' ] || exit_msg 1 "ERR Unknown argument \`$1'."
       shift
@@ -179,7 +180,7 @@ cp_tar() {
   { cd "$(dirname "$2")" && tar --same-owner -xp; }
 }
 
-# <full_path_of_file_or_dir_to_copy> <dst_path_relative_to_/_of_the_target_system>
+# <full_path_of_file_or_dir_to_copy> <dst_path_relative_to_/_of_the_target_system> [<uid:gid>]
 # NOTE
 #   directories are not copied recursively (thus they will be empty)
 #   no checks for path existence are done (path should already exist -
@@ -193,7 +194,8 @@ cp_n_backup() {
 
   # use cp -p where possible because cp_tar is slow
   if [ -d "$1" ]; then
-    [ -e "$NODE/$2" ] && {
+    # preserve the first one backuped file/dir (i.e. the original one)
+    [ -e "$NODE/$2" -a ! -e "$_BACKUP_DIR/$2" ] && {
       cp_tar "$NODE/$2" "$_BACKUP_DIR/$2" || {
         emsg "ERR Backup failed, original file \`$NODE$2' preserved."
         return 1
@@ -201,7 +203,7 @@ cp_n_backup() {
     }
     cp_tar "$1" "$NODE/$2"
   else
-    [ -e "$NODE/$2" ] && {
+    [ -e "$NODE/$2" -a ! -e "$_BACKUP_DIR/$2" ] && {
       mv "$NODE/$2" "$_BACKUP_DIR/$2" 2> /dev/null || {
         emsg "ERR Backup failed, original file \`$NODE$2' preserved."
         return 1
@@ -209,14 +211,20 @@ cp_n_backup() {
     }
     cp -p "$1" "$NODE/$2"
   fi
+  # it's not possible to change owner of symlinks
+  [ $# -gt 2 -a -n "$3" ] && [ ! -L "$NODE/$2" ] && chown "$3" "$NODE/$2"
   echo "$2" >> "$BACKUP_DIR/installed_files"
 }
 
+# <tree_path> [<dst_tree_prefix_relative_to_/_of_the_target_system> [<uid:gid>]]
 install_tree() {
   _len="$(echo "$1" | wc -c)"
   # skip first line because it is the $1 itself
-  find "$1" | sort | tail -n +2 | while read f; do
-    cp_n_backup "$f" "$(echo "$f" | cut -b $_len-)"
+  _offset=2
+  # create dir first
+  [ $# -gt 1 ] && _offset=1
+  find "$1" | sort | tail -n +$((_offset)) | while read f; do
+    cp_n_backup "$f" "$2$(echo "$f" | cut -b $_len-)" "$3"
   done
 }
 
@@ -278,9 +286,21 @@ user_add() {
     echo "ERR GID \`$4' doesn't exists."
     return 4
   }
+  sed -i -r -e "s|^([^:]+:[^:]*:$4:.*)$|\\1,$1|" -e "s|:,|:|g" \
+    "$NODE/etc/passwd"
   echo "$1:$2:$_uid:$4:$5:$6:$7" >> "$NODE/etc/passwd"
-  [ -d "$6" ] || mkdir -p "$6"
-  chown "$_uid":"$4" "$6"
+  if [ -d "$NODE$6" ]; then
+    cp_tar "$NODE$6" "$BACKUP_DIR/tree$6"
+    chown "$_uid":"$4" "$NODE$6"
+    echo "$6" >> "$BACKUP_DIR/installed_files"
+  else
+    mkdir -p "$NODE$(dirname "$6")"
+    cp -rp /etc/skel "$NODE$6"
+    chown -R "$_uid:$4" "$NODE$6"
+    cd "$NODE"
+    find "$6" >> "$BACKUP_DIR/installed_files"
+  fi
+  chmod 750 "$NODE$6"
   echo "$_uid"
   )
 }
@@ -307,7 +327,8 @@ get_id() {
 [ "$STATE" = 'uninstall' ] && {
   msg 'INFO Restoring all files from backup and removing files/dirs'
   msg '     introduced in that particular Disam RT SCADA installation.'
-  sort -r "$BACKUP_DIR/installed_files" | while read f; do
+  sed 's|/+|/|g' "$BACKUP_DIR/installed_files" | sort -r | uniq |
+  while read f; do
     if [ -e "$BACKUP_DIR/tree/$f" ]; then
       # use cp -p where possible because cp_tar is slow
       if [ -d "$BACKUP_DIR/tree/$f" ]; then
@@ -381,9 +402,9 @@ install_tree "$SRCPATH/specific_keepalive"
 install_tree "$SRCPATH/specific_launchmenu"
 # just for information - we won't install any QNX license automatically!
 if [ -e "$NODE/etc/qnx/license/licenses" ]; then
-  msg "INFO QNX license found."
+  msg "INFO Installed QNX license found."
 else
-  msg "WARN No QNX license found, some SCADA functionality mustn't work."
+  msg "WARN No installed QNX license found, some SCADA functionality mustn't work."
 fi
 msg "INFO Currently running QNX microkernel: $(uname -r)"
 msg "INFO Available licenses for manual installation:"
@@ -396,6 +417,7 @@ ls -1 "$SRCPATH"/specific_license/etc/qnx/license/licenses* 2>/dev/null | {
   [ -z "$found" ] && msg "  <none>"
 }
 #FIXME detect (otherwise it could break display.conf)
+msg "WARN Not installing $SRCPATH/specific_matrox because of possible display.conf issues."
 #install_tree "$SRCPATH/specific_matrox"
 ls -1 -d "$NODE"/usr/qnx6*/target/qnx6/usr/include 2>/dev/null |
   while read d; do
@@ -441,11 +463,12 @@ ret="$(user_add 'kost' '' "$gid_drt" "$gid_drt" \
 # ignore "User already exists" error
 [ $? -eq 2 ] || ask_ignore "$ret" || exit 1
 if [ -z "$MEA_ST" ]; then
-  cp -rp "$SRCPATH/common/home/ms/.ph/" "$NODE/home/kost/"
+  install_tree "$SRCPATH/specific_home_ms/home/ms/.ph" \
+    "/home/kost" "$gid_drt:$gid_drt"
 else
-  cp -rp "$SRCPATH/common/home/ps/.ph/" "$NODE/home/kost/"
+  install_tree "$SRCPATH/specific_home_ps/home/ps/.ph" \
+    "/home/kost" "$gid_drt:$gid_drt"
 fi
-chown -R "$gid_drt:$gid_drt" "$NODE/home/kost/.ph/"
 
 
 # formerly UID=101
@@ -456,14 +479,17 @@ uid_pm="$(user_add "$PROJECT" '' '' "$gid_drt" \
   uid_pm="$(get_id uid "$PROJECT")" || exit_msg 1 "$uid_pm"
 }
 for d in bin gbin source include ph_app; do
-  mkdir -p "$NODE/libr/$PROJECT/$d"
+  mkdir "$NODE/libr/$PROJECT/$d"
+  chown "$uid_pm:$gid_drt" "$NODE/libr/$PROJECT/$d"
+  echo "/libr/$PROJECT/$d" >> "$BACKUP_DIR/installed_files"
 done
 if [ -z "$MEA_ST" ]; then
-  cp -rp "$SRCPATH/common/home/ms/.ph/" "$NODE/libr/$PROJECT"
+  install_tree "$SRCPATH/specific_home_ms/home/ms/.ph/" \
+    "/libr/$PROJECT" "$uid_pm:$gid_drt"
 else
-  cp -rp "$SRCPATH/common/home/ps/.ph/" "$NODE/libr/$PROJECT"
+  install_tree "$SRCPATH/specific_home_ps/home/ps/.ph/" \
+    "/libr/$PROJECT" "$uid_pm:$gid_drt"
 fi
-chown -R "$uid_pm:$gid_drt" "$NODE/libr/$PROJECT/"
 
 
 # formerly UID=200
@@ -474,8 +500,8 @@ uid_ms="$(user_add 'ms' '' '' "$gid_mcs03" \
   [ $? -eq 2 ] || ask_ignore "$uid_ms" || exit 1
   uid_ms="$(get_id uid 'ms')" || exit_msg 1 "$uid_ms"
 }
-# FIXME see /home/ms/.ph/README.txt for detailed installation
-chown -R "$uid_ms:$gid_mcs03" "$NODE/home/ms"
+# FIXME adjust according to /home/ms/.ph/README.txt
+install_tree "$SRCPATH/specific_home_ms/home/ms/" "/home" "$uid_ms:$gid_mcs03"
 
 
 # formerly UID=201
@@ -486,8 +512,8 @@ uid_ps="$(user_add 'ps' '' '' "$gid_mcs03" \
   [ $? -eq 2 ] || ask_ignore "$uid_ps" || exit 1
   uid_ps="$(get_id uid 'ps')" || exit_msg 1 "$uid_ps"
 }
-# FIXME see /home/ps/.ph/README.txt for detailed installation
-chown -R "$uid_ps:$gid_mcs03" "$NODE/home/ps"
+# FIXME adjust according to /home/ps/.ph/README.txt
+install_tree "$SRCPATH/specific_home_ps/home/ps/" "/home" "$uid_ms:$gid_mcs03"
 
 
 # formerly UID=202
@@ -508,18 +534,23 @@ uid_tu="$(user_add "$TECH_USER" '' '' "$gid_mcs03" \
 }
 for d in exe err litters; do
   mkdir -p "$NODE/home/$TECH_USER/$d"
+  chown "$uid_tu:$gid_mcs03" "$NODE/home/$TECH_USER/$d"
+  echo "/home/$TECH_USER/$d" >> "$BACKUP_DIR/installed_files"
 done
 if [ "$NODE_ID" -eq 1 ]; then
   for d in alr arc kfg server graf eng monitor; do
-    mkdir -p "$NODE/home/$TECH_USER/$d"
+    mkdir "$NODE/home/$TECH_USER/$d"
+    chown "$uid_tu:$gid_mcs03" "$NODE/home/$TECH_USER/$d"
+    echo "/home/$TECH_USER/$d" >> "$BACKUP_DIR/installed_files"
   done
-  #FIXME cp -r "$SRCPATH/common/home/~ms/.ph/ ...
-  cp -rp "$SRCPATH/common/home/ms/.ph/" "$NODE/home/$TECH_USER"
+  #FIXME cp -rp "$SRCPATH/common/home/~ms/.ph/ ...
+  install_tree "$SRCPATH/specific_home_ms/home/ms/.ph/" \
+    "/home/$TECH_USER" "$uid_tu:$gid_mcs03"
 else
-  #FIXME cp -r "$SRCPATH/common/home/~ps/.ph/ ...
-  cp -rp "$SRCPATH/common/home/ps/.ph/" "$NODE/home/$TECH_USER"
+  #FIXME cp -rp "$SRCPATH/common/home/~ps/.ph/ ...
+  install_tree "$SRCPATH/specific_home_ps/home/ps/.ph/" \
+    "/home/$TECH_USER" "$uid_tu:$gid_mcs03"
 fi
-chown -R "$uid_tu:$gid_mcs03" "$NODE/home/$TECH_USER"
 
 
 if [ "$NODE_ID" -eq 1 ]; then
@@ -536,10 +567,12 @@ uid_drt="$(user_add "$user_drt" '' '' "$gid_mcs03" \
 }
 for d in exe err litters; do
   ln -s "/home/$TECH_USER/$d" "$NODE/home/$user_drt"
+  echo "/home/$user_drt/$d" >> "$BACKUP_DIR/installed_files"
 done
 [ "$NODE_ID" -eq 1 ] && {
   for d in alr arc kfg server graf eng monitor; do
     ln -s "/home/$TECH_USER/$d" "$NODE/home/$user_drt"
+    echo "/home/$user_drt/$d" >> "$BACKUP_DIR/installed_files"
   done
 }
 # do not chown -R "$uid_drt:$gid_mcs03" "$NODE/home/$user_drt"
@@ -556,11 +589,12 @@ uid_admin="$(user_add 'admin' '' '' "$gid_mcs03" \
   uid_admin="$(get_id uid 'admin')" || exit_msg 1 "$uid_admin"
 }
 if [ -z "$MEA_ST" ]; then
-  cp -rp "$SRCPATH/common/home/ms/.ph/" "$NODE/home/admin/"
+  install_tree "$SRCPATH/specific_home_ms/home/ms/.ph/" \
+    "/home/admin" "$uid_admin:$gid_mcs03"
 else
-  cp -rp "$SRCPATH/common/home/ps/.ph/" "$NODE/home/admin/"
+  install_tree "$SRCPATH/specific_home_ps/home/ps/.ph/" \
+    "/home/admin" "$uid_admin:$gid_mcs03"
 fi
-chown -R "$uid_admin:$gid_mcs03" "$NODE/home/admin/"
 
 
 msg 'WARN Please set passwords to the newly created accounts. Currently'
