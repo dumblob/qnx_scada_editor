@@ -181,7 +181,6 @@ cp_tar() {
 }
 
 # <full_path_of_file_or_dir_to_copy> <dst_path_relative_to_/_of_the_target_system> [<uid:gid>]
-# NOTE
 #   directories are not copied recursively (thus they will be empty)
 #   no checks for path existence are done (path should already exist -
 #     ensure it using e.g. `find . | sort')
@@ -216,14 +215,21 @@ cp_n_backup() {
   echo "$2" >> "$BACKUP_DIR/installed_files"
 }
 
-# <tree_path> [<dst_tree_prefix_relative_to_/_of_the_target_system> [<uid:gid>]]
+# <tree_path>
+#   recursively copy the content of the given tree_path into $NODE/, i.e.
+#     cp -r <tree_path>/* $NODE/
+#   but with hidden files of course
+# <tree_path> <dst_tree_prefix> [<uid:gid>]
+#   recursively copy the given tree_path into (!) the
+#   $NODE/dst_tree_prefix/ directory, i.e.
+#     cp -r <tree_path>/ $NODE/<dst_tree_prefix>/
+# both <tree_path> and <dst_tree_prefix> always have to begin with /
 install_tree() {
   _len="$(echo "$1" | wc -c)"
+  # create path first
+  [ $# -gt 1 ] && cp_n_backup "$1" "$2/$(basename "$1")" || return $?
   # skip first line because it is the $1 itself
-  _offset=2
-  # create dir first
-  [ $# -gt 1 ] && _offset=1
-  find "$1" | sort | tail -n +$((_offset)) | while read f; do
+  find "$1" | sort | tail -n +2 | while read f; do
     cp_n_backup "$f" "$2$(echo "$f" | cut -b $_len-)" "$3"
   done
 }
@@ -484,10 +490,10 @@ for d in bin gbin source include ph_app; do
   echo "/libr/$PROJECT/$d" >> "$BACKUP_DIR/installed_files"
 done
 if [ -z "$MEA_ST" ]; then
-  install_tree "$SRCPATH/specific_home_ms/home/ms/.ph/" \
+  install_tree "$SRCPATH/specific_home_ms/home/ms/.ph" \
     "/libr/$PROJECT" "$uid_pm:$gid_drt"
 else
-  install_tree "$SRCPATH/specific_home_ps/home/ps/.ph/" \
+  install_tree "$SRCPATH/specific_home_ps/home/ps/.ph" \
     "/libr/$PROJECT" "$uid_pm:$gid_drt"
 fi
 
