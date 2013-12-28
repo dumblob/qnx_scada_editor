@@ -257,7 +257,7 @@ install_tree() {(
   # create path first
   [ $# -gt 1 ] && {
     _full_prefix="$2/$(basename "$1")"
-    cp_n_backup "$1" "$_full_prefix" || exit $?
+    cp_n_backup "$1" "$_full_prefix" "$3" || exit $?
   }
   # skip first line because it is the $1 itself
   find "$1" | sort | tail -n +1 | while read f; do
