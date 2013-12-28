@@ -1,8 +1,11 @@
 #!/bin/sh
 
 # TODO
-#   set up network (touch ... and restart?)
 #   set fonts
+#   set up network (touch ... and restart?)
+#     Not sure if "SCADA installation script" should mangle with network
+#     settings. Maybe just notifying user what the proper network settings
+#     could be should be the way to go?
 #   add support for >1 group into the useradd interface
 #   replace non-POSIX constructs
 #     sed -i
@@ -226,9 +229,11 @@ cp_n_backup() {
 # both <tree_path> and <dst_tree_prefix> always have to begin with / character
 install_tree() {(
   _len="$(echo "$1" | wc -c)"
-  _full_prefix="$2/$(basename "$1")"
   # create path first
-  [ $# -gt 1 ] && cp_n_backup "$1" "$_full_prefix" || exit $?
+  [ $# -gt 1 ] && {
+    _full_prefix="$2/$(basename "$1")"
+    cp_n_backup "$1" "$_full_prefix" || exit $?
+  }
   # skip first line because it is the $1 itself
   find "$1" | sort | tail -n +2 | while read f; do
     cp_n_backup "$f" "$_full_prefix/$(echo "$f" | cut -b $_len-)" "$3"
