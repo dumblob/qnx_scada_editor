@@ -325,14 +325,14 @@ user_add() {
   sed -i -r -e "s|^([^:]+:[^:]*:$4:.*)$|\\1,$1|" -e "s|:,|:|g" \
     "$NODE/etc/passwd"
   echo "$1:$2:$_uid:$4:$5:$6:$7" >> "$NODE/etc/passwd"
-  if [ -d "$NODE$6" ]; then
-    cp_tar "$NODE$6" "$BACKUP_DIR/tree$6"
-    chown "$_uid":"$4" "$NODE$6"
+  if [ -d "$NODE/$6" ]; then
+    cp_tar "$NODE/$6" "$BACKUP_DIR/tree/$6"
+    chown "$_uid":"$4" "$NODE/$6"
     echo "$6" >> "$BACKUP_DIR/installed_files"
   else
-    mkdir -p "$NODE$(dirname "$6")"
-    cp -rp /etc/skel "$NODE$6"
-    chown -R "$_uid:$4" "$NODE$6"
+    mkdir -p "$NODE/$(dirname "$6")"  # for sure
+    cp -rp /etc/skel "$NODE/$6"
+    chown -R "$_uid:$4" "$NODE/$6"
     cd "$NODE"
     find "$6" >> "$BACKUP_DIR/installed_files"
   fi
