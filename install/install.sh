@@ -277,7 +277,6 @@ user_add() {
     mkdir -p "$BACKUP_DIR/tree"
     cp_tar "$NODE/etc" "$BACKUP_DIR/tree/etc"
     cp -p "$NODE/etc/passwd" "$BACKUP_DIR/tree/etc/passwd"
-    echo "$NODE/etc/passwd" "$BACKUP_DIR/tree/etc/passwd"
     echo '/etc/passwd' >> "$BACKUP_DIR/installed_files"
   }
   grep -E "^$1:" < "$NODE/etc/passwd" > /dev/null 2>&1 && {
