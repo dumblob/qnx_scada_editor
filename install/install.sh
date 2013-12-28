@@ -214,7 +214,7 @@ mirror_path() {
 already_installed() {
   # FIXME escape the path properly as ERE (extended regular expression)
   grep -E "^$(clean_path "$1" | sed -r -e 's|/|//*|g' -e 's|[.]|[.]|g')/*$" \
-    "$BACKUP_DIR/installed_files"> /dev/null 2>&1
+    "$BACKUP_DIR/installed_files" > /dev/null 2>&1
 }
 
 # <full_path_of_file_or_dir_to_copy> <dst_path_relative_to_/_of_the_target_system> [<uid:gid>]
@@ -376,7 +376,7 @@ get_id() {
   sed -r 's|/+|/|g' "$BACKUP_DIR/installed_files" | sort -r | uniq |
   while read f; do
     # remember `test' follows symlinks!
-    if [ -e "$BACKUP_DIR/tree/$f" -o -L "$NODE/$f" ]; then
+    if [ -e "$BACKUP_DIR/tree/$f" -o -L "$BACKUP_DIR/tree/$f" ]; then
       # use cp -p where possible because cp_tar is slow
       if [ -d "$BACKUP_DIR/tree/$f" -a ! -L "$BACKUP_DIR/tree/$f" ]; then
         cp_tar "$BACKUP_DIR/tree/$f" "$NODE/$f"
