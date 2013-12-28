@@ -11,6 +11,9 @@
 #     sed -i
 #     tar --no-recursion
 
+# fix echo
+echo() { printf '%s\n' "$*"; }
+
 print_help() {
   echo "SYNOPSIS"
   echo "  Installs Disam RT SCADA system-wide on measure- or work- station node."
@@ -59,7 +62,7 @@ full_path() {
 
 # useful for user messages etc.
 clean_path() {
-  echo "$1" | sed -r -e 's|/./|/|g' -e 's|/./|/|g' -e 's|/+|/|g'
+  echo "$1" | sed -r -e 's|/./|/|g' -e 's|/./|/|g' -e 's|/+|/|g' -e 's|/+$||'
 }
 
 TSTAMP="$(date '+%Y%m%d-%H%M%S')"
@@ -208,6 +211,12 @@ mirror_path() {
   )
 }
 
+already_installed() {
+  # FIXME escape the path properly as ERE (extended regular expression)
+  grep -E "^$(clean_path "$1" | sed -r -e 's|/|//*|g' -e 's|[.]|[.]|g')/*$" \
+    "$BACKUP_DIR/installed_files"> /dev/null 2>&1
+}
+
 # <full_path_of_file_or_dir_to_copy> <dst_path_relative_to_/_of_the_target_system> [<uid:gid>]
 # directories are not copied recursively (thus they will be empty)
 # recommended usage: `find . | sort | while read f; do cp_n_backup ...'
@@ -221,18 +230,20 @@ cp_n_backup() {
   # use cp -p where possible because cp_tar is slow
   if [ -d "$1" ]; then
     # preserve the first one backuped file/dir (i.e. the original one)
-    [ -e "$NODE/$2" -a ! -e "$_BACKUP_TREE/$2" ] && {
+    [ -e "$NODE/$2" ] && { already_installed "$_BACKUP_TREE/$2"
+        [ $? -ge 1 ]; } && {
       mirror_path "$NODE" "$_BACKUP_TREE" "$2" || {
-        emsg "ERR Backup failed, original file \`$NODE$2' preserved."
+        emsg "ERR Backup failed, original file \`$(clean_path "$NODE/$2")' preserved."
         return 1
       }
     }
     cp_tar "$1" "$NODE/$2"
   else
-    [ -e "$NODE/$2" -a ! -e "$_BACKUP_TREE/$2" ] && {
+    [ -e "$NODE/$2" ] && { already_installed "$_BACKUP_TREE/$2"
+        [ $? -ge 1 ]; } && {
       mirror_path "$NODE" "$_BACKUP_TREE" "$(dirname "$2")" &&
       mv "$NODE/$2" "$_BACKUP_TREE/$2" 2> /dev/null || {
-        emsg "ERR Backup failed, original file \`$NODE$2' preserved."
+        emsg "ERR Backup failed, original file \`$(clean_path "$NODE/$2")' preserved."
         return 1
       }
     }
