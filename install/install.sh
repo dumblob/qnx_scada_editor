@@ -375,19 +375,20 @@ get_id() {
   msg '     introduced in that particular Disam RT SCADA installation.'
   sed -r 's|/+|/|g' "$BACKUP_DIR/installed_files" | sort -r | uniq |
   while read f; do
-    if [ -e "$BACKUP_DIR/tree/$f" ]; then
+    # remember `test' follows symlinks!
+    if [ -e "$BACKUP_DIR/tree/$f" -o -L "$NODE/$f" ]; then
       # use cp -p where possible because cp_tar is slow
-      if [ -d "$BACKUP_DIR/tree/$f" ]; then
+      if [ -d "$BACKUP_DIR/tree/$f" -a ! -L "$BACKUP_DIR/tree/$f" ]; then
         cp_tar "$BACKUP_DIR/tree/$f" "$NODE/$f"
       else
         mv "$BACKUP_DIR/tree/$f" "$NODE/$f"
       fi
     else
-      # avoid rm -rf (we are root and QNX even allows to rm -rf /)
-      if [ -d "$NODE/$f" ]; then
+      # avoid rm -rf (we are root and QNX allows e.g. rm -rf /)
+      if [ -d "$NODE/$f" -a ! -L "$NODE/$f" ]; then
         # discard errors about non-empty dir
         rmdir "$NODE/$f" 2> /dev/null
-      elif [ -e "$NODE/$f" ]; then
+      elif [ -e "$NODE/$f" -o -L "$NODE/$f" ]; then
         rm -f "$NODE/$f"
       fi
     fi
@@ -555,7 +556,7 @@ msg "INFO Adding users (if needed)."; {
     uid_ps="$(get_id uid 'ps')" || exit_msg 1 "$uid_ps"
   }
   # FIXME adjust according to /home/ps/.ph/README.txt
-  install_tree "$SRCPATH/specific_home_ps/home/ps/" "/home" "$uid_ms:$gid_mcs03"
+  install_tree "$SRCPATH/specific_home_ps/home/ps/" "/home" "$uid_ps:$gid_mcs03"
 
   # formerly UID=202
   msg "INFO   useradd \`rps'"
