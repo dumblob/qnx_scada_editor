@@ -57,6 +57,11 @@ full_path() {
   cd "$OLDPWD"
 }
 
+# useful for user messages etc.
+clean_path() {
+  echo "$1" | sed -r -e 's|/./|/|g' -e 's|/./|/|g' -e 's|/+|/|g'
+}
+
 TSTAMP="$(date '+%Y%m%d-%H%M%S')"
 MEA_ST=
 SRCPATH="$(full_path '.')"
@@ -184,16 +189,24 @@ cp_tar() {
 }
 
 # <src_prefix> <dst_prefix> <full_path_to_mirror>
-mirror_path() {(
-  _x="$3"
+mirror_path() {
+  # performance hack (mirror_path is called e.g. for each file in directo
+  [ -e "$2/$3" ] && return
+  (
+  # wtf? QNX dirname works differently in interactive and non-interactive
+  _x="$(clean_path "$3")"
   while [ "$_x" != '/' -a "$_x" != '.' ]; do
     echo "$_x"
     _x="$(dirname "$_x")"
   done | sort | while read f; do
     # keep already existing dirs
-    [ -e "$2/$f" ] || { cp_tar "$1/$f" "$2/$f" || exit 1; }
+    [ -e "$2/$f" ] || {
+      cp_tar "$1/$f" "$2/$f" || exit 1
+      echo "$f" >> "$BACKUP_DIR/installed_files"
+    }
   done
-)}
+  )
+}
 
 # <full_path_of_file_or_dir_to_copy> <dst_path_relative_to_/_of_the_target_system> [<uid:gid>]
 # directories are not copied recursively (thus they will be empty)
@@ -233,7 +246,7 @@ cp_n_backup() {
 # <tree_path>
 #   recursively copy the content of the given tree_path into $NODE/, i.e. mimic
 #     cp -r <tree_path>/* $NODE/
-#   but with hidden files of course
+#   but with hidden files
 # <tree_path> <already_existing_dst_tree_prefix> [<uid:gid>]
 #   recursively copy the given tree_path into (!) the
 #   $NODE/dst_tree_prefix/ directory, i.e. mimic
@@ -346,11 +359,10 @@ get_id() {
   )
 }
 
-
 [ "$STATE" = 'uninstall' ] && {
   msg 'INFO Restoring all files from backup and removing files/dirs'
   msg '     introduced in that particular Disam RT SCADA installation.'
-  sed 's|/+|/|g' "$BACKUP_DIR/installed_files" | sort -r | uniq |
+  sed -r 's|/+|/|g' "$BACKUP_DIR/installed_files" | sort -r | uniq |
   while read f; do
     if [ -e "$BACKUP_DIR/tree/$f" ]; then
       # use cp -p where possible because cp_tar is slow
@@ -360,7 +372,9 @@ get_id() {
         mv "$BACKUP_DIR/tree/$f" "$NODE/$f"
       fi
     else
+      # avoid rm -rf (we are root and QNX even allows to rm -rf /)
       if [ -d "$NODE/$f" ]; then
+        # discard errors about non-empty dir
         rmdir "$NODE/$f" 2> /dev/null
       elif [ -e "$NODE/$f" ]; then
         rm -f "$NODE/$f"
@@ -373,254 +387,243 @@ get_id() {
   exit
 }
 
-
-BACKUP_DIR="$NODE/backup_$TSTAMP"
+BACKUP_DIR="$(clean_path "$NODE/backup_$TSTAMP")"
 mkdir -p "$BACKUP_DIR" || exit $?
 msg "INFO Backup directory is \`$BACKUP_DIR'"
 
+msg 'INFO Installing system files...'; {
+  install_tree "$SRCPATH/common"
+  msg "WARN Please check the following files for your specific settings,"
+  msg "     because they were overwritten."
+  msg "  $(clean_path "$NODE/etc/rc.local")"
+  msg "  $(clean_path "$NODE/etc/ntp.conf")"
+  msg "WARN Assuming hostname \`$(hostname)' of the target node \`$NODE'."
+  #FIXME which abbreviations are valid?
+  #  WS work-station aka `pracovni stanice'
+  #  ES <unknown>
+  #  MS measurement-station aka `merici stanice'
+  #  ZMS backup measurement-station aka `zalozni merici stanice'
+  #  PS <unknown>
+  { echo "ORIG_HOSTNAME=$(hostname)"
+    echo "ALIAS_HOSTNAME=$(hostname)"
+    echo "HOST_FCE=$(if [ -z "$MEA_ST" ]; then echo MS; else echo WS; fi)  # WS|ES|MS MS/ZMS/PS"
+  # permissions are preserved when using sh > redirection
+  } > "$NODE/etc/hostnames.run"
+}
 
-msg 'INFO Installing system files...'
+msg 'INFO Installing specific/optional system files...'; {
+  #FIXME detect did: 293e,27de,7012
+  install_tree "$SRCPATH/specific_dll"
+  install_tree "$SRCPATH/specific_editor"
+  install_tree "$SRCPATH/specific_etc"
+  msg "WARN Please check if \`$(clean_path "$NODE/etc/ham-ph.cfg")'"
+  msg "     contains the right values."
 
+  f='/etc/profile.d/scada.sh'
+  sed -r \
+    -e 's|(SCADA_MS_NODE=)MS_dummy_name|\1'"$(
+      if [ -z "$MEA_ST" ]; then hostname; else echo "$MEA_ST"; fi)"'|' \
+    -e 's|(PROJEKT=)MCS_dummy|\1'"$PROJECT"'|' \
+    "$SRCPATH/specific_etc/$f" > "$NODE/$f"
+  msg "WARN Please check \`$(clean_path "$NODE/$f")'"
+  msg "     for sockets and ftp-server settings."
 
-install_tree "$SRCPATH/common"
-msg "WARN Please check the following files for your specific settings,"
-msg "     because they were overwritten."
-msg "  $NODE/etc/rc.local"
-msg "  $NODE/etc/ntp.conf"
-msg "WARN Assuming hostname \`$(hostname)' of the target node \`$NODE'."
-#FIXME which abbreviations are valid?
-#  WS work-station aka `pracovni stanice'
-#  ES <unknown>
-#  MS measurement-station aka `merici stanice'
-#  ZMS backup measurement-station aka `zalozni merici stanice'
-#  PS <unknown>
-echo \
-  "ORIG_HOSTNAME=$(hostname)" \
-  "ALIAS_HOSTNAME=$(hostname)" \
-  "HOST_FCE=$(if [ -z "$MEA_ST" ]; then echo MS; else echo WS; fi)  # WS|ES|MS MS/ZMS/PS" \
-  > "$NODE/etc/hostnames.run"
+  #FIXME detect did: 293e,27de,7012
+  install_tree "$SRCPATH/specific_io-audio"
+  #FIXME auto-detect Qnet over IP?
+  install_tree "$SRCPATH/specific_ip-qnet"
+  install_tree "$SRCPATH/specific_keepalive"
+  install_tree "$SRCPATH/specific_launchmenu"
 
+  # just for information - we won't install any QNX license automatically!
+  if [ -e "$NODE/etc/qnx/license/licenses" ]; then
+    msg "INFO Installed QNX license found."
+  else
+    msg "WARN No installed QNX license found, some SCADA functionality"
+    msg "     may not be accessible or work properly."
+  fi
+  msg "INFO Currently running on QNX microkernel $(uname -r)"
+  msg "INFO Available licenses for manual installation:"
+  ls -1 "$SRCPATH"/specific_license/etc/qnx/license/licenses* 2>/dev/null | {
+    found=
+    while read l; do
+      found='yes'
+      msg "  $l"
+    done
+    [ -z "$found" ] && msg "  <none>"
+  }
 
-msg 'INFO Installing specific/optional system files...'
+  #FIXME detect (otherwise it could break display.conf)
+  msg "WARN Not installing \`$SRCPATH/specific_matrox'"
+  msg "     because of possible display.conf issues."
+  #install_tree "$SRCPATH/specific_matrox"
 
+  ls -1 -d "$NODE"/usr/qnx6*/target/qnx6/usr/include 2>/dev/null |
+    while read d; do
+      cp_n_backup "$SRCPATH/specific_symlinks/usr/include/drt" "$d/drt"
+    done
+  ls -1 -d "$NODE"/usr/qnx6*/target/qnx6/usr/help/product 2>/dev/null |
+    while read d; do
+      cp_n_backup \
+        "$SRCPATH/specific_symlinks/usr/help/product/Disam" "$d/Disam"
+      cp_n_backup \
+        "$SRCPATH/specific_symlinks/usr/help/product/Disam.toc" "$d/Disam.toc"
+    done
+}
 
-#FIXME detect did: 293e,27de,7012
-install_tree "$SRCPATH/specific_dll"
-install_tree "$SRCPATH/specific_editor"
-install_tree "$SRCPATH/specific_etc"
-msg "WARN Please check if \`$NODE/etc/ham-ph.cfg contains the right values."
-# permissions are preserved when using sh > redirection
-f='/etc/profile.d/scada.sh'
-sed -r \
-  -e 's|(SCADA_MS_NODE=)MS_dummy_name|\1'"$(
-    if [ -z "$MEA_ST" ]; then hostname; else echo "$MEA_ST"; fi)"'|' \
-  -e 's|(PROJEKT=)MCS_dummy|\1'"$PROJECT"'|' \
-  "$SRCPATH/specific_etc$f" > "$NODE$f"
-msg "WARN Please check \`$NODE$f' for sockets and ftp-server settings."
-#FIXME detect did: 293e,27de,7012
-install_tree "$SRCPATH/specific_io-audio"
-#FIXME auto-detect Qnet over IP?
-install_tree "$SRCPATH/specific_ip-qnet"
-install_tree "$SRCPATH/specific_keepalive"
-install_tree "$SRCPATH/specific_launchmenu"
-# just for information - we won't install any QNX license automatically!
-if [ -e "$NODE/etc/qnx/license/licenses" ]; then
-  msg "INFO Installed QNX license found."
-else
-  msg "WARN No installed QNX license found, some SCADA functionality mustn't work."
-fi
-msg "INFO Currently running on QNX microkernel $(uname -r)"
-msg "INFO Available licenses for manual installation:"
-ls -1 "$SRCPATH"/specific_license/etc/qnx/license/licenses* 2>/dev/null | {
-  found=
-  while read l; do
-    found='yes'
-    msg "     $l"
+msg "INFO Adding groups (if needed)."; {
+  # formerly GID=100
+  msg "INFO   groupadd \`drt'"
+  gid_drt="$(group_add 'drt' '' '' '')" || {
+    # ignore "Group already exists" error
+    [ $? -eq 2 ] || ask_ignore "$gid_drt" || exit 1
+    # ensure gid_drt is set (in case of $?==2 or if user ignored some ERR)
+    gid_drt="$(get_id gid 'drt')" || exit_msg 1 "$gid_drt"
+  }
+
+  # formerly GID=101
+  msg "INFO   groupadd \`mcs03'"
+  gid_mcs03="$(group_add 'mcs03' '' '' '')" || {
+    [ $? -eq 2 ] || ask_ignore "$gid_mcs03" || exit 1
+    gid_mcs03="$(get_id gid 'mcs03')" || exit_msg 1 "$gid_mcs03"
+  }
+}
+
+msg "INFO Adding users (if needed)."; {
+  # formerly UID=100 GID=100
+  msg "INFO   useradd \`kost'"
+  ret="$(user_add 'kost' '' "$gid_drt" "$gid_drt" \
+    'V. Košťál' '/home/kost' '/bin/sh')" ||
+  # ignore "User already exists" error
+  [ $? -eq 2 ] || ask_ignore "$ret" || exit 1
+  if [ -z "$MEA_ST" ]; then
+    install_tree "$SRCPATH/specific_home_ms/home/ms/.ph" \
+      "/home/kost" "$gid_drt:$gid_drt"
+  else
+    install_tree "$SRCPATH/specific_home_ps/home/ps/.ph" \
+      "/home/kost" "$gid_drt:$gid_drt"
+  fi
+
+  # formerly UID=101
+  msg "INFO   useradd \`$PROJECT'"
+  uid_pm="$(user_add "$PROJECT" '' '' "$gid_drt" \
+    'Správce projektu' "/libr/$PROJECT" '/bin/sh')" || {
+    [ $? -eq 2 ] || ask_ignore "$uid_pm" || exit 1
+    uid_pm="$(get_id uid "$PROJECT")" || exit_msg 1 "$uid_pm"
+  }
+  for d in bin gbin source include ph_app; do
+    mkdir "$NODE/libr/$PROJECT/$d" 2> /dev/null
+    chown "$uid_pm:$gid_drt" "$NODE/libr/$PROJECT/$d"
+    echo "/libr/$PROJECT/$d" >> "$BACKUP_DIR/installed_files"
   done
-  [ -z "$found" ] && msg "     <none>"
-}
-#FIXME detect (otherwise it could break display.conf)
-msg "WARN Not installing \`$SRCPATH/specific_matrox'"
-msg "     because of possible display.conf issues."
-#install_tree "$SRCPATH/specific_matrox"
-ls -1 -d "$NODE"/usr/qnx6*/target/qnx6/usr/include 2>/dev/null |
-  while read d; do
-    cp_n_backup "$SRCPATH/specific_symlinks/usr/include/drt" "$d/drt"
-  done
-ls -1 -d "$NODE"/usr/qnx6*/target/qnx6/usr/help/product 2>/dev/null |
-  while read d; do
-    cp_n_backup \
-      "$SRCPATH/specific_symlinks/usr/help/product/Disam" "$d/Disam"
-    cp_n_backup \
-      "$SRCPATH/specific_symlinks/usr/help/product/Disam.toc" "$d/Disam.toc"
-  done
+  if [ -z "$MEA_ST" ]; then
+    install_tree "$SRCPATH/specific_home_ms/home/ms/.ph" \
+      "/libr/$PROJECT" "$uid_pm:$gid_drt"
+  else
+    install_tree "$SRCPATH/specific_home_ps/home/ps/.ph" \
+      "/libr/$PROJECT" "$uid_pm:$gid_drt"
+  fi
 
+  # formerly UID=200
+  msg "INFO   useradd \`ms'"
+  # SCADA software runs from here
+  uid_ms="$(user_add 'ms' '' '' "$gid_mcs03" \
+    'MS-SCADA-QNX' '/home/ms' '/bin/sh')" || {
+    [ $? -eq 2 ] || ask_ignore "$uid_ms" || exit 1
+    uid_ms="$(get_id uid 'ms')" || exit_msg 1 "$uid_ms"
+  }
+  # FIXME adjust according to /home/ms/.ph/README.txt
+  install_tree "$SRCPATH/specific_home_ms/home/ms/" "/home" "$uid_ms:$gid_mcs03"
 
-msg "INFO Adding groups (if needed)."
+  # formerly UID=201
+  msg "INFO   useradd \`ps'"
+  # SCADA HMI software runs from here
+  uid_ps="$(user_add 'ps' '' '' "$gid_mcs03" \
+    'PS-SCADA-QNX' '/home/ps' '/bin/sh')" || {
+    [ $? -eq 2 ] || ask_ignore "$uid_ps" || exit 1
+    uid_ps="$(get_id uid 'ps')" || exit_msg 1 "$uid_ps"
+  }
+  # FIXME adjust according to /home/ps/.ph/README.txt
+  install_tree "$SRCPATH/specific_home_ps/home/ps/" "/home" "$uid_ms:$gid_mcs03"
 
+  # formerly UID=202
+  msg "INFO   useradd \`rps'"
+  uid_rps="$(user_add 'rps' '' '' "$gid_mcs03" \
+    'Remote PS' '/home/rps' '/bin/sh')" || {
+    [ $? -eq 2 ] || ask_ignore "$uid_rps" || exit 1
+    uid_rps="$(get_id uid 'rps')" || exit_msg 1 "$uid_rps"
+  }
 
-# formerly GID=100
-msg "INFO   groupadd \`drt'"
-gid_drt="$(group_add 'drt' '' '' '')" || {
-  # ignore "Group already exists" error
-  [ $? -eq 2 ] || ask_ignore "$gid_drt" || exit 1
-  # ensure gid_drt is set (in case of $?==2 or if user ignored some ERR)
-  gid_drt="$(get_id gid 'drt')" || exit_msg 1 "$gid_drt"
-}
-
-
-# formerly GID=101
-msg "INFO   groupadd \`mcs03'"
-gid_mcs03="$(group_add 'mcs03' '' '' '')" || {
-  [ $? -eq 2 ] || ask_ignore "$gid_mcs03" || exit 1
-  gid_mcs03="$(get_id gid 'mcs03')" || exit_msg 1 "$gid_mcs03"
-}
-
-
-msg "INFO Adding users (if needed)."
-
-
-# formerly UID=100 GID=100
-msg "INFO   useradd \`kost'"
-ret="$(user_add 'kost' '' "$gid_drt" "$gid_drt" \
-  'V. Košťál' '/home/kost' '/bin/sh')" ||
-# ignore "User already exists" error
-[ $? -eq 2 ] || ask_ignore "$ret" || exit 1
-if [ -z "$MEA_ST" ]; then
-  install_tree "$SRCPATH/specific_home_ms/home/ms/.ph" \
-    "/home/kost" "$gid_drt:$gid_drt"
-else
-  install_tree "$SRCPATH/specific_home_ps/home/ps/.ph" \
-    "/home/kost" "$gid_drt:$gid_drt"
-fi
-
-
-# formerly UID=101
-msg "INFO   useradd \`$PROJECT'"
-uid_pm="$(user_add "$PROJECT" '' '' "$gid_drt" \
-  'Správce projektu' "/libr/$PROJECT" '/bin/sh')" || {
-  [ $? -eq 2 ] || ask_ignore "$uid_pm" || exit 1
-  uid_pm="$(get_id uid "$PROJECT")" || exit_msg 1 "$uid_pm"
-}
-for d in bin gbin source include ph_app; do
-  mkdir "$NODE/libr/$PROJECT/$d"
-  chown "$uid_pm:$gid_drt" "$NODE/libr/$PROJECT/$d"
-  echo "/libr/$PROJECT/$d" >> "$BACKUP_DIR/installed_files"
-done
-if [ -z "$MEA_ST" ]; then
-  install_tree "$SRCPATH/specific_home_ms/home/ms/.ph" \
-    "/libr/$PROJECT" "$uid_pm:$gid_drt"
-else
-  install_tree "$SRCPATH/specific_home_ps/home/ps/.ph" \
-    "/libr/$PROJECT" "$uid_pm:$gid_drt"
-fi
-
-
-# formerly UID=200
-msg "INFO   useradd \`ms'"
-# SCADA software runs from here
-uid_ms="$(user_add 'ms' '' '' "$gid_mcs03" \
-  'MS-SCADA-QNX' '/home/ms' '/bin/sh')" || {
-  [ $? -eq 2 ] || ask_ignore "$uid_ms" || exit 1
-  uid_ms="$(get_id uid 'ms')" || exit_msg 1 "$uid_ms"
-}
-# FIXME adjust according to /home/ms/.ph/README.txt
-install_tree "$SRCPATH/specific_home_ms/home/ms/" "/home" "$uid_ms:$gid_mcs03"
-
-
-# formerly UID=201
-msg "INFO   useradd \`ps'"
-# SCADA HMI software runs from here
-uid_ps="$(user_add 'ps' '' '' "$gid_mcs03" \
-  'PS-SCADA-QNX' '/home/ps' '/bin/sh')" || {
-  [ $? -eq 2 ] || ask_ignore "$uid_ps" || exit 1
-  uid_ps="$(get_id uid 'ps')" || exit_msg 1 "$uid_ps"
-}
-# FIXME adjust according to /home/ps/.ph/README.txt
-install_tree "$SRCPATH/specific_home_ps/home/ps/" "/home" "$uid_ms:$gid_mcs03"
-
-
-# formerly UID=202
-msg "INFO   useradd \`rps'"
-uid_rps="$(user_add 'rps' '' '' "$gid_mcs03" \
-  'Remote PS' '/home/rps' '/bin/sh')" || {
-  [ $? -eq 2 ] || ask_ignore "$uid_rps" || exit 1
-  uid_rps="$(get_id uid 'rps')" || exit_msg 1 "$uid_rps"
-}
-
-
-# formerly UID=(200 + $NODE_ID)
-msg "INFO   useradd \`$TECH_USER'"
-uid_tu="$(user_add "$TECH_USER" '' '' "$gid_mcs03" \
-  'Stand. uživatel' "/home/$TECH_USER" '/bin/sh')" || {
-  [ $? -eq 2 ] || ask_ignore "$uid_tu" || exit 1
-  uid_tu="$(get_id uid "$TECH_USER")" || exit_msg 1 "$uid_tu"
-}
-for d in exe err litters; do
-  mkdir -p "$NODE/home/$TECH_USER/$d"
-  chown "$uid_tu:$gid_mcs03" "$NODE/home/$TECH_USER/$d"
-  echo "/home/$TECH_USER/$d" >> "$BACKUP_DIR/installed_files"
-done
-if [ "$NODE_ID" -eq 1 ]; then
-  for d in alr arc kfg server graf eng monitor; do
-    mkdir "$NODE/home/$TECH_USER/$d"
+  # formerly UID=(200 + $NODE_ID)
+  msg "INFO   useradd \`$TECH_USER'"
+  uid_tu="$(user_add "$TECH_USER" '' '' "$gid_mcs03" \
+    'Stand. uživatel' "/home/$TECH_USER" '/bin/sh')" || {
+    [ $? -eq 2 ] || ask_ignore "$uid_tu" || exit 1
+    uid_tu="$(get_id uid "$TECH_USER")" || exit_msg 1 "$uid_tu"
+  }
+  for d in exe err litters; do
+    mkdir -p "$NODE/home/$TECH_USER/$d" 2> /dev/null
     chown "$uid_tu:$gid_mcs03" "$NODE/home/$TECH_USER/$d"
     echo "/home/$TECH_USER/$d" >> "$BACKUP_DIR/installed_files"
   done
-  #FIXME cp -rp "$SRCPATH/common/home/~ms/.ph/ ...
-  install_tree "$SRCPATH/specific_home_ms/home/ms/.ph/" \
-    "/home/$TECH_USER" "$uid_tu:$gid_mcs03"
-else
-  #FIXME cp -rp "$SRCPATH/common/home/~ps/.ph/ ...
-  install_tree "$SRCPATH/specific_home_ps/home/ps/.ph/" \
-    "/home/$TECH_USER" "$uid_tu:$gid_mcs03"
-fi
+  if [ "$NODE_ID" -eq 1 ]; then
+    for d in alr arc kfg server graf eng monitor; do
+      mkdir "$NODE/home/$TECH_USER/$d" 2> /dev/null
+      chown "$uid_tu:$gid_mcs03" "$NODE/home/$TECH_USER/$d"
+      echo "/home/$TECH_USER/$d" >> "$BACKUP_DIR/installed_files"
+    done
+    #FIXME cp -rp "$SRCPATH/common/home/~ms/.ph/ ...
+    install_tree "$SRCPATH/specific_home_ms/home/ms/.ph/" \
+      "/home/$TECH_USER" "$uid_tu:$gid_mcs03"
+  else
+    #FIXME cp -rp "$SRCPATH/common/home/~ps/.ph/ ...
+    install_tree "$SRCPATH/specific_home_ps/home/ps/.ph/" \
+      "/home/$TECH_USER" "$uid_tu:$gid_mcs03"
+  fi
 
-
-if [ "$NODE_ID" -eq 1 ]; then
-  user_drt="ms_drt"
-else
-  user_drt="ps_drt"
-fi
-# formerly UID=199
-msg "INFO   useradd \`$user_drt'"
-uid_drt="$(user_add "$user_drt" '' '' "$gid_mcs03" \
-  'Drt-service' "/home/$user_drt" '/bin/sh')" || {
-  [ $? -eq 2 ] || ask_ignore "$uid_drt" || exit 1
-  uid_drt="$(get_id uid "$user_drt")" || exit_msg 1 "$uid_drt"
-}
-for d in exe err litters; do
-  ln -s "/home/$TECH_USER/$d" "$NODE/home/$user_drt"
-  echo "/home/$user_drt/$d" >> "$BACKUP_DIR/installed_files"
-done
-[ "$NODE_ID" -eq 1 ] && {
-  for d in alr arc kfg server graf eng monitor; do
-    ln -s "/home/$TECH_USER/$d" "$NODE/home/$user_drt"
+  if [ "$NODE_ID" -eq 1 ]; then
+    user_drt="ms_drt"
+  else
+    user_drt="ps_drt"
+  fi
+  # formerly UID=199
+  msg "INFO   useradd \`$user_drt'"
+  uid_drt="$(user_add "$user_drt" '' '' "$gid_mcs03" \
+    'Drt-service' "/home/$user_drt" '/bin/sh')" || {
+    [ $? -eq 2 ] || ask_ignore "$uid_drt" || exit 1
+    uid_drt="$(get_id uid "$user_drt")" || exit_msg 1 "$uid_drt"
+  }
+  for d in exe err litters; do
+    ln -s "/home/$TECH_USER/$d" "$NODE/home/$user_drt" 2> /dev/null &&
     echo "/home/$user_drt/$d" >> "$BACKUP_DIR/installed_files"
   done
+  [ "$NODE_ID" -eq 1 ] && {
+    for d in alr arc kfg server graf eng monitor; do
+      ln -s "/home/$TECH_USER/$d" "$NODE/home/$user_drt" 2> /dev/null &&
+      echo "/home/$user_drt/$d" >> "$BACKUP_DIR/installed_files"
+    done
+  }
+  # do not chown -R "$uid_drt:$gid_mcs03" "$NODE/home/$user_drt"
+  #   because symlinks are always ugo+rwx and chown -R do work only
+  #   with the symlink destination (there is no way to change owner
+  #   of symlink in shell under QNX)
+
+  # formerly UID=200
+  msg "INFO   useradd \`admin'"
+  uid_admin="$(user_add 'admin' '' '' "$gid_mcs03" \
+    '' "/home/admin" '/bin/sh')" || {
+    [ $? -eq 2 ] || ask_ignore "$uid_admin" || exit 1
+    uid_admin="$(get_id uid 'admin')" || exit_msg 1 "$uid_admin"
+  }
+  if [ -z "$MEA_ST" ]; then
+    install_tree "$SRCPATH/specific_home_ms/home/ms/.ph/" \
+      "/home/admin" "$uid_admin:$gid_mcs03"
+  else
+    install_tree "$SRCPATH/specific_home_ps/home/ps/.ph/" \
+      "/home/admin" "$uid_admin:$gid_mcs03"
+  fi
 }
-# do not chown -R "$uid_drt:$gid_mcs03" "$NODE/home/$user_drt"
-#   because symlinks are always ugo+rwx and chown -R do work only
-#   with the symlink destination (there is no way to change owner
-#   of symlink in shell under QNX)
 
-
-# formerly UID=200
-msg "INFO   useradd \`admin'"
-uid_admin="$(user_add 'admin' '' '' "$gid_mcs03" \
-  '' "/home/admin" '/bin/sh')" || {
-  [ $? -eq 2 ] || ask_ignore "$uid_admin" || exit 1
-  uid_admin="$(get_id uid 'admin')" || exit_msg 1 "$uid_admin"
-}
-if [ -z "$MEA_ST" ]; then
-  install_tree "$SRCPATH/specific_home_ms/home/ms/.ph/" \
-    "/home/admin" "$uid_admin:$gid_mcs03"
-else
-  install_tree "$SRCPATH/specific_home_ps/home/ps/.ph/" \
-    "/home/admin" "$uid_admin:$gid_mcs03"
-fi
-
-
-msg 'WARN Please set passwords to the newly created accounts. Currently'
+msg 'WARN Please set passwords to newly created accounts. Currently'
 msg '     all passwords are empty and thus everybody can login.'
 msg 'INFO Installation of Disam RT SCADA successful.'
