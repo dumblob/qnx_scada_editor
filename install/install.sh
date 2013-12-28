@@ -183,10 +183,21 @@ cp_tar() {
   { cd "$(dirname "$2")" && tar --same-owner -xp; }
 }
 
+# <src_prefix> <dst_prefix> <full_path_to_mirror>
+mirror_path() {(
+  _x="$3"
+  while [ "$_x" != '/' -a "$_x" != '.' ]; do
+    echo "$_x"
+    _x="$(dirname "$_x")"
+  done | sort | while read f; do
+    # keep already existing dirs
+    [ -e "$2/$f" ] || { cp_tar "$1/$f" "$2/$f" || exit 1; }
+  done
+)}
+
 # <full_path_of_file_or_dir_to_copy> <dst_path_relative_to_/_of_the_target_system> [<uid:gid>]
-#   directories are not copied recursively (thus they will be empty)
-#   no checks for path existence are done (path should already exist -
-#     ensure it using e.g. `find . | sort')
+# directories are not copied recursively (thus they will be empty)
+# recommended usage: `find . | sort | while read f; do cp_n_backup ...'
 cp_n_backup() {
   [ -z "$_BACKUP_TREE" ] && {
     _BACKUP_TREE="$BACKUP_DIR/tree"
@@ -198,7 +209,7 @@ cp_n_backup() {
   if [ -d "$1" ]; then
     # preserve the first one backuped file/dir (i.e. the original one)
     [ -e "$NODE/$2" -a ! -e "$_BACKUP_TREE/$2" ] && {
-      cp_tar "$NODE/$2" "$_BACKUP_TREE/$2" || {
+      mirror_path "$NODE" "$_BACKUP_TREE" "$2" || {
         emsg "ERR Backup failed, original file \`$NODE$2' preserved."
         return 1
       }
@@ -206,6 +217,7 @@ cp_n_backup() {
     cp_tar "$1" "$NODE/$2"
   else
     [ -e "$NODE/$2" -a ! -e "$_BACKUP_TREE/$2" ] && {
+      mirror_path "$NODE" "$_BACKUP_TREE" "$(dirname "$2")" &&
       mv "$NODE/$2" "$_BACKUP_TREE/$2" 2> /dev/null || {
         emsg "ERR Backup failed, original file \`$NODE$2' preserved."
         return 1
