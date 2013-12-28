@@ -219,12 +219,12 @@ cp_n_backup() {
 }
 
 # <tree_path>
-#   recursively copy the content of the given tree_path into $NODE/, i.e.
+#   recursively copy the content of the given tree_path into $NODE/, i.e. mimic
 #     cp -r <tree_path>/* $NODE/
 #   but with hidden files of course
 # <tree_path> <already_existing_dst_tree_prefix> [<uid:gid>]
 #   recursively copy the given tree_path into (!) the
-#   $NODE/dst_tree_prefix/ directory, i.e.
+#   $NODE/dst_tree_prefix/ directory, i.e. mimic
 #     cp -r <tree_path>/ $NODE/<dst_tree_prefix>/
 # both <tree_path> and <dst_tree_prefix> always have to begin with / character
 install_tree() {(
@@ -235,7 +235,7 @@ install_tree() {(
     cp_n_backup "$1" "$_full_prefix" || exit $?
   }
   # skip first line because it is the $1 itself
-  find "$1" | sort | tail -n +2 | while read f; do
+  find "$1" | sort | tail -n +1 | while read f; do
     cp_n_backup "$f" "$_full_prefix/$(echo "$f" | cut -b $_len-)" "$3"
   done
 )}
@@ -424,12 +424,13 @@ ls -1 "$SRCPATH"/specific_license/etc/qnx/license/licenses* 2>/dev/null | {
   found=
   while read l; do
     found='yes'
-    msg "  $l"
+    msg "     $l"
   done
-  [ -z "$found" ] && msg "  <none>"
+  [ -z "$found" ] && msg "     <none>"
 }
 #FIXME detect (otherwise it could break display.conf)
-msg "WARN Not installing $SRCPATH/specific_matrox because of possible display.conf issues."
+msg "WARN Not installing \`$SRCPATH/specific_matrox'"
+msg "     because of possible display.conf issues."
 #install_tree "$SRCPATH/specific_matrox"
 ls -1 -d "$NODE"/usr/qnx6*/target/qnx6/usr/include 2>/dev/null |
   while read d; do
