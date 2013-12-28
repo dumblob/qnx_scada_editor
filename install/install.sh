@@ -197,16 +197,16 @@ cp_n_backup() {
   # use cp -p where possible because cp_tar is slow
   if [ -d "$1" ]; then
     # preserve the first one backuped file/dir (i.e. the original one)
-    [ -e "$NODE/$2" -a ! -e "$_BACKUP_DIR/$2" ] && {
-      cp_tar "$NODE/$2" "$_BACKUP_DIR/$2" || {
+    [ -e "$NODE/$2" -a ! -e "$_BACKUP_TREE/$2" ] && {
+      cp_tar "$NODE/$2" "$_BACKUP_TREE/$2" || {
         emsg "ERR Backup failed, original file \`$NODE$2' preserved."
         return 1
       }
     }
     cp_tar "$1" "$NODE/$2"
   else
-    [ -e "$NODE/$2" -a ! -e "$_BACKUP_DIR/$2" ] && {
-      mv "$NODE/$2" "$_BACKUP_DIR/$2" 2> /dev/null || {
+    [ -e "$NODE/$2" -a ! -e "$_BACKUP_TREE/$2" ] && {
+      mv "$NODE/$2" "$_BACKUP_TREE/$2" 2> /dev/null || {
         emsg "ERR Backup failed, original file \`$NODE$2' preserved."
         return 1
       }
