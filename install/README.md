@@ -10,7 +10,7 @@ Comparison to the old `isys` script
 -----------------------------------
 
 * GID and UID is automatically chosen for new users/groups
-* ~dir and non-tilda dirs divided into separate directories (common & specific_???) while abandoning the `~` character
+* ~dir and non-tilda dirs were divided into separate dirs (common & specific_XXX) while abandoning the `~` character
 
     many different files/dirs were moved between common and specific_??? dirs
 
@@ -35,3 +35,12 @@ Comparison to the old `isys` script
     home/ps/.ph/
 
 * much more (local and remote installation, different autodetections, uninstall possibility, logging, etc.)
+
+Changes to SCADA install data
+-----------------------------
+
+* logging capability introduced (using syslogd)
+
+    /var/log/syslog has limited size of 2MB by default (QNX\`s syslogd itself has a hard file size limit of 2GB)
+
+* various fixes to overcome booting issues (e.g. missing APS) and many permission fixes especially to system files
