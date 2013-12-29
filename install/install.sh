@@ -334,7 +334,7 @@ user_add() {
     return 4
   }
   sed -i -r -e "s|^([^:]+:[^:]*:$4:.*)$|\\1,$1|" -e "s|:,|:|g" \
-    "$NODE/etc/passwd"
+    "$NODE/etc/group"
   echo "$1:$2:$_uid:$4:$5:$6:$7" >> "$NODE/etc/passwd"
   if [ -d "$NODE/$6" ]; then
     cp_tar "$NODE/$6" "$BACKUP_DIR/tree/$6"
