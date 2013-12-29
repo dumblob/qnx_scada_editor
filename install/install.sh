@@ -230,8 +230,7 @@ cp_n_backup() {
   # use cp -p where possible because cp_tar is slow
   if [ -d "$1" ]; then
     # preserve the first one backuped file/dir (i.e. the original one)
-    [ -e "$NODE/$2" ] && { already_installed "$_BACKUP_TREE/$2"
-        [ $? -ge 1 ]; } && {
+    [ -e "$NODE/$2" ] && { already_installed "$2"; [ $? -ge 1 ]; } && {
       mirror_path "$NODE" "$_BACKUP_TREE" "$2" || {
         emsg "ERR Backup failed, original file \`$(clean_path "$NODE/$2")' preserved."
         return 1
@@ -239,8 +238,7 @@ cp_n_backup() {
     }
     cp_tar "$1" "$NODE/$2"
   else
-    [ -e "$NODE/$2" ] && { already_installed "$_BACKUP_TREE/$2"
-        [ $? -ge 1 ]; } && {
+    [ -e "$NODE/$2" ] && { already_installed "$2"; [ $? -ge 1 ]; } && {
       mirror_path "$NODE" "$_BACKUP_TREE" "$(dirname "$2")" &&
       mv "$NODE/$2" "$_BACKUP_TREE/$2" 2> /dev/null || {
         emsg "ERR Backup failed, original file \`$(clean_path "$NODE/$2")' preserved."
@@ -337,17 +335,19 @@ user_add() {
     "$NODE/etc/group"
   echo "$1:$2:$_uid:$4:$5:$6:$7" >> "$NODE/etc/passwd"
   if [ -d "$NODE/$6" ]; then
-    cp_tar "$NODE/$6" "$BACKUP_DIR/tree/$6"
+    already_installed "$6" || {
+      cp_tar "$NODE/$6" "$BACKUP_DIR/tree/$6"
+      echo "$6" >> "$BACKUP_DIR/installed_files"
+    }
     chown "$_uid":"$4" "$NODE/$6"
-    echo "$6" >> "$BACKUP_DIR/installed_files"
   else
     mkdir -p "$NODE/$(dirname "$6")"  # for sure
     cp -rp /etc/skel "$NODE/$6"
     chown -R "$_uid:$4" "$NODE/$6"
-    cd "$NODE"
+    cd "$NODE"  # no need to cd back
     find "$6" >> "$BACKUP_DIR/installed_files"
   fi
-  chmod 750 "$NODE$6"
+  chmod 750 "$NODE/$6"
   echo "$_uid"
   )
 }
