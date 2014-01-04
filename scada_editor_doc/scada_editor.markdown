@@ -16,7 +16,7 @@ Základní spuštění lze provést takto:
 
     cd /path/to/install/dir && ./scada_editor
 
-Ke\ správné funkčnosti je zapotřebí skript `src2xml.sh`, jež zpracovává vstupní (otevírané soubory) jak ve formátu XML, tak v\ „src“. Tento se buď musí nacházet v\ `$PATH`, v\ aktuálním adresáři (`man 1 pwd`), nebo lze předat editoru parametr `-p /cesta/k/src2xml.sh`.
+Ke\ správné funkčnosti je zapotřebí skript `src2xml.sh`, jež zpracovává vstupní (otevírané soubory) jak ve formátu XML, tak v\ „src“. Tento se buď musí nacházet v\ `$PATH`, v\ aktuálním adresáři (`use pwd`), nebo lze předat editoru parametr `-p /cesta/k/src2xml.sh`.
 
 Editor uživatele neobtěžuje výstražnými dialogy ani méně významnými chybovými zprávami. Tyto jsou vypisovány na `stdout` a `stderr`. Je tedy možné tyto výpisy inkrementálně zálohovat např. takto:
 
@@ -80,14 +80,14 @@ Nástrojová lišta s\ tlačítky
 
 `Remove row` odstraní řádek s\ buňkou, která má fokus. Pokud žádná buňka fokus nemá, je odstraněn poslední řádek z\ konce tabulky.
 
-Stromový pohled s tabulkou
+Stromový pohled s\ tabulkou
 --------------------------
 
 Ve stromovém pohledu vlevo jsou hlavní kategorie (definované v\ konfiguračním XML souboru) spolu s\ podkategoriemi. Hlavní kategorie nelze přejmenovávat (názvy jsou pevně dané v konfiguračním XML souboru). Po zvolení položky, která neobsahuje již žádné další potomky, je v\ pravé části editoru zobrazena tabulka s\ hodnotami jednotlivých konfiguračních voleb. Pro zjištění kompletního názvu konfigurační volby lze využít *tooltip* nadpisu sloupce v\ tabulce. Obsah buněk v\ tabulce lze přímo editovat.
 
-Ukázka přidávání nové položky
------------------------------
+Ukázka práce s\ editorem
+------------------------
 
-![Přidávání nové položky](img/2013-12-11-155037_1680x1050+0+0_imlib2_grab-s.jpg)
+![Přejmenování označené položky](img/2013-12-11-155037_1680x1050+0+0_imlib2_grab-s.jpg)
 
 ![Po přidání nové položky a nového řádku](img/2013-12-11-155228_1680x1050+0+0_imlib2_grab-s.jpg)

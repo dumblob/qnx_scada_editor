@@ -10,7 +10,7 @@
 <body>
 <div id="header">
 <h1 class="title">Editor konfigurace Disam RT SCADA</h1>
-<h3 class="date">2013-12-11 16:20:36 CET</h3>
+<h3 class="date">2014-01-04 10:39:45 CET</h3>
 </div>
 <div id="TOC">
 <ul>
@@ -23,8 +23,8 @@
 <li><a href="#práce-sobsahem-buňek-tabulky"><span class="toc-section-number">3.2.2</span> Práce s obsahem buňek tabulky</a></li>
 <li><a href="#práce-stabulkou"><span class="toc-section-number">3.2.3</span> Práce s tabulkou</a></li>
 </ul></li>
-<li><a href="#stromový-pohled-s-tabulkou"><span class="toc-section-number">3.3</span> Stromový pohled s tabulkou</a></li>
-<li><a href="#ukázka-přidávání-nové-položky"><span class="toc-section-number">3.4</span> Ukázka přidávání nové položky</a></li>
+<li><a href="#stromový-pohled-stabulkou"><span class="toc-section-number">3.3</span> Stromový pohled s tabulkou</a></li>
+<li><a href="#ukázka-práce-seditorem"><span class="toc-section-number">3.4</span> Ukázka práce s editorem</a></li>
 </ul></li>
 </ul>
 </div>
@@ -39,7 +39,7 @@
 <h1><a href="#spuštění"><span class="header-section-number">2</span> Spuštění</a></h1>
 <p>Základní spuštění lze provést takto:</p>
 <pre><code>cd /path/to/install/dir &amp;&amp; ./scada_editor</code></pre>
-<p>Ke správné funkčnosti je zapotřebí skript <code>src2xml.sh</code>, jež zpracovává vstupní (otevírané soubory) jak ve formátu XML, tak v „src“. Tento se buď musí nacházet v <code>$PATH</code>, v aktuálním adresáři (<code>man 1 pwd</code>), nebo lze předat editoru parametr <code>-p /cesta/k/src2xml.sh</code>.</p>
+<p>Ke správné funkčnosti je zapotřebí skript <code>src2xml.sh</code>, jež zpracovává vstupní (otevírané soubory) jak ve formátu XML, tak v „src“. Tento se buď musí nacházet v <code>$PATH</code>, v aktuálním adresáři (<code>use pwd</code>), nebo lze předat editoru parametr <code>-p /cesta/k/src2xml.sh</code>.</p>
 <p>Editor uživatele neobtěžuje výstražnými dialogy ani méně významnými chybovými zprávami. Tyto jsou vypisovány na <code>stdout</code> a <code>stderr</code>. Je tedy možné tyto výpisy inkrementálně zálohovat např. takto:</p>
 <pre><code>scada_editor &gt;&gt; &quot;$HOME/muj_log&quot; 2&gt;&amp;1</code></pre>
 <p>V případě otevírání datového souboru „src“ se lze setkat s výpisem</p>
@@ -84,14 +84,14 @@
 <p><code>Remove row</code> odstraní řádek s buňkou, která má fokus. Pokud žádná buňka fokus nemá, je odstraněn poslední řádek z konce tabulky.</p>
 </div>
 </div>
-<div id="stromový-pohled-s-tabulkou" class="section level2">
-<h2><a href="#stromový-pohled-s-tabulkou"><span class="header-section-number">3.3</span> Stromový pohled s tabulkou</a></h2>
+<div id="stromový-pohled-stabulkou" class="section level2">
+<h2><a href="#stromový-pohled-stabulkou"><span class="header-section-number">3.3</span> Stromový pohled s tabulkou</a></h2>
 <p>Ve stromovém pohledu vlevo jsou hlavní kategorie (definované v konfiguračním XML souboru) spolu s podkategoriemi. Hlavní kategorie nelze přejmenovávat (názvy jsou pevně dané v konfiguračním XML souboru). Po zvolení položky, která neobsahuje již žádné další potomky, je v pravé části editoru zobrazena tabulka s hodnotami jednotlivých konfiguračních voleb. Pro zjištění kompletního názvu konfigurační volby lze využít <em>tooltip</em> nadpisu sloupce v tabulce. Obsah buněk v tabulce lze přímo editovat.</p>
 </div>
-<div id="ukázka-přidávání-nové-položky" class="section level2">
-<h2><a href="#ukázka-přidávání-nové-položky"><span class="header-section-number">3.4</span> Ukázka přidávání nové položky</a></h2>
+<div id="ukázka-práce-seditorem" class="section level2">
+<h2><a href="#ukázka-práce-seditorem"><span class="header-section-number">3.4</span> Ukázka práce s editorem</a></h2>
 <div class="figure">
-<img src="img/2013-12-11-155037_1680x1050+0+0_imlib2_grab-s.jpg" alt="Přidávání nové položky" /><p class="caption">Přidávání nové položky</p>
+<img src="img/2013-12-11-155037_1680x1050+0+0_imlib2_grab-s.jpg" alt="Přejmenování označené položky" /><p class="caption">Přejmenování označené položky</p>
 </div>
 <div class="figure">
 <img src="img/2013-12-11-155228_1680x1050+0+0_imlib2_grab-s.jpg" alt="Po přidání nové položky a nového řádku" /><p class="caption">Po přidání nové položky a nového řádku</p>
