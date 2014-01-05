@@ -64,4 +64,27 @@ src2xml
   pridat parametr -f, ktery ignoruje vyse uvedene kontroly
   otestovat skript na QNX 6.4.1 (cut nezna argument -b)
 
+table widget thoughts
+  PtSetArg( &args[i++], Pt_ARG_CONTAINER_FLAGS, Pt_AUTO_EXTENT, Pt_AUTO_EXTENT );
+
+  nebo
+
+  PtWidget_t *PtExtentWidget( PtWidget_t *widget );
+    Force a widget to calculate its extent
+
+  nebo
+
+  proste nejak menit virtual area, coz se ma dit samo diky layoutu, ale neni tomu tak :(
+
+  nebo
+
+  narvat vsechno do PtDivider (coz je PtGroup + divider)
+
+  nebo
+
+  PtScrollContainer automaticky provede anchoring vsech jeho deti k virtual area,
+    takze ignoruje ostatni policy; lze pouze nastavit
+    Pt_ARG_SCROLLCONT_RESIZE_FLAGS ktere snad budou nejak menit chovani zmen
+    velikosti te virtual area
+
 vim: set wrap:
