@@ -6,6 +6,21 @@ Synopsis
 
 Installation script for Disam RT SCADA system. For more information please run `install.sh help`.
 
+Examples of installation
+------------------------
+
+workstation
+
+    ./install.sh install -m ms1 -s install_data/ -p proj33 -i 33 -t tech33
+
+measurement station
+
+    ./install.sh install -s install_data/ -p proj33 -i 1 -t tech33
+
+uninstall
+
+    ./install.sh uninstall -b /backup_20131224-101933
+
 Comparison to the old `isys` script
 -----------------------------------
 

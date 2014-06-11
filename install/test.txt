@@ -1,8 +1,0 @@
-workstation
-  time ../gitsvn_SCADA/install/install.sh install -m ms1 -s install_data/ -p proj33 -i 33 -t tech33
-
-measurement station
-  time ../gitsvn_SCADA/install/install.sh install -s install_data/ -p proj33 -i 1 -t tech33
-
-uninstall
-  time ../gitsvn_SCADA/install/install.sh uninstall -b /backup*
