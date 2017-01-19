@@ -15,3 +15,9 @@ NOTES
   Under QNX, the child has to trap SIGTERM, because the default behavior
   of direct child is to resends the signal to its parent, thus
   effectively terminating this daemon!
+
+TODO
+
+  reimplement timers (to support longer waiting time than the dispatch frequency)
+  send the UDP packet 3x at once (both request & reply)
+  run it with nice -n-255
